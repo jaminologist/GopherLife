@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -9,8 +10,11 @@ import (
 type Gopher struct {
 	name     string
 	lifespan int
+	hunger   int
+}
 
-	hunger int
+func newGopher(name string) Gopher { //Gophers live for 3 years
+	return Gopher{name: name, lifespan: 0, hunger: 100}
 }
 
 func (g *Gopher) SetName(name string) {
@@ -18,12 +22,12 @@ func (g *Gopher) SetName(name string) {
 }
 
 func (g *Gopher) IsDead() bool {
-	return g.lifespan >= 4
+	return g.lifespan >= 300
 }
 
 func (g *Gopher) Eat() {
 
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 100; i++ {
 
 	}
 
@@ -35,23 +39,32 @@ func (g *Gopher) Dig() {
 
 func StartLife(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
-	fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
+	//	fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
 
 	if !g.IsDead() {
 		g.lifespan++
 		g.Eat()
 		c <- g
 	} else {
-		fmt.Println(g.name, "is dead :(")
+		//fmt.Println(g.name, "is dead :(")
 	}
 	wg.Done()
+
+}
+
+func generateGophers(inputChannel chan *Gopher) {
+	goph := newGopher(fmt.Sprintf("[1]", rand.Int()))
+
+	select {
+	case inputChannel <- &goph:
+		generateGophers(inputChannel)
+	}
 
 }
 
 func main() {
 
 	//	runtime.GOMAXPROCS(1)
-
 	start := time.Now()
 
 	var wg sync.WaitGroup
@@ -60,13 +73,15 @@ func main() {
 
 	channel := make(chan *Gopher, numGophers)
 
-	for i := 0; i < numGophers; i++ {
-		wg.Add(1)
-		go StartLife(&wg, &Gopher{fmt.Sprintf("%v", i), 1, 1}, channel)
+	for len(channel) != cap(channel) {
+		go generateGophers(channel)
 	}
 
+	i := 0
+
 	for numGophers > 0 {
-		wg.Wait()
+
+		fmt.Println("Num Gophs: ", numGophers, " Number of moments: ", i)
 		numGophers = len(channel)
 		secondChannel := make(chan *Gopher, numGophers)
 		for i := 0; i < numGophers; i++ {
@@ -75,10 +90,11 @@ func main() {
 			go StartLife(&wg, msg, secondChannel)
 		}
 		channel = secondChannel
+		i++
+		wg.Wait()
 	}
 
-	fmt.Println("Done")
-
 	fmt.Println(time.Since(start))
+	fmt.Println("Done")
 
 }
