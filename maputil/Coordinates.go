@@ -1,6 +1,8 @@
 package maputil
 
 import "fmt"
+import s "strings"
+import "strconv"
 
 type Coordinates struct {
 	x int
@@ -8,6 +10,13 @@ type Coordinates struct {
 }
 
 func NewCoordinate(x int, y int) Coordinates {
+	return Coordinates{x, y}
+}
+
+func StringToCoordinates(coordString string) Coordinates {
+	var split = s.Split(coordString, ",")
+	var x, _ = strconv.Atoi(split[0])
+	var y, _ = strconv.Atoi(split[1])
 	return Coordinates{x, y}
 }
 
@@ -33,5 +42,5 @@ func (c *Coordinates) MapKey() string {
 }
 
 func CoordinateMapKey(x int, y int) string {
-	return fmt.Sprintf("%[1]d %[2]d", x, y)
+	return fmt.Sprintf("%[1]d,%[2]d", x, y)
 }

@@ -16,11 +16,12 @@ type Gopher struct {
 	name     string
 	lifespan int
 	hunger   int
+
+	position *maputil.Coordinates
 }
 
-func newGopher(name string) Gopher {
-
-	return Gopher{name: name, lifespan: 0, hunger: rand.Intn(1000)}
+func newGopher(name string, coord *maputil.Coordinates) Gopher {
+	return Gopher{name: name, lifespan: 0, hunger: rand.Intn(1000), position: coord}
 }
 
 func (g *Gopher) SetName(name string) {
@@ -47,7 +48,7 @@ func (g *Gopher) Dig() {
 	time.Sleep(100)
 }
 
-func CreateMap(width int, height int) {
+func CreateMap(width int, height int) map[string]struct{} {
 
 	var m = make(map[string]struct{})
 
@@ -58,16 +59,20 @@ func CreateMap(width int, height int) {
 		}
 	}
 
+	return m
+
 }
 
 func PerformMoment(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
-	//	fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
+	//fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
 
 	if !g.IsDead() {
 		g.lifespan++
 		g.applyHunger()
 		g.Eat()
+		//fmt.Println(g.position)
+		//fmt.Println(g.hunger)
 		c <- g
 	} else {
 		//fmt.Println(g.name, "is dead :(")
@@ -76,20 +81,13 @@ func PerformMoment(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
 }
 
-func generateGophers(inputChannel chan *Gopher) {
-	goph := newGopher(fmt.Sprintf("[1]", rand.Int()))
+func generateGopher(inputChannel chan *Gopher, start *maputil.Coordinates) {
+	goph := newGopher(fmt.Sprintf("[1]", rand.Int()), start)
 
 	select {
 	case inputChannel <- &goph:
-		generateGophers(inputChannel)
 	}
 
-}
-
-func a(inputChannel chan *Gopher) {
-	for len(inputChannel) != cap(inputChannel) {
-		go generateGophers(inputChannel)
-	}
 }
 
 func main() {
@@ -97,17 +95,42 @@ func main() {
 	//	runtime.GOMAXPROCS(1)
 	start := time.Now()
 
+	rand.Perm(1000)
+
+	width := 1000
+	height := 1000
+
+	var mymap = CreateMap(width, height)
+
+	keys := make([]string, len(mymap))
+
+	i := 0
+	for k := range mymap {
+		keys[i] = k
+		i++
+	}
+
+	rand.Shuffle(len(keys), func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	//fmt.Print(keys)
+
 	var wg sync.WaitGroup
 
 	var numGophers = 10000
 
 	channel := make(chan *Gopher, numGophers)
 
+	count := 0
+
 	for len(channel) != cap(channel) {
-		go generateGophers(channel)
+		var c = maputil.StringToCoordinates(keys[count])
+		go generateGopher(channel, &c)
+		count++
 	}
 
-	i := 0
+	i = 0
 
 	for numGophers > 0 {
 
@@ -117,6 +140,7 @@ func main() {
 		for i := 0; i < numGophers; i++ {
 			msg := <-channel
 			wg.Add(1)
+
 			go PerformMoment(&wg, msg, secondChannel)
 		}
 		channel = secondChannel
