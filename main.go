@@ -5,7 +5,12 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"./food"
+	"./maputil"
 )
+
+const hungerPerMoment = 2
 
 type Gopher struct {
 	name     string
@@ -13,8 +18,9 @@ type Gopher struct {
 	hunger   int
 }
 
-func newGopher(name string) Gopher { //Gophers live for 3 years
-	return Gopher{name: name, lifespan: 0, hunger: 100}
+func newGopher(name string) Gopher {
+
+	return Gopher{name: name, lifespan: 0, hunger: rand.Intn(1000)}
 }
 
 func (g *Gopher) SetName(name string) {
@@ -22,14 +28,18 @@ func (g *Gopher) SetName(name string) {
 }
 
 func (g *Gopher) IsDead() bool {
-	return g.lifespan >= 300
+	return g.lifespan >= 300 || g.hunger <= 0
+}
+
+func (g *Gopher) applyHunger() {
+	g.hunger -= hungerPerMoment
 }
 
 func (g *Gopher) Eat() {
 
-	for i := 0; i < 100; i++ {
+	//for i := 0; i < 100; i++ {
 
-	}
+	//}
 
 }
 
@@ -37,12 +47,26 @@ func (g *Gopher) Dig() {
 	time.Sleep(100)
 }
 
-func StartLife(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
+func CreateMap(width int, height int) {
+
+	var m = make(map[string]struct{})
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			var s struct{}
+			m[maputil.CoordinateMapKey(x, y)] = s
+		}
+	}
+
+}
+
+func PerformMoment(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
 	//	fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
 
 	if !g.IsDead() {
 		g.lifespan++
+		g.applyHunger()
 		g.Eat()
 		c <- g
 	} else {
@@ -60,6 +84,12 @@ func generateGophers(inputChannel chan *Gopher) {
 		generateGophers(inputChannel)
 	}
 
+}
+
+func a(inputChannel chan *Gopher) {
+	for len(inputChannel) != cap(inputChannel) {
+		go generateGophers(inputChannel)
+	}
 }
 
 func main() {
@@ -87,7 +117,7 @@ func main() {
 		for i := 0; i < numGophers; i++ {
 			msg := <-channel
 			wg.Add(1)
-			go StartLife(&wg, msg, secondChannel)
+			go PerformMoment(&wg, msg, secondChannel)
 		}
 		channel = secondChannel
 		i++
@@ -97,4 +127,5 @@ func main() {
 	fmt.Println(time.Since(start))
 	fmt.Println("Done")
 
+	fmt.Println(food.NewCarrot().Name)
 }
