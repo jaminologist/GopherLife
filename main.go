@@ -12,18 +12,21 @@ import (
 )
 
 const hungerPerMoment = 2
+const numberOfGophs = 1
+
+const size = 30
 
 type MapPoint struct {
-	Gopher Gopher
-	Food   food.Food
+	Gopher *Gopher
+	Food   *food.Food
 }
 
 func (mp *MapPoint) isEmpty() bool {
-	return mp.Gopher == Gopher{} && mp.Food == food.Food{}
+	return mp.Gopher == &Gopher{} && mp.Food == &food.Food{}
 }
 
 type World struct {
-	world map[string]MapPoint
+	world map[string]*MapPoint
 
 	width  int
 	height int
@@ -48,21 +51,26 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		keys[i], keys[j] = keys[j], keys[i]
 	})
 
-	fmt.Println(len(keys))
 	count := 0
 
 	world.activeGophers = make(chan *Gopher, numberOfGophers)
 
 	for i := 0; i < numberOfGophers; i++ {
 		var mapPoint = world.world[keys[count]]
-		mapPoint.Gopher = newGopher(strconv.Itoa(i), maputil.StringToCoordinates(keys[count]))
-		world.activeGophers <- &mapPoint.Gopher
+
+		var goph = newGopher(strconv.Itoa(i), maputil.StringToCoordinates(keys[count]))
+
+		mapPoint.Gopher = &goph
+		world.activeGophers <- &goph
 		world.world[keys[count]] = mapPoint
 	}
 
 	for i := 0; i < numberOfFood; i++ {
 		var mapPoint = world.world[keys[count]]
-		mapPoint.Food = food.NewPotato()
+
+		var food = food.NewPotato()
+
+		mapPoint.Food = &food
 		world.world[keys[count]] = mapPoint
 	}
 
@@ -74,11 +82,12 @@ func CreateWorld(width int, height int) World {
 	world.inputActions = make(chan func(), 10000)
 	world.outputAction = make(chan func(), 10000)
 
-	world.world = make(map[string]MapPoint)
+	world.world = make(map[string]*MapPoint)
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
-			world.world[maputil.CoordinateMapKey(x, y)] = MapPoint{}
+			var point = MapPoint{}
+			world.world[maputil.CoordinateMapKey(x, y)] = &point
 		}
 	}
 
@@ -86,7 +95,7 @@ func CreateWorld(width int, height int) World {
 		fmt.Println("Hello")
 	}
 
-	world.SetUpMapPoints(10000, 100)
+	world.SetUpMapPoints(numberOfGophs, 100)
 
 	return world
 
@@ -101,7 +110,7 @@ type Gopher struct {
 }
 
 func newGopher(name string, coord maputil.Coordinates) Gopher {
-	return Gopher{name: name, lifespan: 0, hunger: rand.Intn(1000), position: coord}
+	return Gopher{name: name, lifespan: 0, hunger: rand.Intn(100), position: coord}
 }
 
 func (g *Gopher) SetName(name string) {
@@ -117,7 +126,7 @@ func (g *Gopher) applyHunger() {
 }
 
 func (g *Gopher) Move(x int, y int) {
-
+	g.position.Add(x, y)
 }
 
 func (g *Gopher) Eat() {
@@ -146,7 +155,34 @@ func CreateMap(width int, height int) map[string]*Gopher {
 
 }
 
-func PerformMoment(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
+func QueueMovement(world *World, goph *Gopher, x int, y int) func() {
+
+	return func() {
+
+		//currentPostion := goph.position
+		currentMapPoint := world.world[goph.position.MapKey()]
+
+		targetPosition := goph.position.RelativeCoordinate(x, y)
+		targetMapPoint, exists := world.world[targetPosition.MapKey()]
+
+		//	fmt.Println("Current", currentMapPoint.Gopher.name, "Position", currentMapPoint.Gopher.position)
+
+		if exists && targetMapPoint.Gopher == nil {
+
+			targetMapPoint.Gopher = goph
+			currentMapPoint.Gopher = nil
+			goph.position = targetPosition
+			fmt.Println("Gopher ", goph.name, "Moves to ", goph.position.MapKey())
+		} else {
+			world.outputAction <- func() {
+				fmt.Println("Gopher ", goph.name, " Can't Move!")
+			}
+		}
+	}
+
+}
+
+func PerformMoment(world *World, wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
 	//fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
 
@@ -154,8 +190,8 @@ func PerformMoment(wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 		g.lifespan++
 		g.applyHunger()
 		g.Eat()
-		//fmt.Println(g.position)
-		//fmt.Println(g.hunger)
+
+		world.inputActions <- QueueMovement(world, g, 1, 1)
 		c <- g
 	} else {
 		//fmt.Println(g.name, "is dead :(")
@@ -174,34 +210,19 @@ func generateGopher(inputChannel chan *Gopher, coordinates string, world map[str
 
 }
 
-func RenderMap(myMap map[string]*Gopher) {
-
-	for k := range myMap {
-
-		var s = fmt.Sprint(myMap[k])
-		if s != "&{ 0 0 {0 0}}" {
-			fmt.Println(s)
-		}
-
-	}
-
-}
-
 func main() {
 
 	//	runtime.GOMAXPROCS(1)
 	start := time.Now()
 
-	width, height := 1000, 1000
+	width, height := size, size
 
 	var world = CreateWorld(width, height)
 	fmt.Println(world)
 
-	var mymap = CreateMap(width, height)
-
 	var wg sync.WaitGroup
 
-	var numGophers = 10000
+	var numGophers = 1
 
 	var channel = world.activeGophers
 
@@ -209,23 +230,42 @@ func main() {
 
 	for numGophers > 0 {
 
-		fmt.Println("Num Gophs: ", numGophers, " Number of moments: ", i)
+		//	fmt.Println("Num Gophs: ", numGophers, " Number of moments: ", i)
 		numGophers = len(channel)
 		secondChannel := make(chan *Gopher, numGophers)
 		for i := 0; i < numGophers; i++ {
 			msg := <-channel
-
-			mymap[msg.position.MapKey()] = msg
+			//		fmt.Println("Name: ", msg.name, " Position: ", msg.position)
 			wg.Add(1)
 
-			go PerformMoment(&wg, msg, secondChannel)
+			go PerformMoment(&world, &wg, msg, secondChannel)
 		}
 		channel = secondChannel
 		i++
 		wg.Wait()
-	}
 
-	RenderMap(mymap)
+		wait := true
+		for wait {
+			select {
+			case action := <-world.inputActions:
+				action()
+			default:
+				wait = false
+			}
+		}
+
+		wait = true
+
+		for wait {
+			select {
+			case action := <-world.outputAction:
+				action()
+			default:
+				wait = false
+			}
+		}
+
+	}
 
 	fmt.Println(time.Since(start))
 	fmt.Println("Done")
