@@ -9,6 +9,24 @@ type Coordinates struct {
 	y int
 }
 
+type ByNearest []Coordinates
+
+func (a ByNearest) Len() int { return len(a) }
+func (a ByNearest) Less(i, j int) bool {
+
+	ix, iy, jx, jy := abs(a[i].x), abs(a[i].y), abs(a[j].x), abs(a[j].y)
+
+	return (ix + iy) < (jx + jy)
+}
+func (a ByNearest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
+func abs(i int) int {
+	if i < 0 {
+		return i * -1
+	}
+	return i
+}
+
 func NewCoordinate(x int, y int) Coordinates {
 	return Coordinates{x, y}
 }

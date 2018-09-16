@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 const hungerPerMoment = 2
-const numberOfGophs = 1
+const numberOfGophs = 5
 
 const size = 30
 
@@ -22,7 +23,7 @@ type MapPoint struct {
 }
 
 func (mp *MapPoint) isEmpty() bool {
-	return mp.Gopher == &Gopher{} && mp.Food == &food.Food{}
+	return mp.Gopher == nil && mp.Food == nil
 }
 
 type World struct {
@@ -37,6 +38,34 @@ type World struct {
 	activeGophers chan *Gopher
 }
 
+func (world *World) RenderWorld() {
+
+	for k := range world.world {
+
+		if !world.world[k].isEmpty() {
+
+			mapGopher := world.world[k].Gopher
+			var a string
+			if mapGopher == nil {
+				a = "NOT SET"
+			} else {
+				a = mapGopher.name
+			}
+
+			mapFood := world.world[k].Food
+			var b string
+
+			if mapFood == nil {
+				b = "NOT SET"
+			} else {
+				b = mapFood.Name
+			}
+
+			fmt.Println("At ", k, " Gopher is: ", a, "Food is: ", b)
+		}
+	}
+}
+
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 	keys := make([]string, len(world.world))
@@ -46,6 +75,8 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		keys[i] = k
 		i++
 	}
+
+	rand.Seed(1)
 
 	rand.Shuffle(len(keys), func(i, j int) {
 		keys[i], keys[j] = keys[j], keys[i]
@@ -63,6 +94,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		mapPoint.Gopher = &goph
 		world.activeGophers <- &goph
 		world.world[keys[count]] = mapPoint
+		count++
 	}
 
 	for i := 0; i < numberOfFood; i++ {
@@ -72,6 +104,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 		mapPoint.Food = &food
 		world.world[keys[count]] = mapPoint
+		count++
 	}
 
 }
@@ -107,6 +140,12 @@ type Gopher struct {
 	hunger   int
 
 	position maputil.Coordinates
+
+	heldFood *food.Food
+
+	foodTargets []maputil.Coordinates
+
+	movementPath []maputil.Coordinates
 }
 
 func newGopher(name string, coord maputil.Coordinates) Gopher {
@@ -131,6 +170,18 @@ func (g *Gopher) Move(x int, y int) {
 
 func (g *Gopher) Eat() {
 
+	if g.heldFood != nil {
+
+		prev := g.hunger
+		g.hunger += g.heldFood.Energy
+
+		foodName := g.heldFood.Name
+
+		g.heldFood = nil
+
+		fmt.Println("Gopher "+g.name, " is eating a ",
+			foodName, ". Hunger restored to ", g.hunger, " from ", prev)
+	}
 	//for i := 0; i < 100; i++ {
 
 	//}
@@ -139,6 +190,42 @@ func (g *Gopher) Eat() {
 
 func (g *Gopher) Dig() {
 	time.Sleep(100)
+}
+
+func (g *Gopher) FindFood(world *World, radius int) {
+
+	fmt.Println("Gopher ", g.name, " is Searching for Food...")
+
+	var coordsArray = []maputil.Coordinates{}
+
+	for x := 0; x < radius; x++ {
+		for y := 0; y < radius; y++ {
+			if x == 0 && y == 0 {
+				continue
+			}
+
+			key := g.position.RelativeCoordinate(x, y)
+
+			if mapPoint, ok := world.world[key.MapKey()]; ok {
+				food := mapPoint.Food
+
+				if food != nil {
+					coordsArray = append(coordsArray, key)
+				}
+			}
+
+		}
+	}
+
+	sort.Sort(maputil.ByNearest(coordsArray))
+
+	if len(coordsArray) > 0 {
+		g.foodTargets = coordsArray
+		fmt.Println("Food Found at locations ",
+			coordsArray, " By Gopher ",
+			g.name, " at Position ", g.position)
+	}
+
 }
 
 func CreateMap(width int, height int) map[string]*Gopher {
@@ -182,19 +269,113 @@ func QueueMovement(world *World, goph *Gopher, x int, y int) func() {
 
 }
 
+func QueuePickUpFood(world *World, goph *Gopher) func() {
+
+	return func() {
+
+		//currentPostion := goph.position
+		currentMapPoint := world.world[goph.position.MapKey()]
+
+		if currentMapPoint.Food == nil {
+			goph.foodTargets = nil
+		} else {
+			goph.heldFood = currentMapPoint.Food
+			currentMapPoint.Food = nil
+		}
+	}
+
+}
+
+func QueueScanForFood(world *World, goph *Gopher, radius int) func() {
+
+	return func() {
+
+		var coordsArray = []maputil.Coordinates{}
+
+		for x := 0; x < radius; x++ {
+			for y := 0; y < radius; y++ {
+				if x == 0 && y == 0 {
+					continue
+				}
+
+				key := goph.position.RelativeCoordinate(x, y)
+
+				if mapPoint, ok := world.world[key.MapKey()]; ok {
+					food := mapPoint.Food
+
+					if food != nil {
+						coordsArray = append(coordsArray, key)
+					}
+				}
+
+			}
+		}
+
+		sort.Sort(maputil.ByNearest(coordsArray))
+
+		fmt.Println(coordsArray)
+
+		if len(coordsArray) > 0 {
+			goph.foodTargets = coordsArray
+			world.outputAction <- func() {
+				fmt.Println("Food Found at locations ", coordsArray, " By Gopher ", goph.name, " at Position ", goph.position)
+			}
+		}
+	}
+
+}
+
 func PerformMoment(world *World, wg *sync.WaitGroup, g *Gopher, c chan *Gopher) {
 
 	//fmt.Println(g.name, "is alive :) lifespan is: ", g.lifespan)
 
+	switch {
+	case g.IsDead():
+	case g.hunger < 1000:
+
+		switch {
+		case g.heldFood != nil:
+			g.Eat()
+		case len(g.foodTargets) > 0:
+			target := g.foodTargets[0]
+
+			diffX := g.position.GetX() - target.GetX()
+			diffY := g.position.GetY() - target.GetY()
+
+			moveX := 0
+			moveY := 0
+
+			if moveX == 0 && moveY == 0 {
+				world.inputActions <- QueuePickUpFood(world, g)
+			}
+
+			if diffX > 0 {
+				moveX = -1
+			} else if diffX < 0 {
+				moveX = 1
+			}
+
+			if diffY > 0 {
+				moveY = -1
+			} else if diffY < 0 {
+				moveY = 1
+			}
+
+			world.inputActions <- QueueMovement(world, g, moveX, moveY)
+		default:
+			g.FindFood(world, 100)
+		}
+	}
+
 	if !g.IsDead() {
 		g.lifespan++
 		g.applyHunger()
-		g.Eat()
 
-		world.inputActions <- QueueMovement(world, g, 1, 1)
+		//world.inputActions <- QueueScanForFood(world, g, 5)
+		//QueueMovement(world, g, 1, 1)
 		c <- g
 	} else {
-		//fmt.Println(g.name, "is dead :(")
+		fmt.Println("Gopher ", g.name, " is dead :(")
 	}
 	wg.Done()
 
@@ -218,7 +399,8 @@ func main() {
 	width, height := size, size
 
 	var world = CreateWorld(width, height)
-	fmt.Println(world)
+	world.RenderWorld()
+	//fmt.Println(world)
 
 	var wg sync.WaitGroup
 
@@ -235,9 +417,7 @@ func main() {
 		secondChannel := make(chan *Gopher, numGophers)
 		for i := 0; i < numGophers; i++ {
 			msg := <-channel
-			//		fmt.Println("Name: ", msg.name, " Position: ", msg.position)
 			wg.Add(1)
-
 			go PerformMoment(&world, &wg, msg, secondChannel)
 		}
 		channel = secondChannel
