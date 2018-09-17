@@ -286,6 +286,26 @@ func QueuePickUpFood(world *World, goph *Gopher) func() {
 
 }
 
+func QueueRemoveGopher(world *World, goph *Gopher) func() {
+
+	return func() {
+
+		if mapPoint, ok := world.world[goph.position.MapKey()]; ok {
+			mapPoint.Gopher = nil
+		}
+		//currentPostion := goph.position
+		currentMapPoint := world.world[goph.position.MapKey()]
+
+		if currentMapPoint.Food == nil {
+			goph.foodTargets = nil
+		} else {
+			goph.heldFood = currentMapPoint.Food
+			currentMapPoint.Food = nil
+		}
+	}
+
+}
+
 func QueueScanForFood(world *World, goph *Gopher, radius int) func() {
 
 	return func() {
@@ -370,12 +390,10 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *Gopher, c chan *Gopher) 
 	if !g.IsDead() {
 		g.lifespan++
 		g.applyHunger()
-
-		//world.inputActions <- QueueScanForFood(world, g, 5)
-		//QueueMovement(world, g, 1, 1)
 		c <- g
 	} else {
 		fmt.Println("Gopher ", g.name, " is dead :(")
+		g = nil
 	}
 	wg.Done()
 
@@ -411,6 +429,12 @@ func main() {
 	i := 0
 
 	for numGophers > 0 {
+
+		var age int
+		fmt.Println("Testing Scan")
+		a, _ := fmt.Scan(&age)
+
+		fmt.Println(a)
 
 		//	fmt.Println("Num Gophs: ", numGophers, " Number of moments: ", i)
 		numGophers = len(channel)
