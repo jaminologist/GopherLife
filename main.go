@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"sort"
 	"strconv"
 	"sync"
@@ -221,9 +222,7 @@ func (g *Gopher) FindFood(world *World, radius int) {
 
 	if len(coordsArray) > 0 {
 		g.foodTargets = coordsArray
-		fmt.Println("Food Found at locations ",
-			coordsArray, " By Gopher ",
-			g.name, " at Position ", g.position)
+		fmt.Println("Gopher ", g.name, " Found food at nearest location ", coordsArray[0])
 	}
 
 }
@@ -301,45 +300,6 @@ func QueueRemoveGopher(world *World, goph *Gopher) func() {
 		} else {
 			goph.heldFood = currentMapPoint.Food
 			currentMapPoint.Food = nil
-		}
-	}
-
-}
-
-func QueueScanForFood(world *World, goph *Gopher, radius int) func() {
-
-	return func() {
-
-		var coordsArray = []maputil.Coordinates{}
-
-		for x := 0; x < radius; x++ {
-			for y := 0; y < radius; y++ {
-				if x == 0 && y == 0 {
-					continue
-				}
-
-				key := goph.position.RelativeCoordinate(x, y)
-
-				if mapPoint, ok := world.world[key.MapKey()]; ok {
-					food := mapPoint.Food
-
-					if food != nil {
-						coordsArray = append(coordsArray, key)
-					}
-				}
-
-			}
-		}
-
-		sort.Sort(maputil.ByNearest(coordsArray))
-
-		fmt.Println(coordsArray)
-
-		if len(coordsArray) > 0 {
-			goph.foodTargets = coordsArray
-			world.outputAction <- func() {
-				fmt.Println("Food Found at locations ", coordsArray, " By Gopher ", goph.name, " at Position ", goph.position)
-			}
 		}
 	}
 
@@ -426,49 +386,57 @@ func main() {
 
 	var channel = world.activeGophers
 
-	i := 0
-
 	for numGophers > 0 {
 
-		var age int
-		fmt.Println("Testing Scan")
-		a, _ := fmt.Scan(&age)
+		fmt.Println("Enter Command...")
+		var input, value string
+		fmt.Scanln(&input, &value)
 
-		fmt.Println(a)
-
-		//	fmt.Println("Num Gophs: ", numGophers, " Number of moments: ", i)
-		numGophers = len(channel)
-		secondChannel := make(chan *Gopher, numGophers)
-		for i := 0; i < numGophers; i++ {
-			msg := <-channel
-			wg.Add(1)
-			go PerformMoment(&world, &wg, msg, secondChannel)
-		}
-		channel = secondChannel
-		i++
-		wg.Wait()
-
-		wait := true
-		for wait {
-			select {
-			case action := <-world.inputActions:
-				action()
-			default:
-				wait = false
+		switch input {
+		case "at", "advancetime":
+			time, err := strconv.Atoi(value)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(2)
 			}
-		}
 
-		wait = true
+			for time > 0 {
 
-		for wait {
-			select {
-			case action := <-world.outputAction:
-				action()
-			default:
-				wait = false
+				numGophers = len(channel)
+				secondChannel := make(chan *Gopher, numGophers)
+				for i := 0; i < numGophers; i++ {
+					msg := <-channel
+					wg.Add(1)
+					go PerformMoment(&world, &wg, msg, secondChannel)
+				}
+				channel = secondChannel
+				time--
+				wg.Wait()
+
+				wait := true
+				for wait {
+					select {
+					case action := <-world.inputActions:
+						action()
+					default:
+						wait = false
+					}
+				}
+
+				wait = true
+
+				for wait {
+					select {
+					case action := <-world.outputAction:
+						action()
+					default:
+						wait = false
+					}
+				}
+
 			}
-		}
 
+		}
 	}
 
 	fmt.Println(time.Since(start))
