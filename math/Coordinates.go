@@ -1,4 +1,4 @@
-package maputil
+package math
 
 import "fmt"
 import s "strings"
