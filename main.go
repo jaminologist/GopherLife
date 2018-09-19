@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"gopherlife/animal"
 	food "gopherlife/food"
 	gopherlife "gopherlife/world"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -21,18 +19,9 @@ func main() {
 	start := time.Now()
 
 	width, height := size, size
-
 	var world = gopherlife.CreateWorld(width, height)
-	world.RenderWorld()
-	//fmt.Println(world)
 
-	var wg sync.WaitGroup
-
-	var numGophers = 1
-
-	var channel = world.ActiveGophers
-
-	for numGophers > 0 {
+	for len(world.ActiveGophers) > 0 {
 
 		fmt.Println("Enter Command...")
 		var input, value string
@@ -47,45 +36,15 @@ func main() {
 			}
 
 			for time > 0 {
-
-				numGophers = len(channel)
-				secondChannel := make(chan *animal.Gopher, numGophers)
-				for i := 0; i < numGophers; i++ {
-					msg := <-channel
-					wg.Add(1)
-					go gopherlife.PerformMoment(&world, &wg, msg, secondChannel)
-				}
-				channel = secondChannel
+				world.ProcessWorld()
 				time--
-				wg.Wait()
-
-				wait := true
-				for wait {
-					select {
-					case action := <-world.InputActions:
-						action()
-					default:
-						wait = false
-					}
-				}
-
-				wait = true
-
-				for wait {
-					select {
-					case action := <-world.OutputAction:
-						action()
-					default:
-						wait = false
-					}
-				}
-
 			}
 
 		}
 	}
 
 	fmt.Println(time.Since(start))
+	fmt.Println("The World Lasted for ", world.Moments, " Moments")
 	fmt.Println("Done")
 
 	fmt.Println(food.NewCarrot().Name)

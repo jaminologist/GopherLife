@@ -11,7 +11,9 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 5
+const numberOfGophs = 50
+
+const numberOfFoods = 125
 
 type World struct {
 	world map[string]*MapPoint
@@ -22,7 +24,11 @@ type World struct {
 	InputActions chan func()
 	OutputAction chan func()
 
+	GopherWaitGroup sync.WaitGroup
+
 	ActiveGophers chan *animal.Gopher
+
+	Moments int
 }
 
 func CreateMap(width int, height int) map[string]*animal.Gopher {
@@ -52,10 +58,6 @@ func CreateWorld(width int, height int) World {
 			var point = MapPoint{}
 			world.world[math.CoordinateMapKey(x, y)] = &point
 		}
-	}
-
-	world.InputActions <- func() {
-		fmt.Println("Hello")
 	}
 
 	world.SetUpMapPoints(numberOfGophs, 100)
@@ -285,4 +287,32 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 	}
 	wg.Done()
 
+}
+
+func (world *World) ProcessWorld() {
+
+	numGophers := len(world.ActiveGophers)
+	secondChannel := make(chan *animal.Gopher, numGophers)
+	for i := 0; i < numGophers; i++ {
+		gopher := <-world.ActiveGophers
+		world.GopherWaitGroup.Add(1)
+		go PerformMoment(world, &world.GopherWaitGroup, gopher, secondChannel)
+	}
+	world.ActiveGophers = secondChannel
+
+	world.GopherWaitGroup.Wait()
+
+	wait := true
+	for wait {
+		select {
+		case action := <-world.InputActions:
+			action()
+		case action := <-world.OutputAction:
+			action()
+		default:
+			wait = false
+		}
+	}
+
+	world.Moments++
 }

@@ -21,3 +21,4 @@
 
 
 *.zip
+.vscode/settings.json
