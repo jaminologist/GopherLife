@@ -11,9 +11,9 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 50
-
-const numberOfFoods = 125
+const numberOfGophs = 10
+const numberOfFoods = 50
+const worldSize = 25
 
 type World struct {
 	world map[string]*MapPoint
@@ -45,53 +45,52 @@ func CreateMap(width int, height int) map[string]*animal.Gopher {
 
 }
 
-func CreateWorld(width int, height int) World {
+func CreateWorld() World {
 
-	world := World{width: width, height: height}
+	world := World{width: worldSize, height: worldSize}
 	world.InputActions = make(chan func(), 10000)
 	world.OutputAction = make(chan func(), 10000)
 
 	world.world = make(map[string]*MapPoint)
 
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
+	for x := 0; x < worldSize; x++ {
+		for y := 0; y < worldSize; y++ {
 			var point = MapPoint{}
 			world.world[math.CoordinateMapKey(x, y)] = &point
 		}
 	}
 
-	world.SetUpMapPoints(numberOfGophs, 100)
+	world.SetUpMapPoints(numberOfGophs, numberOfFoods)
 
 	return world
 
 }
 
-func (world *World) RenderWorld() {
+func (world *World) RenderWorld() string {
 
-	for k := range world.world {
+	renderString := ""
 
-		if !world.world[k].isEmpty() {
+	renderString += "<p>"
+	for x := 0; x < worldSize; x++ {
 
-			mapGopher := world.world[k].Gopher
-			var a string
-			if mapGopher == nil {
-				a = "NOT SET"
-			} else {
-				a = mapGopher.Name
+		for y := 0; y < worldSize; y++ {
+			var mapPoint = world.world[math.CoordinateMapKey(x, y)]
+
+			switch {
+			case mapPoint.isEmpty():
+				renderString += "<span>O</span>"
+			case mapPoint.Gopher != nil:
+				renderString += "G"
+			case mapPoint.Food != nil:
+				renderString += "F"
 			}
-
-			mapFood := world.world[k].Food
-			var b string
-
-			if mapFood == nil {
-				b = "NOT SET"
-			} else {
-				b = mapFood.Name
-			}
-
-			fmt.Println("At ", k, " Gopher is: ", a, "Food is: ", b)
 		}
+		renderString += "<br />"
 	}
+
+	renderString += "</p>"
+
+	return renderString
 }
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
@@ -273,7 +272,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 
 			world.InputActions <- QueueMovement(world, g, moveX, moveY)
 		default:
-			FindFood(world, g, 100)
+			FindFood(world, g, 200)
 		}
 	}
 
@@ -314,5 +313,8 @@ func (world *World) ProcessWorld() {
 		}
 	}
 
-	world.Moments++
+	if numGophers > 0 {
+		world.Moments++
+	}
+
 }
