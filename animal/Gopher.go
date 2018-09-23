@@ -1,14 +1,13 @@
 package animal
 
 import (
-	"fmt"
 	food "gopherlife/food"
 	math "gopherlife/math"
 	"math/rand"
 	"time"
 )
 
-const hungerPerMoment = 2
+const hungerPerMoment = 0
 
 type Gopher struct {
 	Name     string
@@ -48,15 +47,15 @@ func (g *Gopher) Eat() {
 
 	if g.HeldFood != nil {
 
-		prev := g.Hunger
+		//prev := g.Hunger
 		g.Hunger += g.HeldFood.Energy
 
-		foodName := g.HeldFood.Name
+		//foodName := g.HeldFood.Name
 
 		g.HeldFood = nil
 
-		fmt.Println("Gopher "+g.Name, " is eating a ",
-			foodName, ". Hunger restored to ", g.Hunger, " from ", prev)
+		//fmt.Println("Gopher "+g.Name, " is eating a ",
+		//foodName, ". Hunger restored to ", g.Hunger, " from ", prev)
 	}
 	//for i := 0; i < 100; i++ {
 
