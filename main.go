@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	gopherlife "gopherlife/world"
+	"html/template"
+	"log"
 	"net/http"
 	"time"
 )
@@ -18,14 +20,13 @@ func main() {
 
 	var world = gopherlife.CreateWorld()
 
-	for len(world.ActiveGophers) > 0 {
-		world.ProcessWorld()
-		//mux := http.NewServeMux()
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.HandleFunc("/", worldToHTML(&world))
+	http.HandleFunc("/PollWorld", ajaxProcessWorld(&world))
+	http.ListenAndServe(":8080", nil)
 
-		http.HandleFunc("/", worldToHTML(&world))
-		//mux.HandleFunc("/", worldToHTML(&world))
-		http.ListenAndServe(":8080", nil)
-	}
+	//world.ProcessWorld()
 
 	fmt.Println(time.Since(start))
 	fmt.Println("The World Lasted for ", world.Moments, " Moments")
@@ -35,13 +36,40 @@ func main() {
 func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, world.RenderWorld())
+
+		pageVariables := PageVariables{
+			Data: template.HTML(world.RenderWorld()),
+		}
+
+		t, err := template.ParseFiles("static/index.html")
+
+		if err != nil {
+			log.Print("Template parsing error: ", err)
+		}
+
+		err = t.Execute(w, pageVariables)
+
+		if err != nil {
+			log.Printf("Template executing error: ", err)
+		}
+
+		//var renderString = world.RenderWorld()
+		//w.Header().Add("Content-Type", "text/html")
+		//w.Header().Add("Content-Length", strconv.Itoa(len(renderString)))
+
+		//fmt.Fprintln(w, world.RenderWorld())
 	}
 
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "<p> Hello </p>")
-	fmt.Fprintln(w, "<p> Hello  Again</p>")
-	fmt.Fprintln(w, "<p> Hello WURTU Again</p>")
+func ajaxProcessWorld(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		world.ProcessWorld()
+		w.Write([]byte(world.RenderWorld()))
+	}
+}
+
+type PageVariables struct {
+	Data template.HTML
 }

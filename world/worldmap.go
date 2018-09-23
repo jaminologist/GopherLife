@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	animal "gopherlife/animal"
 	"gopherlife/food"
 	"gopherlife/math"
@@ -11,9 +10,9 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 10
+const numberOfGophs = 20
 const numberOfFoods = 50
-const worldSize = 25
+const worldSize = 50
 
 type World struct {
 	world map[string]*MapPoint
@@ -27,6 +26,8 @@ type World struct {
 	GopherWaitGroup sync.WaitGroup
 
 	ActiveGophers chan *animal.Gopher
+
+	//RenderOutput chan string
 
 	Moments int
 }
@@ -71,18 +72,23 @@ func (world *World) RenderWorld() string {
 	renderString := ""
 
 	renderString += "<p>"
-	for x := 0; x < worldSize; x++ {
+	for y := 0; y < worldSize; y++ {
 
-		for y := 0; y < worldSize; y++ {
+		for x := 0; x < worldSize; x++ {
 			var mapPoint = world.world[math.CoordinateMapKey(x, y)]
 
 			switch {
 			case mapPoint.isEmpty():
-				renderString += "<span>O</span>"
+				renderString += "<span class='grass'>O</span>"
 			case mapPoint.Gopher != nil:
-				renderString += "G"
+				if mapPoint.Gopher.IsDead() {
+					renderString += "<span class='gopher'>X</span>"
+				} else {
+					renderString += "<span class='gopher'>G</span>"
+				}
+
 			case mapPoint.Food != nil:
-				renderString += "F"
+				renderString += "<span class='food'>F</span>"
 			}
 		}
 		renderString += "<br />"
@@ -138,12 +144,12 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 func FindFood(world *World, g *animal.Gopher, radius int) {
 
-	fmt.Println("Gopher ", g.Name, " is Searching for Food...")
+	//fmt.Println("Gopher ", g.Name, " is Searching for Food...")
 
 	var coordsArray = []math.Coordinates{}
 
-	for x := 0; x < radius; x++ {
-		for y := 0; y < radius; y++ {
+	for x := -radius; x < radius; x++ {
+		for y := -radius; y < radius; y++ {
 			if x == 0 && y == 0 {
 				continue
 			}
@@ -165,7 +171,7 @@ func FindFood(world *World, g *animal.Gopher, radius int) {
 
 	if len(coordsArray) > 0 {
 		g.FoodTargets = coordsArray
-		fmt.Println("Gopher ", g.Name, " Found food at nearest location ", coordsArray[0])
+		//fmt.Println("Gopher ", g.Name, " Found food at nearest location ", coordsArray[0])
 	}
 
 }
@@ -179,18 +185,15 @@ func QueueMovement(world *World, goph *animal.Gopher, x int, y int) func() {
 
 		targetPosition := goph.Position.RelativeCoordinate(x, y)
 		targetMapPoint, exists := world.world[targetPosition.MapKey()]
-
-		//	fmt.Println("Current", currentMapPoint.Gopher.name, "Position", currentMapPoint.Gopher.position)
-
 		if exists && targetMapPoint.Gopher == nil {
 
 			targetMapPoint.Gopher = goph
 			currentMapPoint.Gopher = nil
 			goph.Position = targetPosition
-			fmt.Println("Gopher ", goph.Name, "Moves to ", goph.Position.MapKey())
+			//	fmt.Println("Gopher ", goph.Name, "Moves to ", goph.Position.MapKey())
 		} else {
 			world.OutputAction <- func() {
-				fmt.Println("Gopher ", goph.Name, " Can't Move!")
+				//fmt.Println("Gopher ", goph.Name, " Can't Move!")
 			}
 		}
 	}
@@ -281,7 +284,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 		g.ApplyHunger()
 		c <- g
 	} else {
-		fmt.Println("Gopher ", g.Name, " is dead :(")
+		//	fmt.Println("Gopher ", g.Name, " is dead :(")
 		g = nil
 	}
 	wg.Done()
