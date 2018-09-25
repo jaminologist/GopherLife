@@ -5,12 +5,11 @@ import (
 	"gopherlife/food"
 	"gopherlife/math"
 	"math/rand"
-	"sort"
 	"strconv"
 	"sync"
 )
 
-const numberOfGophs = 20
+const numberOfGophs = 2
 const numberOfFoods = 50
 const worldSize = 50
 
@@ -167,7 +166,7 @@ func FindFood(world *World, g *animal.Gopher, radius int) {
 		}
 	}
 
-	sort.Sort(math.ByNearest(coordsArray))
+	math.SortCoordinatesUsingCoordinate(g.Position, coordsArray)
 
 	if len(coordsArray) > 0 {
 		g.FoodTargets = coordsArray
@@ -275,7 +274,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 
 			world.InputActions <- QueueMovement(world, g, moveX, moveY)
 		default:
-			FindFood(world, g, 200)
+			FindFood(world, g, 50)
 		}
 	}
 
