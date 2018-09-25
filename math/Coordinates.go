@@ -1,8 +1,11 @@
 package math
 
-import "fmt"
-import s "strings"
-import "strconv"
+import (
+	"fmt"
+	"sort"
+	"strconv"
+	s "strings"
+)
 
 type Coordinates struct {
 	x int
@@ -82,4 +85,18 @@ func (c *Coordinates) MapKey() string {
 
 func CoordinateMapKey(x int, y int) string {
 	return fmt.Sprintf("%[1]d,%[2]d", x, y)
+}
+
+func SortCoordinatesUsingCoordinate(coords Coordinates, cs []Coordinates) {
+
+	sort.Slice(cs, func(i, j int) bool {
+
+		ix := abs(coords.x - cs[i].x)
+		iy := abs(coords.y - cs[i].y)
+		jx := abs(coords.x - cs[j].x)
+		jy := abs(coords.y - cs[j].y)
+
+		return (ix + iy) < (jx + jy)
+	})
+
 }
