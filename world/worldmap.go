@@ -9,8 +9,8 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 2
-const numberOfFoods = 50
+const numberOfGophs = 50
+const numberOfFoods = 100
 const worldSize = 50
 
 type World struct {
@@ -199,18 +199,57 @@ func QueueMovement(world *World, goph *animal.Gopher, x int, y int) func() {
 
 }
 
-func QueuePickUpFood(world *World, goph *animal.Gopher) func() {
+func QueuePickUpFood(world *World, gopher *animal.Gopher) func() {
 
 	return func() {
 
 		//currentPostion := goph.position
-		currentMapPoint := world.world[goph.Position.MapKey()]
+		currentMapPoint := world.world[gopher.Position.MapKey()]
 
 		if currentMapPoint.Food == nil {
-			goph.FoodTargets = nil
+			gopher.FoodTargets = nil
 		} else {
-			goph.HeldFood = currentMapPoint.Food
+			gopher.HeldFood = currentMapPoint.Food
 			currentMapPoint.Food = nil
+			world.onFoodPickUp(gopher.Position)
+
+		}
+	}
+
+}
+
+func (world *World) onFoodPickUp(location math.Coordinates) {
+
+	size := 50
+
+	xrange := rand.Perm(size)
+	yrange := rand.Perm(size)
+
+	for i := 0; i < size; i++ {
+
+		isDone := false
+
+		for j := 0; j < size; j++ {
+			newFoodLocation := math.NewCoordinate(
+				location.GetX()+xrange[i]-size/2,
+				location.GetY()+yrange[j]-size/2)
+
+			if mapPoint, ok := world.world[newFoodLocation.MapKey()]; ok {
+
+				if mapPoint.Food == nil {
+					var food = food.NewPotato()
+					world.world[newFoodLocation.MapKey()].Food = &food
+
+					isDone = true
+					break
+				}
+
+			}
+
+		}
+
+		if isDone {
+			break
 		}
 	}
 
@@ -280,7 +319,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 
 	if !g.IsDead() {
 		g.Lifespan++
-		g.ApplyHunger()
+		//g.ApplyHunger()
 		c <- g
 	} else {
 		//	fmt.Println("Gopher ", g.Name, " is dead :(")
