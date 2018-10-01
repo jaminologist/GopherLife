@@ -24,6 +24,9 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/", worldToHTML(&world))
 	http.HandleFunc("/PollWorld", ajaxProcessWorld(&world))
+	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world))
+
+	fmt.Println("Listening")
 	http.ListenAndServe(":8080", nil)
 
 	//world.ProcessWorld()
@@ -66,7 +69,35 @@ func ajaxProcessWorld(world *gopherlife.World) func(w http.ResponseWriter, r *ht
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		world.ProcessWorld()
+
 		w.Write([]byte(world.RenderWorld()))
+	}
+}
+
+func ajaxHandleWorldInput(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		r.ParseForm()
+
+		var leftArrow = "37"
+		var rightArrow = "39"
+		var upArrow = "38"
+		var downArrow = "40"
+
+		keydown := r.FormValue("keydown")
+
+		switch keydown {
+		case leftArrow:
+			world.StartX--
+		case rightArrow:
+			world.StartX++
+		case upArrow:
+			world.StartY--
+		case downArrow:
+			world.StartY++
+		}
+
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 0
+const hungerPerMoment = 10
 
 type Gopher struct {
 	Name     string
@@ -32,7 +32,7 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsDead() bool {
-	return g.Lifespan >= 300 || g.Hunger <= 0
+	return false //g.Lifespan >= 300 || g.Hunger <= 0
 }
 
 func (g *Gopher) ApplyHunger() {
