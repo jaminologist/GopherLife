@@ -9,9 +9,9 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 50
-const numberOfFoods = 100
-const worldSize = 50
+const numberOfGophs = 100
+const numberOfFoods = 500
+const worldSize = 200
 
 type World struct {
 	world map[string]*MapPoint
@@ -27,6 +27,11 @@ type World struct {
 	ActiveGophers chan *animal.Gopher
 
 	//RenderOutput chan string
+
+	StartX int
+	StartY int
+
+	RenderSize int
 
 	Moments int
 }
@@ -53,6 +58,8 @@ func CreateWorld() World {
 
 	world.world = make(map[string]*MapPoint)
 
+	world.RenderSize = 25
+
 	for x := 0; x < worldSize; x++ {
 		for y := 0; y < worldSize; y++ {
 			var point = MapPoint{}
@@ -71,24 +78,28 @@ func (world *World) RenderWorld() string {
 	renderString := ""
 
 	renderString += "<p>"
-	for y := 0; y < worldSize; y++ {
+	for y := world.StartY; y < world.StartY+world.RenderSize; y++ {
 
-		for x := 0; x < worldSize; x++ {
-			var mapPoint = world.world[math.CoordinateMapKey(x, y)]
+		for x := world.StartX; x < world.StartX+world.RenderSize; x++ {
 
-			switch {
-			case mapPoint.isEmpty():
-				renderString += "<span class='grass'>O</span>"
-			case mapPoint.Gopher != nil:
-				if mapPoint.Gopher.IsDead() {
-					renderString += "<span class='gopher'>X</span>"
-				} else {
-					renderString += "<span class='gopher'>G</span>"
+			if mapPoint, ok := world.world[math.CoordinateMapKey(x, y)]; ok {
+				switch {
+				case mapPoint.isEmpty():
+					renderString += "<span class='grass'>O</span>"
+				case mapPoint.Gopher != nil:
+					if mapPoint.Gopher.IsDead() {
+						renderString += "<span class='gopher'>X</span>"
+					} else {
+						renderString += "<span class='gopher'>G</span>"
+					}
+
+				case mapPoint.Food != nil:
+					renderString += "<span class='food'>F</span>"
 				}
-
-			case mapPoint.Food != nil:
-				renderString += "<span class='food'>F</span>"
+			} else {
+				renderString += "<span class='food'>X</span>"
 			}
+
 		}
 		renderString += "<br />"
 	}
@@ -319,7 +330,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 
 	if !g.IsDead() {
 		g.Lifespan++
-		//g.ApplyHunger()
+		g.ApplyHunger()
 		c <- g
 	} else {
 		//	fmt.Println("Gopher ", g.Name, " is dead :(")
