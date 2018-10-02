@@ -35,9 +35,11 @@ $(document).ready(function(){
 
         var position = $(this).attr("id")
 
+        console.log(position)
+
         $.ajax({
             type: 'GET',
-            url: '/selectGopher?position=' + position,
+            url: '/SelectGopher?position=' + position,
             error: function(xhr, statusText, err) {
                 console.log("ERR")
               alert("error"+xhr.status);
@@ -76,13 +78,17 @@ function getWorld(){
         },
 
         success: function(data) {
-            //alert(data)
-            $("#worldDiv").html(data)
+            //alert(data
+
+            if(data != "paused"){
+                $("#worldDiv").html(data)
+            }
+
         },
         
         type: 'GET'
      }).always(function(){
-        setTimeout(getWorld(),5000);
+        setTimeout(getWorld(),50000000);
      });
 
 }

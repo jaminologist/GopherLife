@@ -97,32 +97,38 @@ func (world *World) RenderWorld() string {
 	startY := 0
 
 	if world.SelectedGopher != nil {
-		startX = world.SelectedGopher.Position.GetX()
-		startY = world.SelectedGopher.Position.GetX()
+		startX = world.SelectedGopher.Position.GetX() - world.RenderSize/2
+		startY = world.SelectedGopher.Position.GetY() - world.RenderSize/2
 	} else {
 		startX = world.StartX
 		startY = world.StartY
 	}
 
-	renderString += "<p>"
+	renderString += "<h1>"
 	for y := startY; y < startY+world.RenderSize; y++ {
 
 		for x := startX; x < startX+world.RenderSize; x++ {
 
-			if mapPoint, ok := world.world[math.CoordinateMapKey(x, y)]; ok {
+			key := math.CoordinateMapKey(x, y)
 
-				//Add in check that selected gopher = mappoint position
-				//Make selected gopher a different color
-				//Maybe as a style tag?
+			if mapPoint, ok := world.world[key]; ok {
 
 				switch {
 				case mapPoint.isEmpty():
 					renderString += "<span class='grass'>O</span>"
 				case mapPoint.Gopher != nil:
-					if mapPoint.Gopher.IsDead() {
-						renderString += "<span class='gopher'>X</span>"
+
+					isSelected := false
+
+					if world.SelectedGopher != nil {
+						isSelected = world.SelectedGopher.Position.MapKey() == key
+					}
+					if isSelected {
+						renderString += "<span id='" + key + "' style='color:yellow;'>G</span>"
+					} else if mapPoint.Gopher.IsDead() {
+						renderString += "<span id='" + key + "' class='gopher'>X</span>"
 					} else {
-						renderString += "<span class='gopher'>G</span>"
+						renderString += "<span id='" + key + "' class='gopher'>G</span>"
 					}
 
 				case mapPoint.Food != nil:
@@ -136,7 +142,7 @@ func (world *World) RenderWorld() string {
 		renderString += "<br />"
 	}
 
-	renderString += "</p>"
+	renderString += "</h1>"
 
 	return renderString
 }
@@ -232,10 +238,8 @@ func QueueMovement(world *World, goph *animal.Gopher, x int, y int) func() {
 			targetMapPoint.Gopher = goph
 			currentMapPoint.Gopher = nil
 			goph.Position = targetPosition
-			//	fmt.Println("Gopher ", goph.Name, "Moves to ", goph.Position.MapKey())
 		} else {
 			world.OutputAction <- func() {
-				//fmt.Println("Gopher ", goph.Name, " Can't Move!")
 			}
 		}
 	}

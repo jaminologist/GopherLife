@@ -25,7 +25,7 @@ func main() {
 	http.HandleFunc("/", worldToHTML(&world))
 	http.HandleFunc("/PollWorld", ajaxProcessWorld(&world))
 	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world))
-	http.HandleFunc("/SelectGopher", selectGopher(&world))
+	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&world))
 
 	fmt.Println("Listening")
 	http.ListenAndServe(":8080", nil)
@@ -69,17 +69,25 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 func ajaxProcessWorld(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		world.ProcessWorld()
 
+		world.ProcessWorld()
 		w.Write([]byte(world.RenderWorld()))
+
+		if !world.IsPaused {
+
+		} else {
+			w.Write([]byte("paused"))
+		}
+
 	}
 }
 
-func selectGopher(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+func ajaxSelectGopher(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		r.ParseForm()
+
 		position := r.FormValue("position")
 
 		world.SelectEntity(position)
