@@ -10,6 +10,8 @@ $(document).ready(function(){
         var upArrow = 38
         var downArrow = 40
 
+        console.log(key)
+
         var inputData = new FormData()
         inputData.append("keydown", key)
 
@@ -26,6 +28,25 @@ $(document).ready(function(){
                 console.log("syccc")
             }
          })
+    });
+
+
+    $(document).on("click", ".gopher", function(){
+
+        var position = $(this).attr("id")
+
+        $.ajax({
+            type: 'GET',
+            url: '/selectGopher?position=' + position,
+            error: function(xhr, statusText, err) {
+                console.log("ERR")
+              alert("error"+xhr.status);
+            },
+            success: function(){
+                console.log("syccc")
+            }
+         })
+
     });
     
 
