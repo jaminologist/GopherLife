@@ -28,8 +28,12 @@ type World struct {
 
 	//RenderOutput chan string
 
+	SelectedGopher *animal.Gopher
+
 	StartX int
 	StartY int
+
+	IsPaused bool
 
 	RenderSize int
 
@@ -56,6 +60,8 @@ func CreateWorld() World {
 	world.InputActions = make(chan func(), 10000)
 	world.OutputAction = make(chan func(), 10000)
 
+	world.IsPaused = false
+
 	world.world = make(map[string]*MapPoint)
 
 	world.RenderSize = 25
@@ -73,16 +79,42 @@ func CreateWorld() World {
 
 }
 
+func (world *World) SelectEntity(mapKey string) {
+
+	if mapPoint, ok := world.world[mapKey]; ok {
+		if mapPoint.Gopher != nil {
+			world.SelectedGopher = mapPoint.Gopher
+		}
+	}
+
+}
+
 func (world *World) RenderWorld() string {
 
 	renderString := ""
 
-	renderString += "<p>"
-	for y := world.StartY; y < world.StartY+world.RenderSize; y++ {
+	startX := 0
+	startY := 0
 
-		for x := world.StartX; x < world.StartX+world.RenderSize; x++ {
+	if world.SelectedGopher != nil {
+		startX = world.SelectedGopher.Position.GetX()
+		startY = world.SelectedGopher.Position.GetX()
+	} else {
+		startX = world.StartX
+		startY = world.StartY
+	}
+
+	renderString += "<p>"
+	for y := startY; y < startY+world.RenderSize; y++ {
+
+		for x := startX; x < startX+world.RenderSize; x++ {
 
 			if mapPoint, ok := world.world[math.CoordinateMapKey(x, y)]; ok {
+
+				//Add in check that selected gopher = mappoint position
+				//Make selected gopher a different color
+				//Maybe as a style tag?
+
 				switch {
 				case mapPoint.isEmpty():
 					renderString += "<span class='grass'>O</span>"
@@ -298,6 +330,7 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 		case g.HeldFood != nil:
 			g.Eat()
 		case len(g.FoodTargets) > 0:
+
 			target := g.FoodTargets[0]
 
 			diffX := g.Position.GetX() - target.GetX()
@@ -340,7 +373,15 @@ func PerformMoment(world *World, wg *sync.WaitGroup, g *animal.Gopher, c chan *a
 
 }
 
+func (world *World) TogglePause() {
+	world.IsPaused = !world.IsPaused
+}
+
 func (world *World) ProcessWorld() {
+
+	if world.IsPaused {
+		return
+	}
 
 	numGophers := len(world.ActiveGophers)
 	secondChannel := make(chan *animal.Gopher, numGophers)
