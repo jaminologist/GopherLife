@@ -3,35 +3,55 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"time"
+	"sync"
 )
 
 type Gopher struct {
 	name     string
 	lifetime int
-	isDead   bool
 }
 
-func (gopher Gopher) Live() {
-
-	fmt.Println("I, Gopher ", gopher.name, " am alive! :)")
+func (gopher Gopher) Live(aliveChannel chan Gopher, wg *sync.WaitGroup) {
 
 	gopher.lifetime++
 
-	if gopher.lifetime > 300 {
-		gopher.isDead = true
+	if gopher.lifetime > 30000 {
+		fmt.Println("I, Gopher ", gopher.name, " am now the dead :(")
+	} else {
+		aliveChannel <- gopher
 	}
 
-	fmt.Println("I, Gopher ", gopher.name, " am now the dead :(")
+	wg.Done()
 }
 
 func main() {
 
-	for i := 0; i < 10; i++ {
-		gopher := Gopher{name: strconv.Itoa(i)}
-		go gopher.Live()
+	var wg sync.WaitGroup
+
+	numGophers := 10
+
+	inputChan, outputChan := make(chan Gopher, numGophers), make(chan Gopher, numGophers)
+
+	for i := 0; i < numGophers; i++ {
+		newGopher := Gopher{name: strconv.Itoa(i)}
+		inputChan <- newGopher
+		fmt.Println("I, Gopher ", newGopher.name, " am alive! :)")
 	}
 
-	time.Sleep(time.Duration(2) * time.Second)
+	for numGophers > 0 {
+
+		for i := 0; i < numGophers; i++ {
+			wg.Add(1)
+			gopher := <-inputChan
+			go gopher.Live(outputChan, &wg)
+		}
+
+		wg.Wait()
+
+		numGophers = len(outputChan)
+		inputChan = outputChan
+		outputChan = make(chan Gopher, numGophers)
+
+	}
 
 }
