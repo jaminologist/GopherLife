@@ -19,30 +19,30 @@ func main() {
 	start := time.Now()
 
 	var world = gopherlife.CreateWorld()
+	renderer := gopherlife.NewRenderer()
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/", worldToHTML(&world))
-	http.HandleFunc("/PollWorld", ajaxProcessWorld(&world))
-	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world))
-	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&world))
+	http.HandleFunc("/PollWorld", ajaxProcessWorld(&world, &renderer))
+	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world, &renderer))
+	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&world, &renderer))
 
 	fmt.Println("Listening")
 	http.ListenAndServe(":8080", nil)
 
-	//world.ProcessWorld()
-
 	fmt.Println(time.Since(start))
-	fmt.Println("The World Lasted for ", world.Moments, " Moments")
 	fmt.Println("Done")
 }
 
 func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
 
+	renderer := gopherlife.NewRenderer()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		pageVariables := PageVariables{
-			Data: template.HTML(world.RenderWorld()),
+			Data: template.HTML(renderer.RenderWorld(world)),
 		}
 
 		t, err := template.ParseFiles("static/index.html")
@@ -57,32 +57,19 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 			log.Printf("Template executing error: ", err)
 		}
 
-		//var renderString = world.RenderWorld()
-		//w.Header().Add("Content-Type", "text/html")
-		//w.Header().Add("Content-Length", strconv.Itoa(len(renderString)))
-
-		//fmt.Fprintln(w, world.RenderWorld())
 	}
 
 }
 
-func ajaxProcessWorld(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		world.ProcessWorld()
-		w.Write([]byte(world.RenderWorld()))
-
-		if !world.IsPaused {
-
-		} else {
-			w.Write([]byte("paused"))
-		}
-
+		w.Write([]byte(renderer.RenderWorld(world)))
 	}
 }
 
-func ajaxSelectGopher(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+func ajaxSelectGopher(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -90,12 +77,16 @@ func ajaxSelectGopher(world *gopherlife.World) func(w http.ResponseWriter, r *ht
 
 		position := r.FormValue("position")
 
-		world.SelectEntity(position)
+		if world.SelectEntity(position) {
+			w.Write([]byte(renderer.RenderWorld(world)))
+		} else {
+			w.WriteHeader(404)
+		}
 
 	}
 }
 
-func ajaxHandleWorldInput(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
+func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -114,13 +105,13 @@ func ajaxHandleWorldInput(world *gopherlife.World) func(w http.ResponseWriter, r
 		case pKey:
 			world.TogglePause()
 		case leftArrow:
-			world.StartX--
+			renderer.StartX--
 		case rightArrow:
-			world.StartX++
+			renderer.StartX++
 		case upArrow:
-			world.StartY--
+			renderer.StartY--
 		case downArrow:
-			world.StartY++
+			renderer.StartY++
 		}
 
 	}

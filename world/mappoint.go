@@ -1,12 +1,11 @@
 package world
 
 import (
-	"gopherlife/animal"
 	"gopherlife/food"
 )
 
 type MapPoint struct {
-	Gopher *animal.Gopher
+	Gopher *Gopher
 	Food   *food.Food
 }
 
