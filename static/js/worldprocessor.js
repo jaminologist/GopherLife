@@ -9,9 +9,7 @@ $(document).ready(function(){
         var rightArrow = 39
         var upArrow = 38
         var downArrow = 40
-
-        console.log(key)
-
+        
         var inputData = new FormData()
         inputData.append("keydown", key)
 
@@ -88,7 +86,7 @@ function getWorld(){
         
         type: 'GET'
      }).always(function(){
-        setTimeout(getWorld(),50000000);
+        setTimeout(getWorld(),5000);
      });
 
 }
