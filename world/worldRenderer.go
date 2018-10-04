@@ -15,18 +15,25 @@ type Renderer struct {
 	World *World
 }
 
+type Render struct {
+	WorldRender    string
+	SelectedGopher *Gopher
+}
+
 func NewRenderer() Renderer {
 	return Renderer{RenderSize: 25, IsPaused: false}
 }
 
-func (renderer *Renderer) RenderWorld(world *World) string {
+func (renderer *Renderer) RenderWorld(world *World) Render {
 
+	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
 	renderString := ""
 
 	startX := 0
 	startY := 0
 
 	if world.SelectedGopher != nil {
+		render.SelectedGopher = world.SelectedGopher
 		startX = world.SelectedGopher.Position.GetX() - renderer.RenderSize/2
 		startY = world.SelectedGopher.Position.GetY() - renderer.RenderSize/2
 	} else {
@@ -74,5 +81,7 @@ func (renderer *Renderer) RenderWorld(world *World) string {
 
 	renderString += "</h1>"
 
-	return renderString
+	render.WorldRender = renderString
+
+	return render
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	gopherlife "gopherlife/world"
 	"html/template"
@@ -42,7 +43,7 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		pageVariables := PageVariables{
-			Data: template.HTML(renderer.RenderWorld(world)),
+			Data: template.HTML(renderer.RenderWorld(world).WorldRender),
 		}
 
 		t, err := template.ParseFiles("static/index.html")
@@ -67,9 +68,11 @@ func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 		ok := world.ProcessWorld()
 
 		if ok {
-			w.Write([]byte(renderer.RenderWorld(world)))
+			jsonData, _ := json.Marshal(renderer.RenderWorld(world))
+			w.Write(jsonData)
 		} else {
 			w.WriteHeader(404)
+			w.Write([]byte("Hi"))
 		}
 
 	}
@@ -83,15 +86,20 @@ func ajaxSelectGopher(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 
 		position := r.FormValue("position")
 
-		if world.SelectEntity(position) {
-			w.Write([]byte(renderer.RenderWorld(world)))
+		if _, ok := world.SelectEntity(position); ok {
+			w.Header().Set("Content-Type", "application/json")
+			jsonData, _ := json.Marshal(renderer.RenderWorld(world))
+			w.Write(jsonData)
 		} else {
-
-			fmt.Println("hi")
 			w.WriteHeader(404)
 		}
 
 	}
+}
+
+type SelectReturn struct {
+	WorldRender string
+	Gopher      *gopherlife.Gopher
 }
 
 func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {

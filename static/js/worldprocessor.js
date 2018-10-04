@@ -23,7 +23,6 @@ $(document).ready(function(){
               alert("error"+xhr.status);
             },
             success: function(){
-                console.log("syccc")
             }
          })
     });
@@ -36,12 +35,13 @@ $(document).ready(function(){
         $.ajax({
             type: 'GET',
             url: '/SelectGopher?position=' + position,
+            dataType: 'json',
             error: function(xhr, statusText, err) {
                 console.log("ERR")
               alert("error"+xhr.status);
             },
             success: function(data){
-                $("#worldDiv").html(data)
+              UpdateWorldDisplay(data)
             }
          })
 
@@ -50,15 +50,20 @@ $(document).ready(function(){
 
 })
 
+function UpdateWorldDisplay(data){
+    $("#worldDiv").html(data.WorldRender)
+    $("#gopher-info").html(JSON.stringify(data.SelectedGopher, null, 4))
+}
+
 
 function getWorld(){
 
     $.ajax({
         url: '/PollWorld',
+        dataType: 'json',
         success: function(data) {
-              $("#worldDiv").html(data)
+          UpdateWorldDisplay(data)
         },
-
         type: 'GET'
      }).always(function(){
         setTimeout(getWorld(),5000);
