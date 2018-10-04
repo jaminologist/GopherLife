@@ -64,8 +64,14 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		world.ProcessWorld()
-		w.Write([]byte(renderer.RenderWorld(world)))
+		ok := world.ProcessWorld()
+
+		if ok {
+			w.Write([]byte(renderer.RenderWorld(world)))
+		} else {
+			w.WriteHeader(404)
+		}
+
 	}
 }
 
@@ -80,6 +86,8 @@ func ajaxSelectGopher(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 		if world.SelectEntity(position) {
 			w.Write([]byte(renderer.RenderWorld(world)))
 		} else {
+
+			fmt.Println("hi")
 			w.WriteHeader(404)
 		}
 

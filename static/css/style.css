@@ -1,11 +1,15 @@
 
+a {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
 
 span {
-    font-family: "Lucida Console", Monaco, monospace;    
+    font-family: "Lucida Console", Monaco, monospace;
 }
 
 span.gopher {
-    color: brown
+    color: #FFFFFF
 }
 
 span.grass {
