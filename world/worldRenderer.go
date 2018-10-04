@@ -45,7 +45,7 @@ func (renderer *Renderer) RenderWorld(world *World) string {
 
 				switch {
 				case mapPoint.isEmpty():
-					renderString += "<span class='grass'>O</span>"
+					renderString += "<span class='grass'>/</span>"
 				case mapPoint.Gopher != nil:
 
 					isSelected := false
@@ -54,7 +54,7 @@ func (renderer *Renderer) RenderWorld(world *World) string {
 						isSelected = world.SelectedGopher.Position.MapKey() == key
 					}
 					if isSelected {
-						renderString += "<span id='" + key + "' style='color:yellow;'>G</span>"
+						renderString += "<a id='" + key + "' style='color:yellow;'>G</a>"
 					} else if mapPoint.Gopher.IsDead() {
 						renderString += "<span id='" + key + "' class='gopher'>X</span>"
 					} else {
@@ -62,10 +62,10 @@ func (renderer *Renderer) RenderWorld(world *World) string {
 					}
 
 				case mapPoint.Food != nil:
-					renderString += "<span class='food'>F</span>"
+					renderString += "<span class='food'>!</span>"
 				}
 			} else {
-				renderString += "<span class='food'>X</span>"
+				renderString += "<span style='color:#89cff0'; >X</span>"
 			}
 
 		}

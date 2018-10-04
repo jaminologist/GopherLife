@@ -8,8 +8,8 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 100
-const numberOfFoods = 500
+const numberOfGophs = 1000
+const numberOfFoods = 2000
 const worldSize = 200
 
 type World struct {

@@ -85,6 +85,8 @@ func (g *Gopher) FindFood(world *World, radius int) {
 
 				if food != nil {
 					coordsArray = append(coordsArray, key)
+					//g.FoodTargets = coordsArray
+					//return
 				}
 			}
 
@@ -136,7 +138,7 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 
 			world.InputActions <- g.QueueMovement(world, moveX, moveY)
 		default:
-			g.FindFood(world, 50)
+			g.FindFood(world, 10)
 		}
 	}
 
