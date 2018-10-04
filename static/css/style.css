@@ -4,6 +4,20 @@ a {
 }
 
 
+.wrapper {
+  display: grid;
+  grid-template-columns: 10% 80% 10%;
+  grid-template-rows: 10% 80% 10%;
+}
+
+.item-a {
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+
 span {
     font-family: "Lucida Console", Monaco, monospace;
 }

@@ -8,12 +8,15 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 10
+const hungerPerMoment = 1
 
 type Gopher struct {
 	Name     string
 	Lifespan int
-	Hunger   int
+
+	Decay int
+
+	Hunger int
 
 	Position math.Coordinates
 
@@ -33,7 +36,11 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsDead() bool {
-	return false //g.Lifespan >= 300 || g.Hunger <= 0
+	return g.Lifespan >= 500 || g.Hunger <= 0
+}
+
+func (g *Gopher) IsDecayed() bool {
+	return g.Decay >= 50
 }
 
 func (g *Gopher) ApplyHunger() {
@@ -45,23 +52,10 @@ func (g *Gopher) Move(x int, y int) {
 }
 
 func (g *Gopher) Eat() {
-
 	if g.HeldFood != nil {
-
-		//prev := g.Hunger
 		g.Hunger += g.HeldFood.Energy
-
-		//foodName := g.HeldFood.Name
-
 		g.HeldFood = nil
-
-		//fmt.Println("Gopher "+g.Name, " is eating a ",
-		//foodName, ". Hunger restored to ", g.Hunger, " from ", prev)
 	}
-	//for i := 0; i < 100; i++ {
-
-	//}
-
 }
 
 func (g *Gopher) Dig() {
@@ -72,24 +66,37 @@ func (g *Gopher) FindFood(world *World, radius int) {
 
 	var coordsArray = []math.Coordinates{}
 
-	for x := -radius; x < radius; x++ {
-		for y := -radius; y < radius; y++ {
+	for x := 0; x < radius; x++ {
+		for y := 0; y < x; y++ {
 			if x == 0 && y == 0 {
 				continue
 			}
 
-			key := g.Position.RelativeCoordinate(x, y)
+			keySlice := []math.Coordinates{}
 
-			if mapPoint, ok := world.world[key.MapKey()]; ok {
-				food := mapPoint.Food
-
-				if food != nil {
-					coordsArray = append(coordsArray, key)
-					//g.FoodTargets = coordsArray
-					//return
-				}
+			if x == 0 {
+				keySlice = append(keySlice, g.Position.RelativeCoordinate(x, y), g.Position.RelativeCoordinate(x, -y))
+			} else if y == 0 {
+				keySlice = append(keySlice, g.Position.RelativeCoordinate(-x, y), g.Position.RelativeCoordinate(x, y))
+			} else {
+				keySlice = append(keySlice,
+					g.Position.RelativeCoordinate(x, y),
+					g.Position.RelativeCoordinate(-x, -y),
+					g.Position.RelativeCoordinate(-x, y),
+					g.Position.RelativeCoordinate(x, -y),
+				)
 			}
 
+			for _, element := range keySlice {
+				if mapPoint, ok := world.world[element.MapKey()]; ok {
+					food := mapPoint.Food
+					if food != nil {
+						coordsArray = append(coordsArray, element)
+						//g.FoodTargets = coordsArray
+						//return
+					}
+				}
+			}
 		}
 	}
 
@@ -104,7 +111,10 @@ func (g *Gopher) FindFood(world *World, radius int) {
 func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *Gopher) {
 
 	switch {
+	case g.IsDecayed():
+		world.InputActions <- g.QueueRemoveGopher(world)
 	case g.IsDead():
+		g.Decay++
 	case g.Hunger < 1000:
 
 		switch {
@@ -145,10 +155,10 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 	if !g.IsDead() {
 		g.Lifespan++
 		g.ApplyHunger()
-		channel <- g
-	} else {
-		g = nil
 	}
+
+	channel <- g
+
 	wg.Done()
 
 }
@@ -189,6 +199,16 @@ func (gopher *Gopher) QueueMovement(world *World, x int, y int) func() {
 		} else {
 			world.OutputAction <- func() {
 			}
+		}
+	}
+
+}
+
+func (gopher *Gopher) QueueRemoveGopher(world *World) func() {
+
+	return func() {
+		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
+			mapPoint.Gopher = nil
 		}
 	}
 

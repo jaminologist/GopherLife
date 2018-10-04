@@ -67,16 +67,16 @@ func CreateWorld() World {
 
 }
 
-func (world *World) SelectEntity(mapKey string) bool {
+func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 
 	if mapPoint, ok := world.world[mapKey]; ok {
 		if mapPoint.Gopher != nil {
 			world.SelectedGopher = mapPoint.Gopher
-			return true
+			return mapPoint.Gopher, true
 		}
 	}
 
-	return false
+	return nil, false
 }
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
@@ -159,26 +159,6 @@ func (world *World) onFoodPickUp(location math.Coordinates) {
 
 }
 
-func QueueRemoveGopher(world *World, goph *Gopher) func() {
-
-	return func() {
-
-		if mapPoint, ok := world.world[goph.Position.MapKey()]; ok {
-			mapPoint.Gopher = nil
-		}
-		//currentPostion := goph.position
-		currentMapPoint := world.world[goph.Position.MapKey()]
-
-		if currentMapPoint.Food == nil {
-			goph.FoodTargets = nil
-		} else {
-			goph.HeldFood = currentMapPoint.Food
-			currentMapPoint.Food = nil
-		}
-	}
-
-}
-
 func (world *World) ProcessWorld() bool {
 
 	if world.IsPaused {
@@ -192,6 +172,7 @@ func (world *World) ProcessWorld() bool {
 		gopher := <-world.ActiveGophers
 		world.GopherWaitGroup.Add(1)
 		go gopher.PerformMoment(world, &world.GopherWaitGroup, secondChannel)
+
 	}
 
 	world.ActiveGophers = secondChannel
