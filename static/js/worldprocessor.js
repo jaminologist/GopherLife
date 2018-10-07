@@ -19,8 +19,6 @@ $(document).ready(function(){
             type: 'GET',
             url: '/ShiftWorldView?keydown=' + key,
             error: function(xhr, statusText, err) {
-                console.log("ERR")
-              alert("error"+xhr.status);
             },
             success: function(){
             }
