@@ -3,11 +3,19 @@ a {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
+img.responsive {
+    width: 100%;
+    height: auto;
+}
+
+div#worldDiv {
+    text-align: center;
+}
 
 .wrapper {
   display: grid;
-  grid-template-columns: 10% 80% 10%;
-  grid-template-rows: 10% 80% 10%;
+  grid-template-columns: 15% 70% 15%;
+  grid-template-rows: 15% 70% 15%;
 }
 
 .item-a {
@@ -15,23 +23,34 @@ a {
   grid-column-end: 3;
   grid-row-start: 2;
   grid-row-end: 3;
+  background-color: #000000
 }
+
+.item-b {
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 2;
+    grid-row-end: 3;
+  }
 
 
 span {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
-span.gopher {
+.selected {
+    color: #DABC00
+}
+
+.gopher {
     color: #FFFFFF
 }
 
-span.grass {
+.grass {
     color: #41770f
 }
 
-span.food {
+.food {
     color: #e27522
 }
 
-body {background-color:black}
