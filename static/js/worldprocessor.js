@@ -26,7 +26,7 @@ $(document).ready(function(){
     });
 
 
-    $(document).on("click", ".gopher", function(){
+    $(document).on("click", "a.interactable", function(){
 
         var position = $(this).attr("id")
 
@@ -35,8 +35,6 @@ $(document).ready(function(){
             url: '/SelectGopher?position=' + position,
             dataType: 'json',
             error: function(xhr, statusText, err) {
-                console.log("ERR")
-              alert("error"+xhr.status);
             },
             success: function(data){
               UpdateWorldDisplay(data)

@@ -121,13 +121,13 @@ func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer
 		case pKey:
 			world.TogglePause()
 		case leftArrow:
-			renderer.StartX--
+			renderer.ShiftRenderer(-1, 0)
 		case rightArrow:
-			renderer.StartX++
+			renderer.ShiftRenderer(1, 0)
 		case upArrow:
-			renderer.StartY--
+			renderer.ShiftRenderer(0, -1)
 		case downArrow:
-			renderer.StartY++
+			renderer.ShiftRenderer(0, 1)
 		}
 
 	}

@@ -1,21 +1,24 @@
-
+body {
+    height:100%;
+}
 a {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
 img.responsive {
-    width: 100%;
+    width: 50%;
     height: auto;
 }
 
 div#worldDiv {
-    text-align: center;
+   /* text-align: center;*/
 }
 
 .wrapper {
   display: grid;
-  grid-template-columns: 15% 70% 15%;
-  grid-template-rows: 15% 70% 15%;
+  height: 100%;
+  grid-template-columns: 25% 50% 25%;
+  grid-template-rows: 100% 100% 100%;
 }
 
 .item-a {

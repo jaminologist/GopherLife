@@ -32,20 +32,6 @@ type World struct {
 	IsPaused bool
 }
 
-func CreateMap(width int, height int) map[string]*Gopher {
-
-	var m = make(map[string]*Gopher)
-
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			m[math.CoordinateMapKey(x, y)] = &Gopher{}
-		}
-	}
-
-	return m
-
-}
-
 func CreateWorld() World {
 
 	world := World{width: worldSize, height: worldSize}
@@ -69,6 +55,8 @@ func CreateWorld() World {
 
 func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 
+	world.SelectedGopher = nil
+
 	if mapPoint, ok := world.world[mapKey]; ok {
 		if mapPoint.Gopher != nil {
 			world.SelectedGopher = mapPoint.Gopher
@@ -76,7 +64,7 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 		}
 	}
 
-	return nil, false
+	return nil, true
 }
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
@@ -105,6 +93,11 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		var goph = NewGopher(strconv.Itoa(i), math.StringToCoordinates(keys[count]))
 
 		mapPoint.Gopher = &goph
+
+		if i == 0 {
+			world.SelectedGopher = &goph
+		}
+
 		world.ActiveGophers <- &goph
 		world.world[keys[count]] = mapPoint
 		count++
