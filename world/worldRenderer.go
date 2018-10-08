@@ -29,7 +29,7 @@ type span struct {
 }
 
 func NewRenderer() Renderer {
-	return Renderer{RenderSizeX: 30, RenderSizeY: 20, IsPaused: false}
+	return Renderer{RenderSizeX: 30, RenderSizeY: 25, IsPaused: false}
 }
 
 func addSpanTagToRender(span span) string {
@@ -46,12 +46,12 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 	if world.SelectedGopher != nil {
 		render.SelectedGopher = world.SelectedGopher
-		startX = world.SelectedGopher.Position.GetX() - renderer.RenderSizeX/2
-		startY = world.SelectedGopher.Position.GetY() - renderer.RenderSizeY/2
-	} else {
-		startX = renderer.StartX
-		startY = renderer.StartY
+		renderer.StartX = world.SelectedGopher.Position.GetX() - renderer.RenderSizeX/2
+		renderer.StartY = world.SelectedGopher.Position.GetY() - renderer.RenderSizeY/2
 	}
+
+	startX = renderer.StartX
+	startY = renderer.StartY
 
 	for y := startY; y < startY+renderer.RenderSizeY; y++ {
 
@@ -63,7 +63,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 				switch {
 				case mapPoint.isEmpty():
-					renderString += addSpanTagToRender(span{text: "/", class: "grass"})
+					renderString += addSpanTagToRender(span{text: "/", class: "grass interactable"})
 				case mapPoint.Gopher != nil:
 
 					isSelected := false
@@ -72,15 +72,15 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 						isSelected = world.SelectedGopher.Position.MapKey() == key
 					}
 					if isSelected {
-						renderString += addSpanTagToRender(span{text: "G", id: key, class: "selected"})
+						renderString += addSpanTagToRender(span{text: "G", id: key, class: "selected interactable"})
 					} else if mapPoint.Gopher.IsDead() {
-						renderString += addSpanTagToRender(span{text: "X", id: key, class: "gopher"})
+						renderString += addSpanTagToRender(span{text: "X", id: key, class: "gopher interactable"})
 					} else {
-						renderString += addSpanTagToRender(span{text: "G", id: key, class: "gopher"})
+						renderString += addSpanTagToRender(span{text: "G", id: key, class: "gopher interactable"})
 					}
 
 				case mapPoint.Food != nil:
-					renderString += addSpanTagToRender(span{text: "!", id: key, class: "food"})
+					renderString += addSpanTagToRender(span{text: "!", id: key, class: "food interactable"})
 				}
 			} else {
 				renderString += "<span style='color:#89cff0'; >X</span>"
@@ -93,4 +93,9 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 	render.WorldRender = renderString
 
 	return render
+}
+
+func (renderer *Renderer) ShiftRenderer(x int, y int) {
+	renderer.StartX += x
+	renderer.StartY += y
 }

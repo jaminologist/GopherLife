@@ -36,7 +36,7 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsDead() bool {
-	return g.Lifespan >= 500 || g.Hunger <= 0
+	return g.Lifespan >= 5000 || g.Hunger <= 0
 }
 
 func (g *Gopher) IsDecayed() bool {
