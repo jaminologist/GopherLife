@@ -1,17 +1,20 @@
 body {
-    height:100%;
+   
 }
 a {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
-img.responsive {
-    width: 50%;
+img.gopher-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 15%;
     height: auto;
 }
 
 div#worldDiv {
-   /* text-align: center;*/
+    text-align: center;
 }
 
 .wrapper {
@@ -20,6 +23,17 @@ div#worldDiv {
   grid-template-columns: 25% 50% 25%;
   grid-template-rows: 100% 100% 100%;
 }
+
+.gopher-wrapper {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 100% 100% 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+  
 
 .item-a {
   grid-column-start: 2;
@@ -30,11 +44,11 @@ div#worldDiv {
 }
 
 .item-b {
-    grid-column-start: 3;
-    grid-column-end: 4;
-    grid-row-start: 2;
-    grid-row-end: 3;
-  }
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 3;
+    grid-row-end: 4;
+}
 
 
 span {

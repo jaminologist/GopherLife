@@ -48,7 +48,8 @@ $(document).ready(function(){
 
 function UpdateWorldDisplay(data){
     $("#worldDiv").html(data.WorldRender)
-    $("#gopher-info").html(JSON.stringify(data.SelectedGopher, null, 4))
+    $("#gopher-name").html(data.SelectedGopher.Name)
+    $("#gopher-position").html(JSON.stringify(data.SelectedGopher.Position))
 }
 
 
