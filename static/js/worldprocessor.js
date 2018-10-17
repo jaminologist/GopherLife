@@ -49,7 +49,11 @@ $(document).ready(function(){
 function UpdateWorldDisplay(data){
     $("#worldDiv").html(data.WorldRender)
     $("#gopher-name").html(data.SelectedGopher.Name)
-    $("#gopher-position").html(JSON.stringify(data.SelectedGopher.Position))
+
+    var x = data.SelectedGopher.Position.X
+    var y = data.SelectedGopher.Position.Y
+
+    $("#gopher-position").html("(" + x + "," + y + ")")
 }
 
 
