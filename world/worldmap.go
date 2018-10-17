@@ -3,8 +3,8 @@ package world
 import (
 	"gopherlife/food"
 	"gopherlife/math"
+	"gopherlife/names"
 	"math/rand"
-	"strconv"
 	"sync"
 )
 
@@ -90,7 +90,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 	for i := 0; i < numberOfGophers; i++ {
 		var mapPoint = world.world[keys[count]]
 
-		var goph = NewGopher(strconv.Itoa(i), math.StringToCoordinates(keys[count]))
+		var goph = NewGopher(names.GetCuteName(), math.StringToCoordinates(keys[count]))
 
 		mapPoint.Gopher = &goph
 

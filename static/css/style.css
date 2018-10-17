@@ -7,9 +7,11 @@ a {
 
 img.gopher-image {
     display: block;
+    margin-top: auto;
+    margin-bottom: auto;
     margin-left: auto;
     margin-right: auto;
-    width: 15%;
+    width: 25%;
     height: auto;
 }
 
