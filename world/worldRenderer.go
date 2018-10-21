@@ -26,6 +26,7 @@ type span struct {
 	class string
 	id    string
 	text  string
+	style string
 }
 
 func NewRenderer() Renderer {
@@ -33,7 +34,7 @@ func NewRenderer() Renderer {
 }
 
 func addSpanTagToRender(span span) string {
-	return fmt.Sprintf("<a id='%s' class='%s' >%s</a>", span.id, span.class, span.text)
+	return fmt.Sprintf("<a id='%s' class='%s' style='%s'>%s</a>", span.id, span.class, span.style, span.text)
 }
 
 func (renderer *Renderer) RenderWorld(world *World) Render {
@@ -66,18 +67,27 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 					renderString += addSpanTagToRender(span{text: "/", class: "grass interactable"})
 				case mapPoint.Gopher != nil:
 
-					isSelected := false
+					//isSelected := false
+
+					text := "G"
+					class := "gopher interactable"
+					style := "color:#ffffff"
 
 					if world.SelectedGopher != nil {
-						isSelected = world.SelectedGopher.Position.MapKey() == key
+						//	isSelected = world.SelectedGopher.Position.MapKey() == key
+						class = "selected interactable"
 					}
-					if isSelected {
-						renderString += addSpanTagToRender(span{text: "G", id: key, class: "selected interactable"})
-					} else if mapPoint.Gopher.IsDead() {
-						renderString += addSpanTagToRender(span{text: "X", id: key, class: "gopher interactable"})
-					} else {
-						renderString += addSpanTagToRender(span{text: "G", id: key, class: "gopher interactable"})
+
+					if mapPoint.Gopher.IsDead() {
+						text = "X"
 					}
+
+					switch mapPoint.Gopher.Gender {
+					case Male:
+						style = "color:#A9A9A9"
+					}
+
+					renderString += addSpanTagToRender(span{text: text, id: key, class: class, style: style})
 
 				case mapPoint.Food != nil:
 					renderString += addSpanTagToRender(span{text: "!", id: key, class: "food interactable"})
@@ -88,8 +98,10 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 		}
 		renderString += "<br />"
-	}
 
+	}
+	renderString += "<br />"
+	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Number of Gophers: %d </span>", len(world.gopherArray))
 	render.WorldRender = renderString
 
 	return render

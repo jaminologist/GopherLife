@@ -8,11 +8,16 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 1
+const hungerPerMoment = 3
+const timeToDecay = 50
+
+type Gender int
 
 type Gopher struct {
 	Name     string
 	Lifespan int
+
+	Gender Gender
 
 	Decay int
 
@@ -27,8 +32,37 @@ type Gopher struct {
 	MovementPath []math.Coordinates
 }
 
+const (
+	Male   Gender = 0
+	Female Gender = 1
+)
+
+func (gender Gender) String() string {
+	// declare an array of strings
+	// ... operator counts how many
+	// items in the array (7)
+	names := [...]string{
+		"Male",
+		"Female"}
+
+	if gender < Male || gender > Female {
+		return "Unknown"
+	}
+
+	return names[gender]
+}
+
+var genders = [2]Gender{Male, Female}
+
 func NewGopher(Name string, coord math.Coordinates) Gopher {
-	return Gopher{Name: Name, Lifespan: 0, Hunger: rand.Intn(100), Position: coord}
+
+	return Gopher{
+		Name:     Name,
+		Lifespan: 0,
+		Hunger:   rand.Intn(100),
+		Position: coord,
+		Gender:   genders[rand.Intn(len(genders))],
+	}
 }
 
 func (g *Gopher) SetName(Name string) {
@@ -40,7 +74,7 @@ func (g *Gopher) IsDead() bool {
 }
 
 func (g *Gopher) IsDecayed() bool {
-	return g.Decay >= 50
+	return g.Decay >= timeToDecay
 }
 
 func (g *Gopher) ApplyHunger() {
@@ -90,7 +124,8 @@ func (g *Gopher) FindFood(world *World, radius int) {
 			for _, element := range keySlice {
 				if mapPoint, ok := world.world[element.MapKey()]; ok {
 					food := mapPoint.Food
-					if food != nil {
+					gopher := mapPoint.Gopher
+					if food != nil && gopher == nil {
 						coordsArray = append(coordsArray, element)
 						//g.FoodTargets = coordsArray
 						//return
@@ -111,8 +146,6 @@ func (g *Gopher) FindFood(world *World, radius int) {
 func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *Gopher) {
 
 	switch {
-	case g.IsDecayed():
-		world.InputActions <- g.QueueRemoveGopher(world)
 	case g.IsDead():
 		g.Decay++
 	case g.Hunger < 1000:
@@ -147,6 +180,7 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 			}
 
 			world.InputActions <- g.QueueMovement(world, moveX, moveY)
+
 		default:
 			g.FindFood(world, 10)
 		}
@@ -157,7 +191,11 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 		g.ApplyHunger()
 	}
 
-	channel <- g
+	if !g.IsDecayed() {
+		channel <- g
+	} else {
+		world.InputActions <- g.QueueRemoveGopher(world)
+	}
 
 	wg.Done()
 
