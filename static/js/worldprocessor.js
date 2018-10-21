@@ -10,6 +10,10 @@ $(document).ready(function(){
         var upArrow = 38
         var downArrow = 40
 
+        var tab = 9
+
+        console.log(e.which)
+
         var inputData = new FormData()
         inputData.append("keydown", key)
 
