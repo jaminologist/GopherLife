@@ -58,6 +58,7 @@ function UpdateWorldDisplay(data){
     var y = data.SelectedGopher.Position.Y
 
     $("#gopher-position").html("(" + x + "," + y + ")")
+    $("#gopher-hunger").html("(" + data.SelectedGopher.Hunger + ")")
 }
 
 

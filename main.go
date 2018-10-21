@@ -6,6 +6,7 @@ import (
 	gopherlife "gopherlife/world"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -17,6 +18,7 @@ const size = 1000
 func main() {
 
 	//runtime.GOMAXPROCS(1)
+	rand.Seed(time.Now().UnixNano())
 	start := time.Now()
 
 	var world = gopherlife.CreateWorld()

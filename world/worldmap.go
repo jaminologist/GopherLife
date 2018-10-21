@@ -71,11 +71,8 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 }
 
 func (world *World) SelectRandomGopher() {
-
 	rand.Seed(time.Now().Unix())
-
 	world.SelectedGopher = world.gopherArray[rand.Intn(len(world.gopherArray))]
-
 }
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
