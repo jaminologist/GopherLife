@@ -6,6 +6,7 @@ import (
 	"gopherlife/names"
 	"math/rand"
 	"sync"
+	"time"
 )
 
 const numberOfGophs = 1000
@@ -26,6 +27,8 @@ type World struct {
 	ActiveGophers chan *Gopher
 
 	SelectedGopher *Gopher
+
+	gopherArray []*Gopher
 
 	Moments int
 
@@ -65,6 +68,14 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	}
 
 	return nil, true
+}
+
+func (world *World) SelectRandomGopher() {
+
+	rand.Seed(time.Now().Unix())
+
+	world.SelectedGopher = world.gopherArray[rand.Intn(len(world.gopherArray))]
+
 }
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
@@ -161,8 +172,10 @@ func (world *World) ProcessWorld() bool {
 	numGophers := len(world.ActiveGophers)
 
 	secondChannel := make(chan *Gopher, numGophers)
+	world.gopherArray = make([]*Gopher, numGophers)
 	for i := 0; i < numGophers; i++ {
 		gopher := <-world.ActiveGophers
+		world.gopherArray[i] = gopher
 		world.GopherWaitGroup.Add(1)
 		go gopher.PerformMoment(world, &world.GopherWaitGroup, secondChannel)
 

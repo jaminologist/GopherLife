@@ -115,9 +115,13 @@ func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer
 
 		var pKey = "80"
 
+		var tabKey = "81"
+
 		keydown := r.FormValue("keydown")
 
 		switch keydown {
+		case tabKey:
+			world.SelectRandomGopher()
 		case pKey:
 			world.TogglePause()
 		case leftArrow:
