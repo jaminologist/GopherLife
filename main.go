@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const numberOfGophs = 1
+const numberOfGophs = 5
 
 const size = 1000
 
