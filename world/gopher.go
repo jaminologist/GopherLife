@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 3
+const hungerPerMoment = 0
 const timeToDecay = 50
 
 type Gender int
@@ -163,10 +163,6 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 			moveX := 0
 			moveY := 0
 
-			if moveX == 0 && moveY == 0 {
-				world.InputActions <- g.QueuePickUpFood(world)
-			}
-
 			if diffX > 0 {
 				moveX = -1
 			} else if diffX < 0 {
@@ -177,6 +173,11 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 				moveY = -1
 			} else if diffY < 0 {
 				moveY = 1
+			}
+
+			if moveX == 0 && moveY == 0 {
+				world.InputActions <- g.QueuePickUpFood(world)
+				break
 			}
 
 			world.InputActions <- g.QueueMovement(world, moveX, moveY)
