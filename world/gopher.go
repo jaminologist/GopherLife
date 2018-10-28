@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 0
+const hungerPerMoment = 2
 const timeToDecay = 50
 
 type Gender int
@@ -36,6 +36,10 @@ const (
 	Male   Gender = 0
 	Female Gender = 1
 )
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 func (gender Gender) String() string {
 	// declare an array of strings
@@ -71,6 +75,10 @@ func (g *Gopher) SetName(Name string) {
 
 func (g *Gopher) IsDead() bool {
 	return g.Lifespan >= 5000 || g.Hunger <= 0
+}
+
+func (g *Gopher) IsHungry() bool {
+	return g.Hunger <= 250
 }
 
 func (g *Gopher) IsDecayed() bool {
@@ -148,7 +156,8 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 	switch {
 	case g.IsDead():
 		g.Decay++
-	case g.Hunger < 1000:
+
+	case g.IsHungry():
 
 		switch {
 		case g.HeldFood != nil:
@@ -157,34 +166,23 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 
 			target := g.FoodTargets[0]
 
-			diffX := g.Position.GetX() - target.GetX()
-			diffY := g.Position.GetY() - target.GetY()
-
-			moveX := 0
-			moveY := 0
-
-			if diffX > 0 {
-				moveX = -1
-			} else if diffX < 0 {
-				moveX = 1
-			}
-
-			if diffY > 0 {
-				moveY = -1
-			} else if diffY < 0 {
-				moveY = 1
-			}
+			moveX, moveY := math.FindNextStep(g.Position, target)
 
 			if moveX == 0 && moveY == 0 {
-				world.InputActions <- g.QueuePickUpFood(world)
+				g.QueuePickUpFood(world)
+				g.ClearFoodTargets()
 				break
 			}
 
-			world.InputActions <- g.QueueMovement(world, moveX, moveY)
+			g.QueueMovement(world, moveX, moveY)
 
+		case len(g.FoodTargets) < 0:
+			g.FindFood(world, 10)
 		default:
 			g.FindFood(world, 10)
 		}
+	case !g.IsHungry():
+		g.Wander(world)
 	}
 
 	if !g.IsDead() {
@@ -195,57 +193,52 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 	if !g.IsDecayed() {
 		channel <- g
 	} else {
-		world.InputActions <- g.QueueRemoveGopher(world)
+		g.QueueRemoveGopher(world)
 	}
 
 	wg.Done()
 
 }
 
-func (gopher *Gopher) QueuePickUpFood(world *World) func() {
+func (gopher *Gopher) Wander(world *World) {
+	world.InputActions <- func() {
 
-	return func() {
+		x := rand.Intn(3) - 1
+		y := rand.Intn(3) - 1
 
-		//currentPostion := goph.position
-		currentMapPoint := world.world[gopher.Position.MapKey()]
+		success := world.MoveGopher(gopher, x, y)
+		_ = success
+	}
+}
 
-		if currentMapPoint.Food == nil {
-			gopher.FoodTargets = nil
-		} else {
-			gopher.HeldFood = currentMapPoint.Food
-			currentMapPoint.Food = nil
+func (gopher *Gopher) ClearFoodTargets() {
+	gopher.FoodTargets = []math.Coordinates{}
+}
+
+func (gopher *Gopher) QueuePickUpFood(world *World) {
+
+	world.InputActions <- func() {
+		food, ok := world.RemoveFoodFromWorld(gopher.Position)
+		if ok {
+			gopher.HeldFood = food
 			world.onFoodPickUp(gopher.Position)
-
 		}
 	}
 
 }
 
-func (gopher *Gopher) QueueMovement(world *World, x int, y int) func() {
+func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
 
-	return func() {
-
-		//currentPostion := goph.position
-		currentMapPoint := world.world[gopher.Position.MapKey()]
-
-		targetPosition := gopher.Position.RelativeCoordinate(x, y)
-		targetMapPoint, exists := world.world[targetPosition.MapKey()]
-		if exists && targetMapPoint.Gopher == nil {
-
-			targetMapPoint.Gopher = gopher
-			currentMapPoint.Gopher = nil
-			gopher.Position = targetPosition
-		} else {
-			world.OutputAction <- func() {
-			}
-		}
+	world.InputActions <- func() {
+		success := world.MoveGopher(gopher, x, y)
+		_ = success
 	}
 
 }
 
-func (gopher *Gopher) QueueRemoveGopher(world *World) func() {
+func (gopher *Gopher) QueueRemoveGopher(world *World) {
 
-	return func() {
+	world.InputActions <- func() {
 		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
 			mapPoint.Gopher = nil
 		}
