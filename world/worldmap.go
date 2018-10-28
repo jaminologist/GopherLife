@@ -70,6 +70,43 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	return nil, true
 }
 
+func (world *World) RemoveFoodFromWorld(position math.Coordinates) (*food.Food, bool) {
+
+	if mapPoint, ok := world.world[position.MapKey()]; ok {
+		if mapPoint.Food != nil {
+
+			var food = mapPoint.Food
+			mapPoint.Food = nil
+			return food, true
+		}
+	}
+
+	return nil, false
+}
+
+func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
+
+	currentMapPoint, exists := world.world[gopher.Position.MapKey()]
+
+	if !exists {
+		return false
+	}
+
+	targetPosition := gopher.Position.RelativeCoordinate(x, y)
+	targetMapPoint, exists := world.world[targetPosition.MapKey()]
+
+	if exists && targetMapPoint.Gopher == nil {
+
+		targetMapPoint.Gopher = gopher
+		currentMapPoint.Gopher = nil
+		gopher.Position = targetPosition
+
+		return true
+	}
+
+	return false
+}
+
 func (world *World) SelectRandomGopher() {
 	rand.Seed(time.Now().Unix())
 	world.SelectedGopher = world.gopherArray[rand.Intn(len(world.gopherArray))]
