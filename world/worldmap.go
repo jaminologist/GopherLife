@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"gopherlife/food"
 	"gopherlife/math"
 	"gopherlife/names"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-const numberOfGophs = 1
+const numberOfGophs = 500
 const numberOfFoods = 2000
 const worldSize = 200
 
@@ -136,6 +137,10 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		var mapPoint = world.world[keys[count]]
 
 		var goph = NewGopher(names.GetCuteName(), math.StringToCoordinates(keys[count]))
+
+		if goph.Gender == Female {
+			fmt.Println("????/")
+		}
 
 		mapPoint.Gopher = &goph
 

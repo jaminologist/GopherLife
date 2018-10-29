@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-const numberOfGophs = 5
-
 const size = 1000
 
 func main() {
