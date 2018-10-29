@@ -23,11 +23,15 @@ type Gopher struct {
 
 	Hunger int
 
+	IsMated bool
+
 	Position math.Coordinates
 
 	HeldFood *food.Food
 
 	FoodTargets []math.Coordinates
+
+	GopherTargets []math.Coordinates
 
 	MovementPath []math.Coordinates
 }
@@ -56,16 +60,30 @@ func (gender Gender) String() string {
 	return names[gender]
 }
 
+func (gender Gender) Opposite() Gender {
+
+	switch gender {
+	case Male:
+		return Female
+	case Female:
+		return Male
+	default:
+		return Male
+	}
+}
+
 var genders = [2]Gender{Male, Female}
 
 func NewGopher(Name string, coord math.Coordinates) Gopher {
+
+	i := rand.Intn(len(genders))
 
 	return Gopher{
 		Name:     Name,
 		Lifespan: 0,
 		Hunger:   rand.Intn(100),
 		Position: coord,
-		Gender:   genders[rand.Intn(len(genders))],
+		Gender:   genders[i],
 	}
 }
 
@@ -79,6 +97,10 @@ func (g *Gopher) IsDead() bool {
 
 func (g *Gopher) IsHungry() bool {
 	return g.Hunger <= 250
+}
+
+func (g *Gopher) IsLookingForLove() bool {
+	return g.Lifespan > 150 && !g.IsMated
 }
 
 func (g *Gopher) IsDecayed() bool {
@@ -104,7 +126,9 @@ func (g *Gopher) Dig() {
 	time.Sleep(100)
 }
 
-func (g *Gopher) FindFood(world *World, radius int) {
+type MapPointCheck func(*MapPoint) bool
+
+func (g *Gopher) Find(world *World, radius int, check MapPointCheck) []math.Coordinates {
 
 	var coordsArray = []math.Coordinates{}
 
@@ -131,12 +155,11 @@ func (g *Gopher) FindFood(world *World, radius int) {
 
 			for _, element := range keySlice {
 				if mapPoint, ok := world.world[element.MapKey()]; ok {
+					check(mapPoint)
 					food := mapPoint.Food
 					gopher := mapPoint.Gopher
 					if food != nil && gopher == nil {
 						coordsArray = append(coordsArray, element)
-						//g.FoodTargets = coordsArray
-						//return
 					}
 				}
 			}
@@ -145,9 +168,7 @@ func (g *Gopher) FindFood(world *World, radius int) {
 
 	math.SortCoordinatesUsingCoordinate(g.Position, coordsArray)
 
-	if len(coordsArray) > 0 {
-		g.FoodTargets = coordsArray
-	}
+	return coordsArray
 
 }
 
@@ -177,12 +198,27 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 			g.QueueMovement(world, moveX, moveY)
 
 		case len(g.FoodTargets) < 0:
-			g.FindFood(world, 10)
+			g.FoodTargets = g.Find(world, 15, g.CheckMapPointForFood)
+			//If no foodtargets wander?
 		default:
-			g.FindFood(world, 10)
+			g.FoodTargets = g.Find(world, 15, g.CheckMapPointForFood)
 		}
 	case !g.IsHungry():
-		g.Wander(world)
+
+		switch {
+		case g.Gender == Male:
+			g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
+			if len(g.GopherTargets) == 0 {
+				g.Wander(world)
+			} else {
+				target := g.GopherTargets[0]
+				moveX, moveY := math.FindNextStep(g.Position, target)
+				g.QueueMovement(world, moveX, moveY)
+			}
+		default:
+			g.Wander(world)
+		}
+
 	}
 
 	if !g.IsDead() {
@@ -198,6 +234,14 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 
 	wg.Done()
 
+}
+
+func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
+	return mapPoint.Food != nil && mapPoint.Gopher == nil
+}
+
+func (gopher *Gopher) CheckMapPointForPartner(mapPoint *MapPoint) bool {
+	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove()
 }
 
 func (gopher *Gopher) Wander(world *World) {
