@@ -86,7 +86,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 					case Male:
 						style = "color:#A9A9A9"
 					case Female:
-						style = "color:#A9A9A9"
+						style = "color:#FF0080"
 					}
 
 					renderString += addSpanTagToRender(span{text: text, id: key, class: class, style: style})

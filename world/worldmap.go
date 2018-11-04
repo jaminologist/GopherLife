@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const numberOfGophs = 500
+const numberOfGophs = 1000
 const numberOfFoods = 2000
 const worldSize = 200
 
@@ -29,7 +29,8 @@ type World struct {
 
 	SelectedGopher *Gopher
 
-	gopherArray []*Gopher
+	gopherArray     []*Gopher
+	newGophersArray []*Gopher
 
 	Moments int
 
@@ -132,23 +133,22 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 	count := 0
 
 	world.ActiveGophers = make(chan *Gopher, numberOfGophers)
+	world.gopherArray = make([]*Gopher, numberOfGophers)
+	world.newGophersArray = []*Gopher{}
 
 	for i := 0; i < numberOfGophers; i++ {
 		var mapPoint = world.world[keys[count]]
 
-		var goph = NewGopher(names.GetCuteName(), math.StringToCoordinates(keys[count]))
+		var gopher = NewGopher(names.GetCuteName(), math.StringToCoordinates(keys[count]))
 
-		if goph.Gender == Female {
-			fmt.Println("????/")
-		}
-
-		mapPoint.Gopher = &goph
+		mapPoint.Gopher = &gopher
 
 		if i == 0 {
-			world.SelectedGopher = &goph
+			world.SelectedGopher = &gopher
 		}
 
-		world.ActiveGophers <- &goph
+		world.gopherArray[i] = &gopher
+		world.ActiveGophers <- &gopher
 		world.world[keys[count]] = mapPoint
 		count++
 	}
@@ -202,6 +202,20 @@ func (world *World) onFoodPickUp(location math.Coordinates) {
 
 }
 
+func (world *World) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
+
+	gopher.PerformMoment(world)
+
+	if !gopher.IsDecayed() {
+		channel <- gopher
+	} else {
+		world.QueueRemoveGopher(gopher)
+	}
+
+	wg.Done()
+
+}
+
 func (world *World) ProcessWorld() bool {
 
 	if world.IsPaused {
@@ -209,14 +223,17 @@ func (world *World) ProcessWorld() bool {
 	}
 
 	numGophers := len(world.ActiveGophers)
+	//newBornGophers := len(world.newGophersArray)
 
-	secondChannel := make(chan *Gopher, numGophers)
+	//currentArray := world.gopherArray
 	world.gopherArray = make([]*Gopher, numGophers)
+
+	secondChannel := make(chan *Gopher, numGophers*2)
 	for i := 0; i < numGophers; i++ {
 		gopher := <-world.ActiveGophers
 		world.gopherArray[i] = gopher
 		world.GopherWaitGroup.Add(1)
-		go gopher.PerformMoment(world, &world.GopherWaitGroup, secondChannel)
+		go world.PerformEntityAction(gopher, &world.GopherWaitGroup, secondChannel)
 
 	}
 
@@ -246,4 +263,24 @@ func (world *World) ProcessWorld() bool {
 
 func (world *World) TogglePause() {
 	world.IsPaused = !world.IsPaused
+}
+
+func (world *World) AddNewGopher(gopher *Gopher) {
+
+	world.InputActions <- func() {
+
+		fmt.Println("New GOph")
+		world.ActiveGophers <- gopher
+	}
+
+}
+
+func (world *World) QueueRemoveGopher(gopher *Gopher) {
+
+	world.InputActions <- func() {
+		//gopher = nil
+		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
+			mapPoint.Gopher = nil
+		}
+	}
 }
