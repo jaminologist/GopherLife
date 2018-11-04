@@ -1,15 +1,16 @@
 package world
 
 import (
+	"fmt"
 	food "gopherlife/food"
 	math "gopherlife/math"
+	"gopherlife/names"
 	"math/rand"
-	"sync"
 	"time"
 )
 
 const hungerPerMoment = 2
-const timeToDecay = 50
+const timeToDecay = 1
 
 type Gender int
 
@@ -172,7 +173,7 @@ func (g *Gopher) Find(world *World, radius int, check MapPointCheck) []math.Coor
 
 }
 
-func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *Gopher) {
+func (g *Gopher) PerformMoment(world *World) {
 
 	switch {
 	case g.IsDead():
@@ -206,13 +207,19 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 	case !g.IsHungry():
 
 		switch {
-		case g.Gender == Male:
+		case g.Gender == Male && g.IsLookingForLove():
 			g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
 			if len(g.GopherTargets) == 0 {
 				g.Wander(world)
 			} else {
 				target := g.GopherTargets[0]
 				moveX, moveY := math.FindNextStep(g.Position, target)
+
+				if moveX == 1 || moveY == 1 {
+					g.QueueMating(world, target)
+					break
+				}
+
 				g.QueueMovement(world, moveX, moveY)
 			}
 		default:
@@ -225,15 +232,6 @@ func (g *Gopher) PerformMoment(world *World, wg *sync.WaitGroup, channel chan *G
 		g.Lifespan++
 		g.ApplyHunger()
 	}
-
-	if !g.IsDecayed() {
-		channel <- g
-	} else {
-		g.QueueRemoveGopher(world)
-	}
-
-	wg.Done()
-
 }
 
 func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
@@ -241,7 +239,11 @@ func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
 }
 
 func (gopher *Gopher) CheckMapPointForPartner(mapPoint *MapPoint) bool {
-	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove()
+	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove() && gopher.Gender.Opposite() == mapPoint.Gopher.Gender
+}
+
+func (gopher *Gopher) CheckMapPointForEmptySpace(mapPoint *MapPoint) bool {
+	return mapPoint.Food == nil && mapPoint.Gopher == nil
 }
 
 func (gopher *Gopher) Wander(world *World) {
@@ -280,11 +282,35 @@ func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
 
 }
 
-func (gopher *Gopher) QueueRemoveGopher(world *World) {
+func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 
 	world.InputActions <- func() {
-		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
-			mapPoint.Gopher = nil
+
+		if mapPoint, ok := world.world[matePosition.MapKey()]; ok {
+
+			mate := mapPoint.Gopher
+
+			if mate == nil {
+				return
+			}
+
+			emptySpaces := gopher.Find(world, 4, gopher.CheckMapPointForEmptySpace)
+
+			fmt.Println("HERE")
+			fmt.Println(len(emptySpaces))
+
+			if mate.Gender == Female && len(emptySpaces) > 0 {
+				gopher.IsMated = true
+				mate.IsMated = true
+
+				fmt.Println("BIRTH ME")
+
+				newborn := NewGopher(names.GetCuteName(), emptySpaces[0])
+
+				world.AddNewGopher(&newborn)
+
+			}
+
 		}
 	}
 
