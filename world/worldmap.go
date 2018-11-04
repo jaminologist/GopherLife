@@ -114,6 +114,10 @@ func (world *World) SelectRandomGopher() {
 	world.SelectedGopher = world.gopherArray[rand.Intn(len(world.gopherArray))]
 }
 
+func (world *World) UnSelectGopher() {
+	world.SelectedGopher = nil
+}
+
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 	keys := make([]string, len(world.world))

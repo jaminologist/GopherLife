@@ -1,23 +1,23 @@
-package main
+package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	gopherlife "gopherlife/world"
 	"html/template"
 	"log"
-	"math/rand"
 	"net/http"
-	"time"
 )
 
-const size = 1000
+type SelectReturn struct {
+	WorldRender string
+	Gopher      *gopherlife.Gopher
+}
 
-func main() {
+type PageVariables struct {
+	Data template.HTML
+}
 
-	//runtime.GOMAXPROCS(1)
-	rand.Seed(time.Now().UnixNano())
-	start := time.Now()
+func SetUpPage() {
 
 	var world = gopherlife.CreateWorld()
 	renderer := gopherlife.NewRenderer()
@@ -29,11 +29,7 @@ func main() {
 	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world, &renderer))
 	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&world, &renderer))
 
-	fmt.Println("Listening")
 	http.ListenAndServe(":8080", nil)
-
-	fmt.Println(time.Since(start))
-	fmt.Println("Done")
 }
 
 func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
@@ -65,14 +61,13 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ok := world.ProcessWorld()
+		isWorldAlive := world.ProcessWorld()
 
-		if ok {
+		if isWorldAlive {
 			jsonData, _ := json.Marshal(renderer.RenderWorld(world))
 			w.Write(jsonData)
 		} else {
 			w.WriteHeader(404)
-			w.Write([]byte("Hi"))
 		}
 
 	}
@@ -95,11 +90,6 @@ func ajaxSelectGopher(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 		}
 
 	}
-}
-
-type SelectReturn struct {
-	WorldRender string
-	Gopher      *gopherlife.Gopher
 }
 
 func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
@@ -135,8 +125,4 @@ func ajaxHandleWorldInput(world *gopherlife.World, renderer *gopherlife.Renderer
 		}
 
 	}
-}
-
-type PageVariables struct {
-	Data template.HTML
 }

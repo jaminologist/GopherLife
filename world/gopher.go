@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	food "gopherlife/food"
 	math "gopherlife/math"
 	"gopherlife/names"
@@ -296,14 +295,9 @@ func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 
 			emptySpaces := gopher.Find(world, 4, gopher.CheckMapPointForEmptySpace)
 
-			fmt.Println("HERE")
-			fmt.Println(len(emptySpaces))
-
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				gopher.IsMated = true
 				mate.IsMated = true
-
-				fmt.Println("BIRTH ME")
 
 				newborn := NewGopher(names.GetCuteName(), emptySpaces[0])
 
