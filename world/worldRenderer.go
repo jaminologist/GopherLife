@@ -29,8 +29,9 @@ type span struct {
 	style string
 }
 
+//NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer() Renderer {
-	return Renderer{RenderSizeX: 30, RenderSizeY: 25, IsPaused: false}
+	return Renderer{RenderSizeX: 45, RenderSizeY: 15, IsPaused: false}
 }
 
 func addSpanTagToRender(span span) string {
@@ -109,6 +110,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 	return render
 }
 
+//ShiftRenderer moves the current rendering scope of the renderer by the given x and y values
 func (renderer *Renderer) ShiftRenderer(x int, y int) {
 	renderer.StartX += x
 	renderer.StartY += y
