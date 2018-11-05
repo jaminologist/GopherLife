@@ -41,10 +41,6 @@ const (
 	Female Gender = 1
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 func (gender Gender) String() string {
 	// declare an array of strings
 	// ... operator counts how many

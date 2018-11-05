@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"gopherlife/food"
 	"gopherlife/math"
 	"gopherlife/names"
@@ -10,9 +9,9 @@ import (
 	"time"
 )
 
-const numberOfGophs = 1000
-const numberOfFoods = 2000
-const worldSize = 200
+const numberOfGophs = 3000
+const numberOfFoods = 5000
+const worldSize = 500
 
 type World struct {
 	world map[string]*MapPoint
@@ -272,8 +271,6 @@ func (world *World) TogglePause() {
 func (world *World) AddNewGopher(gopher *Gopher) {
 
 	world.InputActions <- func() {
-
-		fmt.Println("New GOph")
 		world.ActiveGophers <- gopher
 	}
 
