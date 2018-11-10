@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const numberOfGophs = 3000
+const numberOfGophs = 2000
 const numberOfFoods = 5000
 const worldSize = 500
 
