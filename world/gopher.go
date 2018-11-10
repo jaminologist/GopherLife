@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	food "gopherlife/food"
 	math "gopherlife/math"
 	"gopherlife/names"
@@ -24,6 +25,8 @@ type Gopher struct {
 	Hunger int
 
 	IsMated bool
+
+	CounterTillReadyToFindLove int
 
 	Position math.Coordinates
 
@@ -87,8 +90,12 @@ func (g *Gopher) SetName(Name string) {
 	g.Name = Name
 }
 
+func (g *Gopher) IsMature() bool {
+	return g.Lifespan >= 50
+}
+
 func (g *Gopher) IsDead() bool {
-	return g.Lifespan >= 5000 || g.Hunger <= 0
+	return g.Lifespan >= 1000 || g.Hunger <= 0
 }
 
 func (g *Gopher) IsHungry() bool {
@@ -96,7 +103,11 @@ func (g *Gopher) IsHungry() bool {
 }
 
 func (g *Gopher) IsLookingForLove() bool {
-	return g.Lifespan > 150 && !g.IsMated
+	return g.IsMature() && !g.IsMated
+}
+
+func (g *Gopher) IsTakingABreakFromLove() bool {
+	return g.IsMature() && g.IsMated && g.CounterTillReadyToFindLove < 150
 }
 
 func (g *Gopher) IsDecayed() bool {
@@ -203,8 +214,11 @@ func (g *Gopher) PerformMoment(world *World) {
 
 		switch {
 		case g.Gender == Male && g.IsLookingForLove():
+
+			g.Wander(world)
+
 			g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
-			if len(g.GopherTargets) == 0 {
+			if len(g.GopherTargets) <= 0 {
 				g.Wander(world)
 			} else {
 				target := g.GopherTargets[0]
@@ -217,16 +231,36 @@ func (g *Gopher) PerformMoment(world *World) {
 
 				g.QueueMovement(world, moveX, moveY)
 			}
+
 		default:
 			g.Wander(world)
 		}
 
 	}
 
-	if !g.IsDead() {
-		g.Lifespan++
-		g.ApplyHunger()
+	g.AdvanceLife()
+}
+
+func (gopher *Gopher) AdvanceLife() {
+
+	if !gopher.IsDead() {
+		gopher.Lifespan++
+		gopher.ApplyHunger()
+
+		if gopher.Gender == Female && gopher.IsTakingABreakFromLove() {
+			gopher.CounterTillReadyToFindLove++
+
+			if !gopher.IsTakingABreakFromLove() {
+				gopher.IsMated = false
+
+				fmt.Println(gopher.IsLookingForLove())
+
+			}
+
+		}
+
 	}
+
 }
 
 func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
@@ -292,8 +326,9 @@ func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 			emptySpaces := gopher.Find(world, 4, gopher.CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
-				gopher.IsMated = true
+				//gopher.IsMated = true
 				mate.IsMated = true
+				mate.CounterTillReadyToFindLove = 0
 
 				newborn := NewGopher(names.GetCuteName(), emptySpaces[0])
 

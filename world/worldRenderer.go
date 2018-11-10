@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"gopherlife/math"
+	"strings"
 )
 
 type Renderer struct {
@@ -88,6 +89,10 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 						style = "color:#A9A9A9"
 					case Female:
 						style = "color:#FF0080"
+					}
+
+					if !mapPoint.Gopher.IsMature() {
+						text = strings.ToLower(text)
 					}
 
 					renderString += addSpanTagToRender(span{text: text, id: key, class: class, style: style})
