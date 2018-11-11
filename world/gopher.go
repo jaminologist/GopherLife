@@ -44,9 +44,7 @@ const (
 )
 
 func (gender Gender) String() string {
-	// declare an array of strings
-	// ... operator counts how many
-	// items in the array (7)
+
 	names := [...]string{
 		"Male",
 		"Female"}
@@ -334,9 +332,16 @@ func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 				mate.IsMated = true
 				mate.CounterTillReadyToFindLove = 0
 
-				newborn := NewGopher(names.GetCuteName(), emptySpaces[0])
+				litterNumber := rand.Intn(5)
 
-				world.AddNewGopher(&newborn)
+				for i := 0; i < litterNumber; i++ {
+
+					if i < len(emptySpaces) {
+						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
+						world.AddNewGopher(&newborn)
+					}
+
+				}
 
 			}
 
