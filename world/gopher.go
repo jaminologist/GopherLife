@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 2
+const hungerPerMoment = 5
 const timeToDecay = 1
 
 type Gender int
@@ -278,14 +278,16 @@ func (gopher *Gopher) CheckMapPointForEmptySpace(mapPoint *MapPoint) bool {
 }
 
 func (gopher *Gopher) Wander(world *World) {
-	world.InputActions <- func() {
+
+	world.AddFunctionToWorldInputActions(func() {
 
 		x := rand.Intn(3) - 1
 		y := rand.Intn(3) - 1
 
 		success := world.MoveGopher(gopher, x, y)
 		_ = success
-	}
+	})
+
 }
 
 func (gopher *Gopher) ClearFoodTargets() {
@@ -294,28 +296,28 @@ func (gopher *Gopher) ClearFoodTargets() {
 
 func (gopher *Gopher) QueuePickUpFood(world *World) {
 
-	world.InputActions <- func() {
+	world.AddFunctionToWorldInputActions(func() {
 		food, ok := world.RemoveFoodFromWorld(gopher.Position)
 		if ok {
 			gopher.HeldFood = food
 			world.onFoodPickUp(gopher.Position)
 		}
-	}
+	})
 
 }
 
 func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
 
-	world.InputActions <- func() {
+	world.AddFunctionToWorldInputActions(func() {
 		success := world.MoveGopher(gopher, x, y)
 		_ = success
-	}
+	})
 
 }
 
 func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 
-	world.InputActions <- func() {
+	world.AddFunctionToWorldInputActions(func() {
 
 		if mapPoint, ok := world.world[matePosition.MapKey()]; ok {
 
@@ -332,7 +334,7 @@ func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 				mate.IsMated = true
 				mate.CounterTillReadyToFindLove = 0
 
-				litterNumber := rand.Intn(5)
+				litterNumber := rand.Intn(11)
 
 				for i := 0; i < litterNumber; i++ {
 
@@ -346,6 +348,6 @@ func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
 			}
 
 		}
-	}
+	})
 
 }

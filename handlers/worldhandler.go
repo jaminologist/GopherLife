@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	gopherlife "gopherlife/world"
 	"html/template"
 	"log"
@@ -29,7 +30,9 @@ func SetUpPage() {
 	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&world, &renderer))
 	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&world, &renderer))
 
+	fmt.Println("Listening...")
 	http.ListenAndServe(":8080", nil)
+
 }
 
 func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Request) {
