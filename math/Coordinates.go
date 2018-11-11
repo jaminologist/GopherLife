@@ -12,18 +12,8 @@ type Coordinates struct {
 	Y int
 }
 
-type ByNearest []Coordinates
-
-func (a ByNearest) Len() int { return len(a) }
-func (a ByNearest) Less(i, j int) bool {
-
-	ix, iy, jx, jy := abs(a[i].X), abs(a[i].Y), abs(a[j].X), abs(a[j].Y)
-
-	return (ix + iy) < (jx + jy)
-}
-func (a ByNearest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-
-func abs(i int) int {
+//Abs returns the absolute value of an integer
+func Abs(i int) int {
 	if i < 0 {
 		return i * -1
 	}
@@ -34,10 +24,6 @@ func NewCoordinate(X int, Y int) Coordinates {
 	return Coordinates{X, Y}
 }
 
-func RelativeCoordinate(c Coordinates, X int, Y int) Coordinates {
-	return Coordinates{c.X + X, c.Y + Y}
-}
-
 func StringToCoordinates(coordString string) Coordinates {
 	var split = s.Split(coordString, ",")
 	var X, _ = strconv.Atoi(split[0])
@@ -45,6 +31,8 @@ func StringToCoordinates(coordString string) Coordinates {
 	return Coordinates{X, Y}
 }
 
+//RelativeCoordinate returns a new Coordinate that is of distance +x and +y
+//from a Coordinate
 func (c Coordinates) RelativeCoordinate(X int, Y int) Coordinates {
 	return Coordinates{c.X + X, c.Y + Y}
 }
@@ -59,10 +47,6 @@ func (c *Coordinates) Set(X int, Y int) {
 	c.Y = Y
 }
 
-func (c *Coordinates) SetX(X int) {
-	c.X = X
-}
-
 func (c *Coordinates) GetX() int {
 	return c.X
 }
@@ -71,30 +55,39 @@ func (c *Coordinates) GetY() int {
 	return c.Y
 }
 
-func (c *Coordinates) SetY(Y int) {
-	c.Y = Y
+//Difference returns the difference between the x and y co-ordinates of two points
+func (c *Coordinates) Difference(c2 Coordinates) (int, int) {
+
+	diffX := c.GetX() - c2.GetX()
+	diffY := c.GetY() - c2.GetY()
+
+	return diffX, diffY
 }
 
+//Equals checks the if two co-ordinates share the same x and y value
 func (c *Coordinates) Equals(c2 *Coordinates) bool {
 	return c.X == c2.X && c.Y == c2.Y
 }
 
+//MapKey creates a string 'key' for a Coordinate struct
 func (c *Coordinates) MapKey() string {
 	return CoordinateMapKey(c.X, c.Y)
 }
 
+//CoordinateMapKey converts an x and y value into a map key
 func CoordinateMapKey(X int, Y int) string {
 	return fmt.Sprintf("%[1]d,%[2]d", X, Y)
 }
 
-func SortCoordinatesUsingCoordinate(coords Coordinates, cs []Coordinates) {
+//SortByNearestFromCoordinate Sorts an array of coordinates by nearest to the given coordinate
+func SortByNearestFromCoordinate(coords Coordinates, cs []Coordinates) {
 
 	sort.Slice(cs, func(i, j int) bool {
 
-		ix := abs(coords.X - cs[i].X)
-		iy := abs(coords.Y - cs[i].Y)
-		jx := abs(coords.X - cs[j].X)
-		jy := abs(coords.Y - cs[j].Y)
+		ix := Abs(coords.X - cs[i].X)
+		iy := Abs(coords.Y - cs[i].Y)
+		jx := Abs(coords.X - cs[j].X)
+		jy := Abs(coords.Y - cs[j].Y)
 
 		return (ix + iy) < (jx + jy)
 	})
