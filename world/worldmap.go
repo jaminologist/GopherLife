@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"gopherlife/food"
 	"gopherlife/math"
 	"gopherlife/names"
@@ -9,9 +10,9 @@ import (
 	"time"
 )
 
-const numberOfGophs = 4000
-const numberOfFoods = 5000
-const worldSize = 500
+const numberOfGophs = 5000
+const numberOfFoods = 50000
+const worldSize = 1000
 
 type World struct {
 	world map[string]*MapPoint
@@ -39,8 +40,8 @@ type World struct {
 func CreateWorld() World {
 
 	world := World{width: worldSize, height: worldSize}
-	world.InputActions = make(chan func(), 10000)
-	world.OutputAction = make(chan func(), 10000)
+	world.InputActions = make(chan func(), 50000)
+	world.OutputAction = make(chan func(), 50000)
 
 	world.world = make(map[string]*MapPoint)
 
@@ -69,6 +70,22 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	}
 
 	return nil, true
+}
+
+func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
+
+	go func() {
+	loop:
+		for {
+			select {
+			case world.InputActions <- inputFunction:
+				break loop
+			default:
+				//fmt.Println("Stuck here forever ", rand.Intn(100))
+			}
+
+		}
+	}()
 }
 
 func (world *World) RemoveFoodFromWorld(position math.Coordinates) (*food.Food, bool) {
@@ -205,12 +222,50 @@ func (world *World) onFoodPickUp(location math.Coordinates) {
 
 }
 
+func ChannelCapMonitor(world *World, capWaitGroup *sync.WaitGroup, stopPolling chan bool) {
+
+	for {
+
+		select {
+		case stopPolling := <-stopPolling:
+			if stopPolling {
+				capWaitGroup.Done()
+				fmt.Println("Quit")
+				return
+			}
+		default:
+			fmt.Println("Default")
+		}
+
+		fmt.Println("len: ", len(world.InputActions), "cap: ", cap(world.InputActions))
+
+		if len(world.InputActions) == cap(world.InputActions) {
+			fmt.Println("????")
+			action := <-world.InputActions
+			action()
+			fmt.Println("PerformedAction")
+		}
+	}
+
+}
+
 func (world *World) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
 
 	gopher.PerformMoment(world)
 
 	if !gopher.IsDecayed() {
-		channel <- gopher
+
+		wait := true
+
+		for wait {
+			select {
+			case channel <- gopher:
+				wait = false
+			default:
+				//	fmt.Println("Can't Write")
+			}
+		}
+
 	} else {
 		world.QueueRemoveGopher(gopher)
 	}
@@ -242,7 +297,16 @@ func (world *World) ProcessWorld() bool {
 
 	world.ActiveGophers = secondChannel
 
+	//var capWaitGroup sync.WaitGroup
+	//inputCapChannel := make(chan bool, 1)
+	//go ChannelCapMonitor(world, &capWaitGroup, inputCapChannel)
+
 	world.GopherWaitGroup.Wait()
+	//	capWaitGroup.Add(1)
+
+	//	inputCapChannel <- true
+
+	//	capWaitGroup.Wait()
 
 	wait := true
 	for wait {
@@ -270,18 +334,18 @@ func (world *World) TogglePause() {
 
 func (world *World) AddNewGopher(gopher *Gopher) {
 
-	world.InputActions <- func() {
+	world.AddFunctionToWorldInputActions(func() {
 		world.ActiveGophers <- gopher
-	}
+	})
 
 }
 
 func (world *World) QueueRemoveGopher(gopher *Gopher) {
 
-	world.InputActions <- func() {
+	world.AddFunctionToWorldInputActions(func() {
 		//gopher = nil
 		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
 			mapPoint.Gopher = nil
 		}
-	}
+	})
 }
