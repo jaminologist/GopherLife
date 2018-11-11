@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	food "gopherlife/food"
 	math "gopherlife/math"
 	"gopherlife/names"
@@ -91,11 +90,11 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsMature() bool {
-	return g.Lifespan >= 50
+	return g.Lifespan >= 100
 }
 
 func (g *Gopher) IsDead() bool {
-	return g.Lifespan >= 1000 || g.Hunger <= 0
+	return g.Lifespan >= 300 || g.Hunger <= 0
 }
 
 func (g *Gopher) IsHungry() bool {
@@ -107,7 +106,7 @@ func (g *Gopher) IsLookingForLove() bool {
 }
 
 func (g *Gopher) IsTakingABreakFromLove() bool {
-	return g.IsMature() && g.IsMated && g.CounterTillReadyToFindLove < 150
+	return g.IsMature() && g.IsMated && g.CounterTillReadyToFindLove < 100
 }
 
 func (g *Gopher) IsDecayed() bool {
@@ -135,7 +134,7 @@ func (g *Gopher) Dig() {
 
 type MapPointCheck func(*MapPoint) bool
 
-func (g *Gopher) Find(world *World, radius int, check MapPointCheck) []math.Coordinates {
+func (g *Gopher) Find(world *World, radius int, mapPointCheck MapPointCheck) []math.Coordinates {
 
 	var coordsArray = []math.Coordinates{}
 
@@ -162,10 +161,7 @@ func (g *Gopher) Find(world *World, radius int, check MapPointCheck) []math.Coor
 
 			for _, element := range keySlice {
 				if mapPoint, ok := world.world[element.MapKey()]; ok {
-					check(mapPoint)
-					food := mapPoint.Food
-					gopher := mapPoint.Gopher
-					if food != nil && gopher == nil {
+					if mapPointCheck(mapPoint) {
 						coordsArray = append(coordsArray, element)
 					}
 				}
@@ -173,7 +169,7 @@ func (g *Gopher) Find(world *World, radius int, check MapPointCheck) []math.Coor
 		}
 	}
 
-	math.SortCoordinatesUsingCoordinate(g.Position, coordsArray)
+	math.SortByNearestFromCoordinate(g.Position, coordsArray)
 
 	return coordsArray
 
@@ -213,23 +209,34 @@ func (g *Gopher) PerformMoment(world *World) {
 	case !g.IsHungry():
 
 		switch {
-		case g.Gender == Male && g.IsLookingForLove():
+		case g.Gender == Male:
 
-			g.Wander(world)
+			if g.IsLookingForLove() {
+				g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
+				if len(g.GopherTargets) <= 0 {
+					g.Wander(world)
+				} else {
+					target := g.GopherTargets[0]
 
-			g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
-			if len(g.GopherTargets) <= 0 {
-				g.Wander(world)
-			} else {
-				target := g.GopherTargets[0]
-				moveX, moveY := math.FindNextStep(g.Position, target)
+					diffX, diffY := g.Position.Difference(target)
 
-				if moveX == 1 || moveY == 1 {
-					g.QueueMating(world, target)
-					break
+					moveX, moveY := math.FindNextStep(g.Position, target)
+
+					/*if world.SelectedGopher.Position.Equals(&g.Position) {
+						fmt.Println(target, " actual position is ", g.Position)
+						fmt.Println(moveX, ",", moveY)
+						fmt.Println("diff ", "(", diffX, ",", diffY, ")")
+					}*/
+
+					if math.Abs(diffX) <= 1 && math.Abs(diffY) <= 1 {
+						g.QueueMating(world, target)
+						break
+					}
+
+					g.QueueMovement(world, moveX, moveY)
 				}
-
-				g.QueueMovement(world, moveX, moveY)
+			} else {
+				g.Wander(world)
 			}
 
 		default:
@@ -252,9 +259,6 @@ func (gopher *Gopher) AdvanceLife() {
 
 			if !gopher.IsTakingABreakFromLove() {
 				gopher.IsMated = false
-
-				fmt.Println(gopher.IsLookingForLove())
-
 			}
 
 		}
