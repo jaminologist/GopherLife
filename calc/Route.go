@@ -1,4 +1,4 @@
-package math
+package calc
 
 func FindNextStep(start Coordinates, end Coordinates) (x int, y int) {
 

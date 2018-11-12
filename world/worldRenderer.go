@@ -2,7 +2,7 @@ package world
 
 import (
 	"fmt"
-	"gopherlife/math"
+	"gopherlife/calc"
 	"strings"
 )
 
@@ -60,7 +60,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
 
-			key := math.CoordinateMapKey(x, y)
+			key := calc.CoordinateMapKey(x, y)
 
 			if mapPoint, ok := world.world[key]; ok {
 

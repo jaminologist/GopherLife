@@ -1,15 +1,15 @@
 package world
 
 import (
+	"gopherlife/calc"
 	food "gopherlife/food"
-	math "gopherlife/math"
 	"gopherlife/names"
 	"math/rand"
 	"time"
 )
 
-const hungerPerMoment = 5
-const timeToDecay = 1
+const hungerPerMoment = 0
+const timeToDecay = 10
 
 type Gender int
 
@@ -27,15 +27,15 @@ type Gopher struct {
 
 	CounterTillReadyToFindLove int
 
-	Position math.Coordinates
+	Position calc.Coordinates
 
 	HeldFood *food.Food
 
-	FoodTargets []math.Coordinates
+	FoodTargets []calc.Coordinates
 
-	GopherTargets []math.Coordinates
+	GopherTargets []calc.Coordinates
 
-	MovementPath []math.Coordinates
+	MovementPath []calc.Coordinates
 }
 
 const (
@@ -70,7 +70,7 @@ func (gender Gender) Opposite() Gender {
 
 var genders = [2]Gender{Male, Female}
 
-func NewGopher(Name string, coord math.Coordinates) Gopher {
+func NewGopher(Name string, coord calc.Coordinates) Gopher {
 
 	i := rand.Intn(len(genders))
 
@@ -132,42 +132,34 @@ func (g *Gopher) Dig() {
 
 type MapPointCheck func(*MapPoint) bool
 
-func (g *Gopher) Find(world *World, radius int, mapPointCheck MapPointCheck) []math.Coordinates {
+func (g *Gopher) Find(world *World, radius int, mapPointCheck MapPointCheck) []calc.Coordinates {
 
-	var coordsArray = []math.Coordinates{}
+	var coordsArray = []calc.Coordinates{}
 
-	for x := 0; x < radius; x++ {
-		for y := 0; y < x; y++ {
-			if x == 0 && y == 0 {
-				continue
-			}
+	spiral := calc.NewSpiral(radius, radius)
 
-			keySlice := []math.Coordinates{}
+	for {
 
-			if x == 0 {
-				keySlice = append(keySlice, g.Position.RelativeCoordinate(x, y), g.Position.RelativeCoordinate(x, -y))
-			} else if y == 0 {
-				keySlice = append(keySlice, g.Position.RelativeCoordinate(-x, y), g.Position.RelativeCoordinate(x, y))
-			} else {
-				keySlice = append(keySlice,
-					g.Position.RelativeCoordinate(x, y),
-					g.Position.RelativeCoordinate(-x, -y),
-					g.Position.RelativeCoordinate(-x, y),
-					g.Position.RelativeCoordinate(x, -y),
-				)
-			}
+		coordinates, hasNext := spiral.Next()
 
-			for _, element := range keySlice {
-				if mapPoint, ok := world.world[element.MapKey()]; ok {
-					if mapPointCheck(mapPoint) {
-						coordsArray = append(coordsArray, element)
-					}
-				}
+		if hasNext == false || len(coordsArray) > 0 {
+			break
+		}
+
+		if coordinates.X == 0 && coordinates.Y == 0 {
+			continue
+		}
+
+		relativeCoords := g.Position.RelativeCoordinate(coordinates.X, coordinates.Y)
+
+		if mapPoint, ok := world.world[relativeCoords.MapKey()]; ok {
+			if mapPointCheck(mapPoint) {
+				coordsArray = append(coordsArray, relativeCoords)
 			}
 		}
 	}
 
-	math.SortByNearestFromCoordinate(g.Position, coordsArray)
+	calc.SortByNearestFromCoordinate(g.Position, coordsArray)
 
 	return coordsArray
 
@@ -188,7 +180,7 @@ func (g *Gopher) PerformMoment(world *World) {
 
 			target := g.FoodTargets[0]
 
-			moveX, moveY := math.FindNextStep(g.Position, target)
+			moveX, moveY := calc.FindNextStep(g.Position, target)
 
 			if moveX == 0 && moveY == 0 {
 				g.QueuePickUpFood(world)
@@ -218,7 +210,7 @@ func (g *Gopher) PerformMoment(world *World) {
 
 					diffX, diffY := g.Position.Difference(target)
 
-					moveX, moveY := math.FindNextStep(g.Position, target)
+					moveX, moveY := calc.FindNextStep(g.Position, target)
 
 					/*if world.SelectedGopher.Position.Equals(&g.Position) {
 						fmt.Println(target, " actual position is ", g.Position)
@@ -226,7 +218,7 @@ func (g *Gopher) PerformMoment(world *World) {
 						fmt.Println("diff ", "(", diffX, ",", diffY, ")")
 					}*/
 
-					if math.Abs(diffX) <= 1 && math.Abs(diffY) <= 1 {
+					if calc.Abs(diffX) <= 1 && calc.Abs(diffY) <= 1 {
 						g.QueueMating(world, target)
 						break
 					}
@@ -291,7 +283,7 @@ func (gopher *Gopher) Wander(world *World) {
 }
 
 func (gopher *Gopher) ClearFoodTargets() {
-	gopher.FoodTargets = []math.Coordinates{}
+	gopher.FoodTargets = []calc.Coordinates{}
 }
 
 func (gopher *Gopher) QueuePickUpFood(world *World) {
@@ -315,7 +307,7 @@ func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
 
 }
 
-func (gopher *Gopher) QueueMating(world *World, matePosition math.Coordinates) {
+func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 
 	world.AddFunctionToWorldInputActions(func() {
 
