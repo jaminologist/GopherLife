@@ -2,8 +2,8 @@ package world
 
 import (
 	"fmt"
+	"gopherlife/calc"
 	"gopherlife/food"
-	"gopherlife/math"
 	"gopherlife/names"
 	"math/rand"
 	"sync"
@@ -48,7 +48,7 @@ func CreateWorld() World {
 	for x := 0; x < worldSize; x++ {
 		for y := 0; y < worldSize; y++ {
 			var point = MapPoint{}
-			world.world[math.CoordinateMapKey(x, y)] = &point
+			world.world[calc.CoordinateMapKey(x, y)] = &point
 		}
 	}
 
@@ -74,21 +74,20 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
 
-	go func() {
-	loop:
-		for {
-			select {
-			case world.InputActions <- inputFunction:
-				break loop
-			default:
-				//fmt.Println("Stuck here forever ", rand.Intn(100))
-			}
-
+loop:
+	for {
+		select {
+		case world.InputActions <- inputFunction:
+			break loop
+		default:
+			//fmt.Println("Stuck here forever ", rand.Intn(100))
 		}
-	}()
+
+	}
+
 }
 
-func (world *World) RemoveFoodFromWorld(position math.Coordinates) (*food.Food, bool) {
+func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, bool) {
 
 	if mapPoint, ok := world.world[position.MapKey()]; ok {
 		if mapPoint.Food != nil {
@@ -159,7 +158,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 	for i := 0; i < numberOfGophers; i++ {
 		var mapPoint = world.world[keys[count]]
 
-		var gopher = NewGopher(names.GetCuteName(), math.StringToCoordinates(keys[count]))
+		var gopher = NewGopher(names.GetCuteName(), calc.StringToCoordinates(keys[count]))
 
 		mapPoint.Gopher = &gopher
 
@@ -185,7 +184,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 }
 
-func (world *World) onFoodPickUp(location math.Coordinates) {
+func (world *World) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
 
@@ -197,7 +196,7 @@ func (world *World) onFoodPickUp(location math.Coordinates) {
 		isDone := false
 
 		for j := 0; j < size; j++ {
-			newFoodLocation := math.NewCoordinate(
+			newFoodLocation := calc.NewCoordinate(
 				location.GetX()+xrange[i]-size/2,
 				location.GetY()+yrange[j]-size/2)
 

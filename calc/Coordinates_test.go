@@ -1,4 +1,4 @@
-package math
+package calc
 
 import (
 	"reflect"
@@ -14,7 +14,7 @@ func TestStringToCoordinates(t *testing.T) {
 		args args
 		want Coordinates
 	}{
-		{"Hey", args{"2,5"}, Coordinates{x: 2, y: 5}},
+		{"Hey", args{"2,5"}, Coordinates{X: 2, Y: 5}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -64,6 +64,7 @@ func worldToHTML(world *gopherlife.World) func(w http.ResponseWriter, r *http.Re
 func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		isWorldAlive := world.ProcessWorld()
 
 		if isWorldAlive {
