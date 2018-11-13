@@ -132,7 +132,7 @@ func (g *Gopher) Dig() {
 
 type MapPointCheck func(*MapPoint) bool
 
-func (g *Gopher) Find(world *World, radius int, mapPointCheck MapPointCheck) []calc.Coordinates {
+func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck MapPointCheck) []calc.Coordinates {
 
 	var coordsArray = []calc.Coordinates{}
 
@@ -142,7 +142,7 @@ func (g *Gopher) Find(world *World, radius int, mapPointCheck MapPointCheck) []c
 
 		coordinates, hasNext := spiral.Next()
 
-		if hasNext == false || len(coordsArray) > 0 {
+		if hasNext == false || len(coordsArray) > maximumFind {
 			break
 		}
 
@@ -191,10 +191,10 @@ func (g *Gopher) PerformMoment(world *World) {
 			g.QueueMovement(world, moveX, moveY)
 
 		case len(g.FoodTargets) < 0:
-			g.FoodTargets = g.Find(world, 15, g.CheckMapPointForFood)
+			g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
 			//If no foodtargets wander?
 		default:
-			g.FoodTargets = g.Find(world, 15, g.CheckMapPointForFood)
+			g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
 		}
 	case !g.IsHungry():
 
@@ -202,7 +202,7 @@ func (g *Gopher) PerformMoment(world *World) {
 		case g.Gender == Male:
 
 			if g.IsLookingForLove() {
-				g.GopherTargets = g.Find(world, 15, g.CheckMapPointForPartner)
+				g.GopherTargets = g.Find(world, 15, 1, g.CheckMapPointForPartner)
 				if len(g.GopherTargets) <= 0 {
 					g.Wander(world)
 				} else {
@@ -319,14 +319,14 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 				return
 			}
 
-			emptySpaces := gopher.Find(world, 4, gopher.CheckMapPointForEmptySpace)
+			litterNumber := rand.Intn(11)
+
+			emptySpaces := gopher.Find(world, 10, litterNumber, gopher.CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				//gopher.IsMated = true
 				mate.IsMated = true
 				mate.CounterTillReadyToFindLove = 0
-
-				litterNumber := rand.Intn(11)
 
 				for i := 0; i < litterNumber; i++ {
 
