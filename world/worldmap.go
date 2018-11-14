@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-const numberOfGophs = 5000
-const numberOfFoods = 50000
-const worldSize = 1000
+const numberOfGophs = 20000
+const numberOfFoods = 500000
+const worldSize = 2000
 
 type World struct {
 	world map[string]*MapPoint
@@ -219,7 +219,11 @@ func (world *World) onFoodPickUp(location calc.Coordinates) {
 		}
 
 		if isDone {
+			if i > 10 {
+				fmt.Println(i, "greater than 10")
+			}
 			break
+
 		}
 	}
 

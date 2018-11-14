@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 0
+const hungerPerMoment = 5
 const timeToDecay = 10
 
 type Gender int
@@ -24,6 +24,10 @@ type Gopher struct {
 	Hunger int
 
 	IsMated bool
+
+	IsDead bool
+
+	IsHungry bool
 
 	CounterTillReadyToFindLove int
 
@@ -77,7 +81,7 @@ func NewGopher(Name string, coord calc.Coordinates) Gopher {
 	return Gopher{
 		Name:     Name,
 		Lifespan: 0,
-		Hunger:   rand.Intn(100),
+		Hunger:   rand.Intn(100) + 50,
 		Position: coord,
 		Gender:   genders[i],
 	}
@@ -91,12 +95,37 @@ func (g *Gopher) IsMature() bool {
 	return g.Lifespan >= 100
 }
 
-func (g *Gopher) IsDead() bool {
-	return g.Lifespan >= 300 || g.Hunger <= 0
+func (gopher *Gopher) SetIsDead() {
+
+	if gopher.IsDead {
+		return
+	}
+
+	chance := rand.Intn(101)
+
+	a := gopher.Lifespan - 300
+
+	if a > chance || gopher.Hunger <= 0 {
+		gopher.IsDead = true
+	}
+
 }
 
-func (g *Gopher) IsHungry() bool {
-	return g.Hunger <= 250
+func (gopher *Gopher) SetIsHungry() {
+
+	if gopher.IsHungry {
+
+		if gopher.Hunger > 300 {
+			gopher.IsHungry = false
+		}
+
+	} else {
+
+		if gopher.Hunger < 150 {
+			gopher.IsHungry = true
+		}
+	}
+
 }
 
 func (g *Gopher) IsLookingForLove() bool {
@@ -128,6 +157,28 @@ func (g *Gopher) Eat() {
 
 func (g *Gopher) Dig() {
 	time.Sleep(100)
+}
+
+func (gopher *Gopher) AdvanceLife() {
+
+	if !gopher.IsDead {
+		gopher.Lifespan++
+		gopher.ApplyHunger()
+
+		if gopher.Gender == Female && gopher.IsTakingABreakFromLove() {
+			gopher.CounterTillReadyToFindLove++
+
+			if !gopher.IsTakingABreakFromLove() {
+				gopher.IsMated = false
+			}
+
+		}
+
+		gopher.SetIsDead()
+		gopher.SetIsHungry()
+
+	}
+
 }
 
 type MapPointCheck func(*MapPoint) bool
@@ -168,10 +219,10 @@ func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck M
 func (g *Gopher) PerformMoment(world *World) {
 
 	switch {
-	case g.IsDead():
+	case g.IsDead:
 		g.Decay++
 
-	case g.IsHungry():
+	case g.IsHungry:
 
 		switch {
 		case g.HeldFood != nil:
@@ -196,7 +247,7 @@ func (g *Gopher) PerformMoment(world *World) {
 		default:
 			g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
 		}
-	case !g.IsHungry():
+	case !g.IsHungry:
 
 		switch {
 		case g.Gender == Male:
@@ -236,25 +287,6 @@ func (g *Gopher) PerformMoment(world *World) {
 	}
 
 	g.AdvanceLife()
-}
-
-func (gopher *Gopher) AdvanceLife() {
-
-	if !gopher.IsDead() {
-		gopher.Lifespan++
-		gopher.ApplyHunger()
-
-		if gopher.Gender == Female && gopher.IsTakingABreakFromLove() {
-			gopher.CounterTillReadyToFindLove++
-
-			if !gopher.IsTakingABreakFromLove() {
-				gopher.IsMated = false
-			}
-
-		}
-
-	}
-
 }
 
 func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
@@ -319,7 +351,7 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 				return
 			}
 
-			litterNumber := rand.Intn(11)
+			litterNumber := rand.Intn(7)
 
 			emptySpaces := gopher.Find(world, 10, litterNumber, gopher.CheckMapPointForEmptySpace)
 
