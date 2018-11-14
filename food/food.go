@@ -10,7 +10,7 @@ func NewCarrot() Food {
 }
 
 func NewPotato() Food {
-	return Food{Name: "Patato", Energy: 200}
+	return Food{Name: "Patato", Energy: 50}
 }
 
 func New() Food {

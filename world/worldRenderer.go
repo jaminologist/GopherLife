@@ -80,7 +80,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 						class = "selected interactable"
 					}
 
-					if mapPoint.Gopher.IsDead() {
+					if mapPoint.Gopher.IsDead {
 						text = "X"
 					}
 
