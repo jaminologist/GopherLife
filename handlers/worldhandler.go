@@ -65,9 +65,11 @@ func ajaxProcessWorld(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		isWorldAlive := world.ProcessWorld()
+		//
 
-		if isWorldAlive {
+		world.ProcessWorld()
+
+		if true {
 			jsonData, _ := json.Marshal(renderer.RenderWorld(world))
 			w.Write(jsonData)
 		} else {

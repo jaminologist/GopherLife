@@ -13,8 +13,6 @@ type Renderer struct {
 	RenderSizeX int
 	RenderSizeY int
 
-	IsPaused bool
-
 	World *World
 }
 
@@ -32,7 +30,7 @@ type span struct {
 
 //NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer() Renderer {
-	return Renderer{RenderSizeX: 45, RenderSizeY: 15, IsPaused: false}
+	return Renderer{RenderSizeX: 45, RenderSizeY: 15}
 }
 
 func addSpanTagToRender(span span) string {
