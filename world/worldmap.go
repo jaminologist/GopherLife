@@ -7,7 +7,6 @@ import (
 	"gopherlife/names"
 	"math/rand"
 	"sync"
-	"time"
 )
 
 const numberOfGophs = 20000
@@ -129,7 +128,6 @@ func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
 }
 
 func (world *World) SelectRandomGopher() {
-	rand.Seed(time.Now().Unix())
 	world.SelectedGopher = world.gopherArray[rand.Intn(len(world.gopherArray))]
 }
 

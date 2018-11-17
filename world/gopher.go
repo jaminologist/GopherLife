@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 5
+const hungerPerMoment = 0
 const timeToDecay = 10
 
 type Gender int
@@ -351,7 +351,7 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 				return
 			}
 
-			litterNumber := rand.Intn(7)
+			litterNumber := rand.Intn(20)
 
 			emptySpaces := gopher.Find(world, 10, litterNumber, gopher.CheckMapPointForEmptySpace)
 
