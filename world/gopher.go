@@ -92,7 +92,7 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsMature() bool {
-	return g.Lifespan >= 100
+	return g.Lifespan >= 50
 }
 
 func (gopher *Gopher) SetIsDead() {
@@ -103,7 +103,7 @@ func (gopher *Gopher) SetIsDead() {
 
 	chance := rand.Intn(101)
 
-	a := gopher.Lifespan - 300
+	a := gopher.Lifespan - 300000
 
 	if a > chance || gopher.Hunger <= 0 {
 		gopher.IsDead = true
@@ -262,12 +262,6 @@ func (g *Gopher) PerformMoment(world *World) {
 					diffX, diffY := g.Position.Difference(target)
 
 					moveX, moveY := calc.FindNextStep(g.Position, target)
-
-					/*if world.SelectedGopher.Position.Equals(&g.Position) {
-						fmt.Println(target, " actual position is ", g.Position)
-						fmt.Println(moveX, ",", moveY)
-						fmt.Println("diff ", "(", diffX, ",", diffY, ")")
-					}*/
 
 					if calc.Abs(diffX) <= 1 && calc.Abs(diffY) <= 1 {
 						g.QueueMating(world, target)
