@@ -9,8 +9,8 @@ import (
 )
 
 const numberOfGophs = 5000
-const numberOfFoods = 500000
-const worldSize = 4000
+const numberOfFoods = 1000000
+const worldSize = 3000
 
 type World struct {
 	world map[string]*MapPoint
@@ -35,6 +35,12 @@ type World struct {
 	Moments int
 
 	IsPaused bool
+
+	avgProcessingTime int
+
+	inputStopWatch   calc.StopWatch
+	gopherStopWatch  calc.StopWatch
+	processStopWatch calc.StopWatch
 }
 
 func CreateWorldCustom(numberOfGophers int, numberOfFood2 int) World {
@@ -93,6 +99,11 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	}
 
 	return nil, true
+}
+
+func (world *World) GetMapPoint(mapKey string) (*MapPoint, bool) {
+	mapPoint, ok := world.world[mapKey]
+	return mapPoint, ok
 }
 
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
@@ -275,6 +286,9 @@ func (world *World) ProcessWorld() bool {
 		return false
 	}
 
+	world.processStopWatch.Start()
+	world.gopherStopWatch.Start()
+
 	numGophers := len(world.ActiveGophers)
 	//newBornGophers := len(world.newGophersArray)
 
@@ -293,12 +307,17 @@ func (world *World) ProcessWorld() bool {
 	world.ActiveGophers = secondChannel
 
 	world.GopherWaitGroup.Wait()
+	world.gopherStopWatch.Stop()
 
+	world.inputStopWatch.Start()
 	readingInputActionsUsingJustChannel(world)
+	world.inputStopWatch.Stop()
 
 	if numGophers > 0 {
 		world.Moments++
 	}
+
+	world.processStopWatch.Stop()
 
 	return true
 

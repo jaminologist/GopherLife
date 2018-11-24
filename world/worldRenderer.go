@@ -108,6 +108,14 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 	}
 	renderString += "<br />"
 	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Number of Gophers: %d </span>", len(world.gopherArray))
+
+	renderString += "<br />"
+	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Processing Time (s): %d </span>", int(world.processStopWatch.GetAverage()))
+	renderString += "<br />"
+	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Gopher Time (sssss): %d </span>", int(world.gopherStopWatch.GetAverage()))
+	renderString += "<br />"
+	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Input Time (ssssss): %d </span>", int(world.inputStopWatch.GetAverage()))
+
 	render.WorldRender = renderString
 
 	return render
