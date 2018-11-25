@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"gopherlife/calc"
 	"gopherlife/food"
 	"gopherlife/names"
@@ -9,9 +8,9 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 20000
-const numberOfFoods = 500000
-const worldSize = 2000
+const numberOfGophs = 5000
+const numberOfFoods = 1000000
+const worldSize = 3000
 
 type World struct {
 	world map[string]*MapPoint
@@ -36,6 +35,34 @@ type World struct {
 	Moments int
 
 	IsPaused bool
+
+	avgProcessingTime int
+
+	inputStopWatch   calc.StopWatch
+	gopherStopWatch  calc.StopWatch
+	processStopWatch calc.StopWatch
+}
+
+func CreateWorldCustom(numberOfGophers int, numberOfFood2 int) World {
+
+	world := World{width: worldSize, height: worldSize}
+	world.InputActions = make(chan func(), 1000000)
+	world.OutputAction = make(chan func(), 50000)
+
+	world.InputActionsArray = make([]chan func(), 0)
+
+	world.world = make(map[string]*MapPoint)
+
+	for x := 0; x < worldSize; x++ {
+		for y := 0; y < worldSize; y++ {
+			var point = MapPoint{}
+			world.world[calc.CoordinateMapKey(x, y)] = &point
+		}
+	}
+
+	world.SetUpMapPoints(numberOfGophers, numberOfFood2)
+	return world
+
 }
 
 func CreateWorld() World {
@@ -56,7 +83,6 @@ func CreateWorld() World {
 	}
 
 	world.SetUpMapPoints(numberOfGophs, numberOfFoods)
-
 	return world
 
 }
@@ -73,6 +99,11 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	}
 
 	return nil, true
+}
+
+func (world *World) GetMapPoint(mapKey string) (*MapPoint, bool) {
+	mapPoint, ok := world.world[mapKey]
+	return mapPoint, ok
 }
 
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
@@ -217,38 +248,8 @@ func (world *World) onFoodPickUp(location calc.Coordinates) {
 		}
 
 		if isDone {
-			if i > 10 {
-				fmt.Println(i, "greater than 10")
-			}
 			break
 
-		}
-	}
-
-}
-
-func ChannelCapMonitor(world *World, capWaitGroup *sync.WaitGroup, stopPolling chan bool) {
-
-	for {
-
-		select {
-		case stopPolling := <-stopPolling:
-			if stopPolling {
-				capWaitGroup.Done()
-				fmt.Println("Quit")
-				return
-			}
-		default:
-			fmt.Println("Default")
-		}
-
-		fmt.Println("len: ", len(world.InputActions), "cap: ", cap(world.InputActions))
-
-		if len(world.InputActions) == cap(world.InputActions) {
-			fmt.Println("????")
-			action := <-world.InputActions
-			action()
-			fmt.Println("PerformedAction")
 		}
 	}
 
@@ -285,6 +286,9 @@ func (world *World) ProcessWorld() bool {
 		return false
 	}
 
+	world.processStopWatch.Start()
+	world.gopherStopWatch.Start()
+
 	numGophers := len(world.ActiveGophers)
 	//newBornGophers := len(world.newGophersArray)
 
@@ -302,34 +306,54 @@ func (world *World) ProcessWorld() bool {
 
 	world.ActiveGophers = secondChannel
 
-	//var capWaitGroup sync.WaitGroup
-	//inputCapChannel := make(chan bool, 1)
-	//go ChannelCapMonitor(world, &capWaitGroup, inputCapChannel)
-
 	world.GopherWaitGroup.Wait()
-	//	capWaitGroup.Add(1)
+	world.gopherStopWatch.Stop()
 
-	//	inputCapChannel <- true
+	world.inputStopWatch.Start()
+	readingInputActionsUsingJustChannel(world)
+	world.inputStopWatch.Stop()
 
-	//	capWaitGroup.Wait()
+	if numGophers > 0 {
+		world.Moments++
+	}
+
+	world.processStopWatch.Stop()
+
+	return true
+
+}
+
+func readingInputActionsUsingGoFunc(world *World) {
+
+	var mutex = &sync.Mutex{}
+
+	wait := true
+	for wait {
+		select {
+		case action := <-world.InputActions:
+			go func() {
+				mutex.Lock()
+				action()
+				mutex.Unlock()
+			}()
+		default:
+			wait = false
+		}
+	}
+
+}
+
+func readingInputActionsUsingJustChannel(world *World) {
 
 	wait := true
 	for wait {
 		select {
 		case action := <-world.InputActions:
 			action()
-		case action := <-world.OutputAction:
-			action()
 		default:
 			wait = false
 		}
 	}
-
-	if numGophers > 0 {
-		world.Moments++
-	}
-
-	return true
 
 }
 
