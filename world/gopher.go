@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hungerPerMoment = 0
+const hungerPerMoment = 5
 const timeToDecay = 10
 
 type Gender int
@@ -92,7 +92,7 @@ func (g *Gopher) SetName(Name string) {
 }
 
 func (g *Gopher) IsMature() bool {
-	return g.Lifespan >= 100
+	return g.Lifespan >= 50
 }
 
 func (gopher *Gopher) SetIsDead() {
@@ -103,7 +103,7 @@ func (gopher *Gopher) SetIsDead() {
 
 	chance := rand.Intn(101)
 
-	a := gopher.Lifespan - 300
+	a := gopher.Lifespan - 500
 
 	if a > chance || gopher.Hunger <= 0 {
 		gopher.IsDead = true
@@ -216,6 +216,41 @@ func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck M
 
 }
 
+func (g *Gopher) moveTowardsFood(world *World) {
+
+	if len(g.FoodTargets) > 0 {
+
+		target := g.FoodTargets[0]
+
+		mapPoint, _ := world.GetMapPoint(target.MapKey())
+
+		if mapPoint.Food == nil {
+			g.ClearFoodTargets()
+		} else {
+
+			diffX, diffY := g.Position.Difference(target)
+
+			if calc.Abs(diffX) <= 0 && calc.Abs(diffY) <= 0 {
+				g.QueuePickUpFood(world)
+				g.ClearFoodTargets()
+				return
+			}
+
+			moveX, moveY := calc.FindNextStep(g.Position, target)
+			g.QueueMovement(world, moveX, moveY)
+
+		}
+
+	} else {
+		g.FoodTargets = g.Find(world, 25, 1, g.CheckMapPointForFood)
+	}
+
+}
+
+func (g *Gopher) LookForFood(world *World) {
+	g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
+}
+
 func (g *Gopher) PerformMoment(world *World) {
 
 	switch {
@@ -227,25 +262,8 @@ func (g *Gopher) PerformMoment(world *World) {
 		switch {
 		case g.HeldFood != nil:
 			g.Eat()
-		case len(g.FoodTargets) > 0:
-
-			target := g.FoodTargets[0]
-
-			moveX, moveY := calc.FindNextStep(g.Position, target)
-
-			if moveX == 0 && moveY == 0 {
-				g.QueuePickUpFood(world)
-				g.ClearFoodTargets()
-				break
-			}
-
-			g.QueueMovement(world, moveX, moveY)
-
-		case len(g.FoodTargets) < 0:
-			g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
-			//If no foodtargets wander?
 		default:
-			g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
+			g.moveTowardsFood(world)
 		}
 	case !g.IsHungry:
 
@@ -262,12 +280,6 @@ func (g *Gopher) PerformMoment(world *World) {
 					diffX, diffY := g.Position.Difference(target)
 
 					moveX, moveY := calc.FindNextStep(g.Position, target)
-
-					/*if world.SelectedGopher.Position.Equals(&g.Position) {
-						fmt.Println(target, " actual position is ", g.Position)
-						fmt.Println(moveX, ",", moveY)
-						fmt.Println("diff ", "(", diffX, ",", diffY, ")")
-					}*/
 
 					if calc.Abs(diffX) <= 1 && calc.Abs(diffY) <= 1 {
 						g.QueueMating(world, target)
