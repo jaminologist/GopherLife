@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"gopherlife/calc"
 	gopherlife "gopherlife/world"
 	"html/template"
 	"log"
@@ -89,9 +90,9 @@ func ajaxSelectGopher(world *gopherlife.World, renderer *gopherlife.Renderer) fu
 
 		r.ParseForm()
 
-		position := r.FormValue("position")
+		position := calc.StringToCoordinates(r.FormValue("position"))
 
-		if _, ok := world.SelectEntity(position); ok {
+		if _, ok := world.SelectEntity(position.GetX(), position.GetY()); ok {
 			w.Header().Set("Content-Type", "application/json")
 			jsonData, _ := json.Marshal(renderer.RenderWorld(world))
 			w.Write(jsonData)

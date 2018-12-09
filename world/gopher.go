@@ -203,7 +203,7 @@ func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck M
 
 		relativeCoords := g.Position.RelativeCoordinate(coordinates.X, coordinates.Y)
 
-		if mapPoint, ok := world.world[relativeCoords.MapKey()]; ok {
+		if mapPoint, ok := world.GetMapPoint(relativeCoords.GetX(), relativeCoords.GetY()); ok {
 			if mapPointCheck(mapPoint) {
 				coordsArray = append(coordsArray, relativeCoords)
 			}
@@ -222,7 +222,7 @@ func (g *Gopher) moveTowardsFood(world *World) {
 
 		target := g.FoodTargets[0]
 
-		mapPoint, _ := world.GetMapPoint(target.MapKey())
+		mapPoint, _ := world.GetMapPoint(target.GetX(), target.GetY())
 
 		if mapPoint.Food == nil {
 			g.ClearFoodTargets()
@@ -345,6 +345,7 @@ func (gopher *Gopher) QueuePickUpFood(world *World) {
 func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
 
 	world.AddFunctionToWorldInputActions(func() {
+
 		success := world.MoveGopher(gopher, x, y)
 		_ = success
 	})
@@ -355,7 +356,7 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 
 	world.AddFunctionToWorldInputActions(func() {
 
-		if mapPoint, ok := world.world[matePosition.MapKey()]; ok {
+		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok {
 
 			mate := mapPoint.Gopher
 
