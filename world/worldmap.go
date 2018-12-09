@@ -13,7 +13,7 @@ const numberOfFoods = 1000000
 const worldSize = 3000
 
 type World struct {
-	world map[string]*MapPoint
+	grid [][]*MapPoint
 
 	width  int
 	height int
@@ -52,13 +52,10 @@ func CreateWorldCustom(numberOfGophers int, numberOfFood2 int) World {
 
 	world.InputActionsArray = make([]chan func(), 0)
 
-	world.world = make(map[string]*MapPoint)
+	world.grid = make([][]*MapPoint, worldSize)
 
-	for x := 0; x < worldSize; x++ {
-		for y := 0; y < worldSize; y++ {
-			var point = MapPoint{}
-			world.world[calc.CoordinateMapKey(x, y)] = &point
-		}
+	for i := 0; i < worldSize; i++ {
+		world.grid[i] = make([]*MapPoint, worldSize)
 	}
 
 	world.SetUpMapPoints(numberOfGophers, numberOfFood2)
@@ -74,12 +71,16 @@ func CreateWorld() World {
 
 	world.InputActionsArray = make([]chan func(), 0)
 
-	world.world = make(map[string]*MapPoint)
+	world.grid = make([][]*MapPoint, worldSize)
 
-	for x := 0; x < worldSize; x++ {
-		for y := 0; y < worldSize; y++ {
-			var point = MapPoint{}
-			world.world[calc.CoordinateMapKey(x, y)] = &point
+	for i := 0; i < worldSize; i++ {
+		world.grid[i] = make([]*MapPoint, worldSize)
+
+		for j := 0; j < worldSize; j++ {
+			mp := MapPoint{}
+			mp.Gopher = nil
+			mp.Food = nil
+			world.grid[i][j] = &mp
 		}
 	}
 
@@ -88,11 +89,11 @@ func CreateWorld() World {
 
 }
 
-func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
+func (world *World) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	world.SelectedGopher = nil
 
-	if mapPoint, ok := world.world[mapKey]; ok {
+	if mapPoint, ok := world.GetMapPoint(x, y); ok {
 		if mapPoint.Gopher != nil {
 			world.SelectedGopher = mapPoint.Gopher
 			return mapPoint.Gopher, true
@@ -102,9 +103,13 @@ func (world *World) SelectEntity(mapKey string) (*Gopher, bool) {
 	return nil, true
 }
 
-func (world *World) GetMapPoint(mapKey string) (*MapPoint, bool) {
-	mapPoint, ok := world.world[mapKey]
-	return mapPoint, ok
+func (world *World) GetMapPoint(x int, y int) (*MapPoint, bool) {
+
+	if x < 0 || x >= worldSize || y < 0 || y >= worldSize {
+		return nil, false
+	}
+
+	return world.grid[x][y], true
 }
 
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
@@ -124,7 +129,7 @@ loop:
 
 func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, bool) {
 
-	if mapPoint, ok := world.world[position.MapKey()]; ok {
+	if mapPoint, ok := world.GetMapPoint(position.GetX(), position.GetY()); ok {
 		if mapPoint.Food != nil {
 
 			var food = mapPoint.Food
@@ -138,19 +143,20 @@ func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, 
 
 func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
 
-	currentMapPoint, exists := world.world[gopher.Position.MapKey()]
+	currentMapPoint, exists := world.GetMapPoint(gopher.Position.GetX(), gopher.Position.GetY())
 
 	if !exists {
 		return false
 	}
 
 	targetPosition := gopher.Position.RelativeCoordinate(x, y)
-	targetMapPoint, exists := world.world[targetPosition.MapKey()]
+	targetMapPoint, exists := world.GetMapPoint(targetPosition.GetX(), targetPosition.GetY())
 
 	if exists && targetMapPoint.Gopher == nil {
 
 		targetMapPoint.Gopher = gopher
 		currentMapPoint.Gopher = nil
+
 		gopher.Position = targetPosition
 
 		return true
@@ -169,12 +175,15 @@ func (world *World) UnSelectGopher() {
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
-	keys := make([]string, len(world.world))
+	keys := make([]calc.Coordinates, worldSize*worldSize)
 
-	i := 0
-	for k := range world.world {
-		keys[i] = k
-		i++
+	keycount := 0
+
+	for i := 0; i < worldSize; i++ {
+		for j := 0; j < worldSize; j++ {
+			keys[keycount] = calc.NewCoordinate(i, j)
+			keycount++
+		}
 	}
 
 	rand.Seed(1)
@@ -190,9 +199,11 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 	world.newGophersArray = []*Gopher{}
 
 	for i := 0; i < numberOfGophers; i++ {
-		var mapPoint = world.world[keys[count]]
 
-		var gopher = NewGopher(names.GetCuteName(), calc.StringToCoordinates(keys[count]))
+		pos := keys[count]
+
+		mapPoint, _ := world.GetMapPoint(pos.GetX(), pos.GetY())
+		var gopher = NewGopher(names.GetCuteName(), pos)
 
 		mapPoint.Gopher = &gopher
 
@@ -202,17 +213,15 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 		world.gopherArray[i] = &gopher
 		world.ActiveGophers <- &gopher
-		world.world[keys[count]] = mapPoint
 		count++
 	}
 
 	for i := 0; i < numberOfFood; i++ {
-		var mapPoint = world.world[keys[count]]
-
+		pos := keys[count]
+		mapPoint, _ := world.GetMapPoint(pos.GetX(), pos.GetY())
 		var food = food.NewPotato()
 
 		mapPoint.Food = &food
-		world.world[keys[count]] = mapPoint
 		count++
 	}
 
@@ -234,11 +243,11 @@ func (world *World) onFoodPickUp(location calc.Coordinates) {
 				location.GetX()+xrange[i]-size/2,
 				location.GetY()+yrange[j]-size/2)
 
-			if mapPoint, ok := world.world[newFoodLocation.MapKey()]; ok {
+			if mapPoint, ok := world.GetMapPoint(newFoodLocation.GetX(), newFoodLocation.GetY()); ok {
 
 				if mapPoint.Food == nil {
 					var food = food.NewPotato()
-					world.world[newFoodLocation.MapKey()].Food = &food
+					mapPoint.Food = &food
 
 					isDone = true
 					break
@@ -378,7 +387,7 @@ func (world *World) QueueRemoveGopher(gopher *Gopher) {
 
 	world.AddFunctionToWorldInputActions(func() {
 		//gopher = nil
-		if mapPoint, ok := world.world[gopher.Position.MapKey()]; ok {
+		if mapPoint, ok := world.GetMapPoint(gopher.Position.GetX(), gopher.Position.GetY()); ok {
 			mapPoint.Gopher = nil
 		}
 	})

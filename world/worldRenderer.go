@@ -60,8 +60,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 			key := calc.CoordinateMapKey(x, y)
 
-			if mapPoint, ok := world.world[key]; ok {
-
+			if mapPoint, ok := world.GetMapPoint(x, y); ok {
 				switch {
 				case mapPoint.isEmpty():
 					renderString += addSpanTagToRender(span{text: "/", class: "grass interactable"})
@@ -74,6 +73,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 					style := "color:#ffffff"
 
 					if world.SelectedGopher != nil {
+
 						//	isSelected = world.SelectedGopher.Position.MapKey() == key
 						class = "selected interactable"
 					}
