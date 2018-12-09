@@ -38,6 +38,7 @@ type World struct {
 
 	avgProcessingTime int
 
+	globalStopWatch  calc.StopWatch
 	inputStopWatch   calc.StopWatch
 	gopherStopWatch  calc.StopWatch
 	processStopWatch calc.StopWatch
@@ -284,6 +285,10 @@ func (world *World) ProcessWorld() bool {
 
 	if world.IsPaused {
 		return false
+	}
+
+	if !world.globalStopWatch.IsStarted() {
+		world.globalStopWatch.Start()
 	}
 
 	world.processStopWatch.Start()

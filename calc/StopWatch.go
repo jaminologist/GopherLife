@@ -3,7 +3,7 @@ package calc
 import "time"
 
 type StopWatch struct {
-	records []int64
+	records []time.Duration
 
 	startTime time.Time
 }
@@ -25,18 +25,34 @@ func (s *StopWatch) Stop() {
 		s.records = s.records[1:len(s.records)]
 	}
 
-	s.records = append(s.records, diff.Nanoseconds())
+	s.records = append(s.records, diff)
+}
+
+func (s *StopWatch) GetCurrentElaspedTime() time.Duration {
+	now := time.Now()
+	diff := now.Sub(s.startTime)
+	return diff
+}
+
+func (s *StopWatch) IsStarted() bool {
+	return s.startTime != time.Time{}
 }
 
 //GetAverage Returns the Average time of all records within the timer
-func (s *StopWatch) GetAverage() int64 {
+func (s *StopWatch) GetAverage() time.Duration {
 
-	var total int64
+	var total time.Duration
 
 	for i := 0; i < len(s.records); i++ {
 		total += s.records[i]
 	}
 
-	return total / int64(len(s.records))
+	var div = time.Duration(len(s.records))
+
+	if div == 0 {
+		div = 1
+	}
+
+	return total / div
 
 }
