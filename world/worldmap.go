@@ -19,9 +19,6 @@ type World struct {
 	height int
 
 	InputActions chan func()
-	OutputAction chan func()
-
-	InputActionsArray []chan func()
 
 	GopherWaitGroup sync.WaitGroup
 
@@ -48,9 +45,6 @@ func CreateWorldCustom(numberOfGophers int, numberOfFood2 int) World {
 
 	world := World{width: worldSize, height: worldSize}
 	world.InputActions = make(chan func(), 1000000)
-	world.OutputAction = make(chan func(), 50000)
-
-	world.InputActionsArray = make([]chan func(), 0)
 
 	world.grid = make([][]*MapPoint, worldSize)
 
@@ -67,9 +61,6 @@ func CreateWorld() World {
 
 	world := World{width: worldSize, height: worldSize}
 	world.InputActions = make(chan func(), 1000000)
-	world.OutputAction = make(chan func(), 50000)
-
-	world.InputActionsArray = make([]chan func(), 0)
 
 	world.grid = make([][]*MapPoint, worldSize)
 
