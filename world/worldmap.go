@@ -26,8 +26,7 @@ type World struct {
 
 	SelectedGopher *Gopher
 
-	gopherArray     []*Gopher
-	newGophersArray []*Gopher
+	gopherArray []*Gopher
 
 	Moments int
 
@@ -41,33 +40,17 @@ type World struct {
 	processStopWatch calc.StopWatch
 }
 
-func CreateWorldCustom(numberOfGophers int, numberOfFood2 int) World {
+func CreateWorldCustom(width int, height int, gophers int, food int) World {
 
-	world := World{width: worldSize, height: worldSize}
+	world := World{width: width, height: height}
 	world.InputActions = make(chan func(), 1000000)
 
 	world.grid = make([][]*MapPoint, worldSize)
 
-	for i := 0; i < worldSize; i++ {
-		world.grid[i] = make([]*MapPoint, worldSize)
-	}
+	for i := 0; i < width; i++ {
+		world.grid[i] = make([]*MapPoint, height)
 
-	world.SetUpMapPoints(numberOfGophers, numberOfFood2)
-	return world
-
-}
-
-func CreateWorld() World {
-
-	world := World{width: worldSize, height: worldSize}
-	world.InputActions = make(chan func(), 1000000)
-
-	world.grid = make([][]*MapPoint, worldSize)
-
-	for i := 0; i < worldSize; i++ {
-		world.grid[i] = make([]*MapPoint, worldSize)
-
-		for j := 0; j < worldSize; j++ {
+		for j := 0; j < height; j++ {
 			mp := MapPoint{}
 			mp.Gopher = nil
 			mp.Food = nil
@@ -75,9 +58,17 @@ func CreateWorld() World {
 		}
 	}
 
-	world.SetUpMapPoints(numberOfGophs, numberOfFoods)
+	world.ActiveGophers = make(chan *Gopher, gophers)
+	world.gopherArray = make([]*Gopher, gophers)
+
+	world.SetUpMapPoints(gophers, food)
 	return world
 
+}
+
+func CreateWorld() World {
+	world := CreateWorldCustom(worldSize, worldSize, numberOfGophs, numberOfFoods)
+	return world
 }
 
 func (world *World) SelectEntity(x int, y int) (*Gopher, bool) {
@@ -130,6 +121,18 @@ func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, 
 	}
 
 	return nil, false
+}
+
+func (world *World) InsertGopher(gopher *Gopher, x int, y int) bool {
+
+	if mp, ok := world.GetMapPoint(x, y); ok {
+		if !mp.HasGopher() {
+			mp.SetGopher(gopher)
+		}
+	}
+
+	return false
+
 }
 
 func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
@@ -185,18 +188,12 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 	count := 0
 
-	world.ActiveGophers = make(chan *Gopher, numberOfGophers)
-	world.gopherArray = make([]*Gopher, numberOfGophers)
-	world.newGophersArray = []*Gopher{}
-
 	for i := 0; i < numberOfGophers; i++ {
 
 		pos := keys[count]
-
-		mapPoint, _ := world.GetMapPoint(pos.GetX(), pos.GetY())
 		var gopher = NewGopher(names.GetCuteName(), pos)
 
-		mapPoint.Gopher = &gopher
+		world.InsertGopher(&gopher, pos.GetX(), pos.GetY())
 
 		if i == 0 {
 			world.SelectedGopher = &gopher
@@ -295,9 +292,7 @@ func (world *World) ProcessWorld() bool {
 	world.gopherStopWatch.Start()
 
 	numGophers := len(world.ActiveGophers)
-	//newBornGophers := len(world.newGophersArray)
 
-	//currentArray := world.gopherArray
 	world.gopherArray = make([]*Gopher, numGophers)
 
 	secondChannel := make(chan *Gopher, numGophers*2)
