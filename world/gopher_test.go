@@ -5,6 +5,14 @@ import (
 	"testing"
 )
 
+func TestMovingGophers(t *testing.T) {
+
+	world := CreateWorld()
+
+	world.MoveGopher(world.SelectedGopher, 1, 1)
+
+}
+
 func TestGender_Opposite(t *testing.T) {
 	tests := []struct {
 		name   string
