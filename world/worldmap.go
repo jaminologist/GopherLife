@@ -123,11 +123,13 @@ func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, 
 	return nil, false
 }
 
+//InsertGopher Inserts the given gopher into the world at the specified co-ordinate
 func (world *World) InsertGopher(gopher *Gopher, x int, y int) bool {
 
 	if mp, ok := world.GetMapPoint(x, y); ok {
 		if !mp.HasGopher() {
 			mp.SetGopher(gopher)
+			return true
 		}
 	}
 
