@@ -14,17 +14,17 @@ func (mp *MapPoint) isEmpty() bool {
 }
 
 func (mp *MapPoint) HasGopher() bool {
-	return mp.Gopher == nil
+	return mp.Gopher != nil
 }
 
 func (mp *MapPoint) HasFood() bool {
-	return mp.Food == nil
+	return mp.Food != nil
 }
 
 func (mp *MapPoint) SetGopher(g *Gopher) {
 	mp.Gopher = g
 }
 
-func (mp *MapPoint) SetFood(f *Food) {
+func (mp *MapPoint) SetFood(f *food.Food) {
 	mp.Food = f
 }
