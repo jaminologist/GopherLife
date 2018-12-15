@@ -221,35 +221,19 @@ func (world *World) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
 
-	xrange := rand.Perm(size)
-	yrange := rand.Perm(size)
+	xrange, yrange := rand.Perm(size), rand.Perm(size)
 
+loop:
 	for i := 0; i < size; i++ {
-
-		isDone := false
-
 		for j := 0; j < size; j++ {
-			newFoodLocation := calc.NewCoordinate(
-				location.GetX()+xrange[i]-size/2,
-				location.GetY()+yrange[j]-size/2)
-
-			if mapPoint, ok := world.GetMapPoint(newFoodLocation.GetX(), newFoodLocation.GetY()); ok {
-
-				if mapPoint.Food == nil {
+			newX, newY := location.GetX()+xrange[i]-size/2, location.GetY()+yrange[j]-size/2
+			if mapPoint, ok := world.GetMapPoint(newX, newY); ok {
+				if !mapPoint.HasFood() {
 					var food = food.NewPotato()
 					mapPoint.Food = &food
-
-					isDone = true
-					break
+					break loop
 				}
-
 			}
-
-		}
-
-		if isDone {
-			break
-
 		}
 	}
 
@@ -322,26 +306,6 @@ func (world *World) ProcessWorld() bool {
 	world.processStopWatch.Stop()
 
 	return true
-
-}
-
-func readingInputActionsUsingGoFunc(world *World) {
-
-	var mutex = &sync.Mutex{}
-
-	wait := true
-	for wait {
-		select {
-		case action := <-world.InputActions:
-			go func() {
-				mutex.Lock()
-				action()
-				mutex.Unlock()
-			}()
-		default:
-			wait = false
-		}
-	}
 
 }
 
