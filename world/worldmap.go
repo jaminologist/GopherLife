@@ -51,7 +51,7 @@ type Statistics struct {
 func CreateWorldCustom(width int, height int, numberOfGophers int, numberOfFood int) World {
 
 	world := World{width: width, height: height}
-	world.InputActions = make(chan func(), 1000000)
+	world.InputActions = make(chan func(), 2000000)
 
 	world.grid = make([][]*MapPoint, worldSize)
 

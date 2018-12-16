@@ -309,20 +309,14 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 
 	world.AddFunctionToWorldInputActions(func() {
 
-		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok {
+		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
 
 			mate := mapPoint.Gopher
-
-			if mate == nil {
-				return
-			}
-
 			litterNumber := rand.Intn(20)
 
 			emptySpaces := gopher.Find(world, 10, litterNumber, CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
-				//gopher.IsMated = true
 				mate.IsMated = true
 				mate.CounterTillReadyToFindLove = 0
 
