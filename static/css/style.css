@@ -22,7 +22,7 @@ div#worldDiv {
 .wrapper {
   display: grid;
   height: 100%;
-  grid-template-columns: 25% 50% 25%;
+  grid-template-columns: 15% 70% 15%;
   grid-template-rows: 100% 100% 100%;
 }
 

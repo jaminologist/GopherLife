@@ -93,3 +93,16 @@ func SortByNearestFromCoordinate(coords Coordinates, cs []Coordinates) {
 	})
 
 }
+
+func GenerateCoordinateArray(startX int, startY int, endX int, endY int) []Coordinates {
+
+	slice := make([]Coordinates, Abs(startX-endX)*Abs(startX-startY))
+
+	for i := startX; i < endX; i++ {
+		for j := startY; j < endY; j++ {
+			slice = append(slice, NewCoordinate(i, j))
+		}
+	}
+
+	return slice
+}
