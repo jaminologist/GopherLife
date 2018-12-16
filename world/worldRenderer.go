@@ -58,15 +58,14 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
 
-			key := calc.CoordinateMapKey(x, y)
-
 			if mapPoint, ok := world.GetMapPoint(x, y); ok {
+
 				switch {
 				case mapPoint.isEmpty():
 					renderString += addSpanTagToRender(span{text: "/", class: "grass interactable"})
 				case mapPoint.Gopher != nil:
 
-					//isSelected := false
+					isSelected := false
 
 					text := "G"
 					class := "gopher interactable"
@@ -74,7 +73,7 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 					if world.SelectedGopher != nil {
 
-						//	isSelected = world.SelectedGopher.Position.MapKey() == key
+						isSelected = world.SelectedGopher.Position.GetX() == x && world.SelectedGopher.Position.GetY() == y
 						class = "selected interactable"
 					}
 
@@ -84,19 +83,29 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 					switch mapPoint.Gopher.Gender {
 					case Male:
-						style = "color:#A9A9A9"
+
+						if isSelected {
+							style = "color:#f5f5f5"
+						} else {
+							style = "color:#A9A9A9"
+						}
 					case Female:
-						style = "color:#FF0080"
+
+						if isSelected {
+							style = "color:#ff9b9a"
+						} else {
+							style = "color:#FF0080"
+						}
 					}
 
 					if !mapPoint.Gopher.IsMature() {
 						text = strings.ToLower(text)
 					}
 
-					renderString += addSpanTagToRender(span{text: text, id: key, class: class, style: style})
+					renderString += addSpanTagToRender(span{text: text, id: calc.CoordinateMapKey(x, y), class: class, style: style})
 
 				case mapPoint.Food != nil:
-					renderString += addSpanTagToRender(span{text: "!", id: key, class: "food interactable"})
+					renderString += addSpanTagToRender(span{text: "!", class: "food interactable"})
 				}
 			} else {
 				renderString += "<span style='color:#89cff0'; >X</span>"
