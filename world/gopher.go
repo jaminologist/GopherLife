@@ -3,9 +3,7 @@ package world
 import (
 	"gopherlife/calc"
 	food "gopherlife/food"
-	"gopherlife/names"
 	"math/rand"
-	"time"
 )
 
 const hungerPerMoment = 5
@@ -155,10 +153,6 @@ func (g *Gopher) Eat() {
 	}
 }
 
-func (g *Gopher) Dig() {
-	time.Sleep(100)
-}
-
 func (gopher *Gopher) AdvanceLife() {
 
 	if !gopher.IsDead {
@@ -274,10 +268,8 @@ func (g *Gopher) PerformMoment(world *World) {
 				} else {
 					target := g.GopherTargets[0]
 
-					diffX, diffY := g.Position.Difference(target)
-
-					if calc.Abs(diffX) <= 1 && calc.Abs(diffY) <= 1 {
-						g.QueueMating(world, target)
+					if g.Position.IsInRange(target, 1, 1) {
+						world.QueueMating(g, target)
 						break
 					}
 					moveX, moveY := calc.FindNextStep(g.Position, target)
@@ -303,35 +295,4 @@ func (gopher *Gopher) Wander(world *World) {
 
 func (gopher *Gopher) ClearFoodTargets() {
 	gopher.FoodTargets = []calc.Coordinates{}
-}
-
-func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
-
-	world.AddFunctionToWorldInputActions(func() {
-
-		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
-
-			mate := mapPoint.Gopher
-			litterNumber := rand.Intn(20)
-
-			emptySpaces := gopher.Find(world, 10, litterNumber, CheckMapPointForEmptySpace)
-
-			if mate.Gender == Female && len(emptySpaces) > 0 {
-				mate.IsMated = true
-				mate.CounterTillReadyToFindLove = 0
-
-				for i := 0; i < litterNumber; i++ {
-
-					if i < len(emptySpaces) {
-						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
-						world.AddNewGopher(&newborn)
-					}
-
-				}
-
-			}
-
-		}
-	})
-
 }
