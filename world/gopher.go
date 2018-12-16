@@ -279,13 +279,11 @@ func (g *Gopher) PerformMoment(world *World) {
 
 					diffX, diffY := g.Position.Difference(target)
 
-					moveX, moveY := calc.FindNextStep(g.Position, target)
-
 					if calc.Abs(diffX) <= 1 && calc.Abs(diffY) <= 1 {
 						g.QueueMating(world, target)
 						break
 					}
-
+					moveX, moveY := calc.FindNextStep(g.Position, target)
 					g.QueueMovement(world, moveX, moveY)
 				}
 			} else {
@@ -316,12 +314,8 @@ func (gopher *Gopher) CheckMapPointForEmptySpace(mapPoint *MapPoint) bool {
 func (gopher *Gopher) Wander(world *World) {
 
 	world.AddFunctionToWorldInputActions(func() {
-
-		x := rand.Intn(3) - 1
-		y := rand.Intn(3) - 1
-
-		success := world.MoveGopher(gopher, x, y)
-		_ = success
+		x, y := rand.Intn(3)-1, rand.Intn(3)-1
+		world.MoveGopher(gopher, x, y)
 	})
 
 }

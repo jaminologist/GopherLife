@@ -85,6 +85,7 @@ func (world *World) SelectEntity(x int, y int) (*Gopher, bool) {
 	return nil, true
 }
 
+//GetMapPoint Gets the given MapPoint at position (x,y)
 func (world *World) GetMapPoint(x int, y int) (*MapPoint, bool) {
 
 	if x < 0 || x >= worldSize || y < 0 || y >= worldSize {
@@ -129,6 +130,20 @@ func (world *World) InsertGopher(gopher *Gopher, x int, y int) bool {
 	if mp, ok := world.GetMapPoint(x, y); ok {
 		if !mp.HasGopher() {
 			mp.SetGopher(gopher)
+			return true
+		}
+	}
+
+	return false
+
+}
+
+//InsertFood Inserts the given food into the world at the specified co-ordinate
+func (world *World) InsertFood(food *food.Food, x int, y int) bool {
+
+	if mp, ok := world.GetMapPoint(x, y); ok {
+		if !mp.HasFood() {
+			mp.SetFood(food)
 			return true
 		}
 	}
@@ -208,10 +223,8 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 	for i := 0; i < numberOfFood; i++ {
 		pos := keys[count]
-		mapPoint, _ := world.GetMapPoint(pos.GetX(), pos.GetY())
 		var food = food.NewPotato()
-
-		mapPoint.Food = &food
+		world.InsertFood(&food, pos.GetX(), pos.GetY())
 		count++
 	}
 
@@ -220,23 +233,18 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 func (world *World) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
-
 	xrange, yrange := rand.Perm(size), rand.Perm(size)
+	food := food.NewPotato()
 
 loop:
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
 			newX, newY := location.GetX()+xrange[i]-size/2, location.GetY()+yrange[j]-size/2
-			if mapPoint, ok := world.GetMapPoint(newX, newY); ok {
-				if !mapPoint.HasFood() {
-					var food = food.NewPotato()
-					mapPoint.Food = &food
-					break loop
-				}
+			if world.InsertFood(&food, newX, newY) {
+				break loop
 			}
 		}
 	}
-
 }
 
 func (world *World) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
