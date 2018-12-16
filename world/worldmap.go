@@ -12,6 +12,7 @@ const numberOfGophs = 5000
 const maximumNumberOfGophs = 100000
 const numberOfFoods = 1000000
 const worldSize = 3000
+const gopherBirthRate = 20
 
 type World struct {
 	grid [][]*MapPoint
@@ -320,6 +321,7 @@ func (world *World) AddNewGopher(gopher *Gopher) {
 
 }
 
+//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
 func (world *World) QueueRemoveGopher(gopher *Gopher) {
 
 	world.AddFunctionToWorldInputActions(func() {
@@ -330,6 +332,7 @@ func (world *World) QueueRemoveGopher(gopher *Gopher) {
 	})
 }
 
+//QueueGopherMove Adds the Move Gopher Method to the Input Queue.
 func (world *World) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 
 	world.AddFunctionToWorldInputActions(func() {
@@ -339,6 +342,8 @@ func (world *World) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 
 }
 
+//QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
+//held food variable
 func (world *World) QueuePickUpFood(gopher *Gopher) {
 
 	world.AddFunctionToWorldInputActions(func() {
@@ -347,6 +352,37 @@ func (world *World) QueuePickUpFood(gopher *Gopher) {
 			gopher.HeldFood = food
 			world.onFoodPickUp(gopher.Position)
 			gopher.ClearFoodTargets()
+		}
+	})
+
+}
+
+func (world *World) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
+
+	world.AddFunctionToWorldInputActions(func() {
+
+		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
+
+			mate := mapPoint.Gopher
+			litterNumber := rand.Intn(gopherBirthRate)
+
+			emptySpaces := gopher.Find(world, 10, litterNumber, CheckMapPointForEmptySpace)
+
+			if mate.Gender == Female && len(emptySpaces) > 0 {
+				mate.IsMated = true
+				mate.CounterTillReadyToFindLove = 0
+
+				for i := 0; i < litterNumber; i++ {
+
+					if i < len(emptySpaces) {
+						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
+						world.AddNewGopher(&newborn)
+					}
+
+				}
+
+			}
+
 		}
 	})
 
