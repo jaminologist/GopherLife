@@ -21,7 +21,7 @@ type World struct {
 
 	InputActions chan func()
 
-	GopherWaitGroup sync.WaitGroup
+	GopherWaitGroup *sync.WaitGroup
 
 	ActiveGophers chan *Gopher
 
@@ -41,7 +41,14 @@ type World struct {
 	processStopWatch calc.StopWatch
 }
 
-func CreateWorldCustom(width int, height int, gophers int, food int) World {
+type Statistics struct {
+	width           int
+	height          int
+	numberOfGophers int
+	numberOfFood    int
+}
+
+func CreateWorldCustom(width int, height int, numberOfGophers int, numberOfFood int) World {
 
 	world := World{width: width, height: height}
 	world.InputActions = make(chan func(), 1000000)
@@ -52,17 +59,18 @@ func CreateWorldCustom(width int, height int, gophers int, food int) World {
 		world.grid[i] = make([]*MapPoint, height)
 
 		for j := 0; j < height; j++ {
-			mp := MapPoint{}
-			mp.Gopher = nil
-			mp.Food = nil
+			mp := MapPoint{nil, nil}
 			world.grid[i][j] = &mp
 		}
 	}
 
-	world.ActiveGophers = make(chan *Gopher, gophers)
-	world.gopherArray = make([]*Gopher, gophers)
+	world.ActiveGophers = make(chan *Gopher, numberOfGophers)
+	world.gopherArray = make([]*Gopher, numberOfGophers)
 
-	world.SetUpMapPoints(gophers, food)
+	var wg sync.WaitGroup
+	world.GopherWaitGroup = &wg
+
+	world.SetUpMapPoints(numberOfGophers, numberOfFood)
 	return world
 
 }
@@ -96,19 +104,9 @@ func (world *World) GetMapPoint(x int, y int) (*MapPoint, bool) {
 	return world.grid[x][y], true
 }
 
+//AddFunctionToWorldInputActions is used to store functions that write data to the world.
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
-
-loop:
-	for {
-		select {
-		case world.InputActions <- inputFunction:
-			break loop
-		default:
-			//fmt.Println("Stuck here forever ", rand.Intn(100))
-		}
-
-	}
-
+	world.InputActions <- inputFunction
 }
 
 //InsertGopher Inserts the given gopher into the world at the specified co-ordinate
@@ -151,7 +149,8 @@ func (world *World) RemoveFoodFromWorld(x int, y int) (*food.Food, bool) {
 	return nil, false
 }
 
-func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
+//MoveGopher Handles the movement of a give gopher, Attempts to move a gopher by moveX and moveY.
+func (world *World) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
 	currentMapPoint, exists := world.GetMapPoint(gopher.Position.GetX(), gopher.Position.GetY())
 
@@ -159,7 +158,7 @@ func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
 		return false
 	}
 
-	targetPosition := gopher.Position.RelativeCoordinate(x, y)
+	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
 	targetMapPoint, exists := world.GetMapPoint(targetPosition.GetX(), targetPosition.GetY())
 
 	if exists && targetMapPoint.Gopher == nil {
@@ -272,7 +271,7 @@ func (world *World) ProcessWorld() bool {
 		gopher := <-world.ActiveGophers
 		world.gopherArray[i] = gopher
 		world.GopherWaitGroup.Add(1)
-		go world.PerformEntityAction(gopher, &world.GopherWaitGroup, secondChannel)
+		go world.PerformEntityAction(gopher, world.GopherWaitGroup, secondChannel)
 
 	}
 
@@ -336,6 +335,19 @@ func (world *World) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 	world.AddFunctionToWorldInputActions(func() {
 		success := world.MoveGopher(gopher, moveX, moveY)
 		_ = success
+	})
+
+}
+
+func (world *World) QueuePickUpFood(gopher *Gopher) {
+
+	world.AddFunctionToWorldInputActions(func() {
+		food, ok := world.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
+		if ok {
+			gopher.HeldFood = food
+			world.onFoodPickUp(gopher.Position)
+			gopher.ClearFoodTargets()
+		}
 	})
 
 }

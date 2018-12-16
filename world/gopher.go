@@ -226,11 +226,8 @@ func (g *Gopher) moveTowardsFood(world *World) {
 			g.ClearFoodTargets()
 		} else {
 
-			diffX, diffY := g.Position.Difference(target)
-
-			if calc.Abs(diffX) <= 0 && calc.Abs(diffY) <= 0 {
-				g.QueuePickUpFood(world)
-				g.ClearFoodTargets()
+			if g.Position.IsInRange(target, 0, 0) {
+				world.QueuePickUpFood(g)
 				return
 			}
 
@@ -306,18 +303,6 @@ func (gopher *Gopher) Wander(world *World) {
 
 func (gopher *Gopher) ClearFoodTargets() {
 	gopher.FoodTargets = []calc.Coordinates{}
-}
-
-func (gopher *Gopher) QueuePickUpFood(world *World) {
-
-	world.AddFunctionToWorldInputActions(func() {
-		food, ok := world.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
-		if ok {
-			gopher.HeldFood = food
-			world.onFoodPickUp(gopher.Position)
-		}
-	})
-
 }
 
 func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {

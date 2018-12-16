@@ -64,6 +64,12 @@ func (c *Coordinates) Difference(c2 Coordinates) (int, int) {
 	return diffX, diffY
 }
 
+//IsInRange Checks if one coordinate is in range of another co-ordinate, using minimum x and y distances
+func (c *Coordinates) IsInRange(c2 Coordinates, minX int, minY int) bool {
+	diffX, diffY := c.Difference(c2)
+	return Abs(diffX) <= minX && Abs(diffY) <= minY
+}
+
 //Equals checks the if two co-ordinates share the same x and y value
 func (c *Coordinates) Equals(c2 *Coordinates) bool {
 	return c.X == c2.X && c.Y == c2.Y

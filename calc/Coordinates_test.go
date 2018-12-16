@@ -54,3 +54,37 @@ func TestGenerateCoordinateArray(t *testing.T) {
 		})
 	}
 }
+
+func TestCoordinates_IsInRange(t *testing.T) {
+	type args struct {
+		c2   Coordinates
+		minX int
+		minY int
+	}
+	tests := []struct {
+		name string
+		c    Coordinates
+		args args
+		want bool
+	}{
+		{
+			"In range, size 1",
+			Coordinates{1, 1},
+			args{Coordinates{0, 0}, 1, 1},
+			true,
+		},
+		{
+			"Out of range, size 1",
+			Coordinates{2, 1},
+			args{Coordinates{0, 0}, 1, 1},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.c.IsInRange(tt.args.c2, tt.args.minX, tt.args.minY); got != tt.want {
+				t.Errorf("Coordinates.IsInRange() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
