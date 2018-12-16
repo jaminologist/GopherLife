@@ -111,20 +111,6 @@ loop:
 
 }
 
-func (world *World) RemoveFoodFromWorld(position calc.Coordinates) (*food.Food, bool) {
-
-	if mapPoint, ok := world.GetMapPoint(position.GetX(), position.GetY()); ok {
-		if mapPoint.Food != nil {
-
-			var food = mapPoint.Food
-			mapPoint.Food = nil
-			return food, true
-		}
-	}
-
-	return nil, false
-}
-
 //InsertGopher Inserts the given gopher into the world at the specified co-ordinate
 func (world *World) InsertGopher(gopher *Gopher, x int, y int) bool {
 
@@ -148,9 +134,21 @@ func (world *World) InsertFood(food *food.Food, x int, y int) bool {
 			return true
 		}
 	}
-
 	return false
+}
 
+//RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
+func (world *World) RemoveFoodFromWorld(x int, y int) (*food.Food, bool) {
+
+	if mapPoint, ok := world.GetMapPoint(x, y); ok {
+		if mapPoint.HasFood() {
+			var food = mapPoint.Food
+			mapPoint.ClearFood()
+			return food, true
+		}
+	}
+
+	return nil, false
 }
 
 func (world *World) MoveGopher(gopher *Gopher, x int, y int) bool {
@@ -331,4 +329,13 @@ func (world *World) QueueRemoveGopher(gopher *Gopher) {
 			mapPoint.Gopher = nil
 		}
 	})
+}
+
+func (world *World) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
+
+	world.AddFunctionToWorldInputActions(func() {
+		success := world.MoveGopher(gopher, moveX, moveY)
+		_ = success
+	})
+
 }

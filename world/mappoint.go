@@ -28,3 +28,11 @@ func (mp *MapPoint) SetGopher(g *Gopher) {
 func (mp *MapPoint) SetFood(f *food.Food) {
 	mp.Food = f
 }
+
+func (mp *MapPoint) ClearGopher() {
+	mp.Gopher = nil
+}
+
+func (mp *MapPoint) ClearFood() {
+	mp.Food = nil
+}

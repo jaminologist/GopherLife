@@ -181,8 +181,6 @@ func (gopher *Gopher) AdvanceLife() {
 
 }
 
-type MapPointCheck func(*MapPoint) bool
-
 func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck MapPointCheck) []calc.Coordinates {
 
 	var coordsArray = []calc.Coordinates{}
@@ -237,18 +235,27 @@ func (g *Gopher) moveTowardsFood(world *World) {
 			}
 
 			moveX, moveY := calc.FindNextStep(g.Position, target)
-			g.QueueMovement(world, moveX, moveY)
+			world.QueueGopherMove(g, moveX, moveY)
 
 		}
 
 	} else {
-		g.FoodTargets = g.Find(world, 25, 1, g.CheckMapPointForFood)
+		g.LookForFood(world)
 	}
 
 }
 
 func (g *Gopher) LookForFood(world *World) {
-	g.FoodTargets = g.Find(world, 15, 1, g.CheckMapPointForFood)
+	g.FoodTargets = g.Find(world, 25, 1, CheckMapPointForFood)
+}
+
+func (g *Gopher) handleHunger(world *World) {
+	switch {
+	case g.HeldFood != nil:
+		g.Eat()
+	default:
+		g.moveTowardsFood(world)
+	}
 }
 
 func (g *Gopher) PerformMoment(world *World) {
@@ -256,15 +263,8 @@ func (g *Gopher) PerformMoment(world *World) {
 	switch {
 	case g.IsDead:
 		g.Decay++
-
 	case g.IsHungry:
-
-		switch {
-		case g.HeldFood != nil:
-			g.Eat()
-		default:
-			g.moveTowardsFood(world)
-		}
+		g.handleHunger(world)
 	case !g.IsHungry:
 
 		switch {
@@ -284,7 +284,7 @@ func (g *Gopher) PerformMoment(world *World) {
 						break
 					}
 					moveX, moveY := calc.FindNextStep(g.Position, target)
-					g.QueueMovement(world, moveX, moveY)
+					world.QueueGopherMove(g, moveX, moveY)
 				}
 			} else {
 				g.Wander(world)
@@ -299,25 +299,9 @@ func (g *Gopher) PerformMoment(world *World) {
 	g.AdvanceLife()
 }
 
-func (gopher *Gopher) CheckMapPointForFood(mapPoint *MapPoint) bool {
-	return mapPoint.Food != nil && mapPoint.Gopher == nil
-}
-
-func (gopher *Gopher) CheckMapPointForPartner(mapPoint *MapPoint) bool {
-	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove() && gopher.Gender.Opposite() == mapPoint.Gopher.Gender
-}
-
-func (gopher *Gopher) CheckMapPointForEmptySpace(mapPoint *MapPoint) bool {
-	return mapPoint.Food == nil && mapPoint.Gopher == nil
-}
-
 func (gopher *Gopher) Wander(world *World) {
-
-	world.AddFunctionToWorldInputActions(func() {
-		x, y := rand.Intn(3)-1, rand.Intn(3)-1
-		world.MoveGopher(gopher, x, y)
-	})
-
+	x, y := rand.Intn(3)-1, rand.Intn(3)-1
+	world.QueueGopherMove(gopher, x, y)
 }
 
 func (gopher *Gopher) ClearFoodTargets() {
@@ -327,21 +311,11 @@ func (gopher *Gopher) ClearFoodTargets() {
 func (gopher *Gopher) QueuePickUpFood(world *World) {
 
 	world.AddFunctionToWorldInputActions(func() {
-		food, ok := world.RemoveFoodFromWorld(gopher.Position)
+		food, ok := world.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
 		if ok {
 			gopher.HeldFood = food
 			world.onFoodPickUp(gopher.Position)
 		}
-	})
-
-}
-
-func (gopher *Gopher) QueueMovement(world *World, x int, y int) {
-
-	world.AddFunctionToWorldInputActions(func() {
-
-		success := world.MoveGopher(gopher, x, y)
-		_ = success
 	})
 
 }
@@ -360,7 +334,7 @@ func (gopher *Gopher) QueueMating(world *World, matePosition calc.Coordinates) {
 
 			litterNumber := rand.Intn(20)
 
-			emptySpaces := gopher.Find(world, 10, litterNumber, gopher.CheckMapPointForEmptySpace)
+			emptySpaces := gopher.Find(world, 10, litterNumber, CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				//gopher.IsMated = true
