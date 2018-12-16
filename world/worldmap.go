@@ -9,6 +9,7 @@ import (
 )
 
 const numberOfGophs = 5000
+const maximumNumberOfGophs = 100000
 const numberOfFoods = 1000000
 const worldSize = 3000
 
@@ -186,18 +187,9 @@ func (world *World) UnSelectGopher() {
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
-	keys := make([]calc.Coordinates, worldSize*worldSize)
-
-	keycount := 0
-
-	for i := 0; i < worldSize; i++ {
-		for j := 0; j < worldSize; j++ {
-			keys[keycount] = calc.NewCoordinate(i, j)
-			keycount++
-		}
-	}
-
 	rand.Seed(1)
+
+	keys := calc.GenerateCoordinateArray(0, 0, worldSize, worldSize)
 
 	rand.Shuffle(len(keys), func(i, j int) {
 		keys[i], keys[j] = keys[j], keys[i]
@@ -252,24 +244,12 @@ func (world *World) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, chan
 	gopher.PerformMoment(world)
 
 	if !gopher.IsDecayed() {
-
-		wait := true
-
-		for wait {
-			select {
-			case channel <- gopher:
-				wait = false
-			default:
-				//	fmt.Println("Can't Write")
-			}
-		}
-
+		channel <- gopher
 	} else {
 		world.QueueRemoveGopher(gopher)
 	}
 
 	wg.Done()
-
 }
 
 func (world *World) ProcessWorld() bool {
