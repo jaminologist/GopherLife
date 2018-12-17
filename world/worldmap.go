@@ -16,22 +16,18 @@ const gopherBirthRate = 20
 type World struct {
 	grid [][]*MapPoint
 
-	width  int
-	height int
+	width           int
+	height          int
+	numberOfGophers int
 
-	InputActions chan func()
-
-	GopherWaitGroup *sync.WaitGroup
-
+	actionQueue   chan func()
 	ActiveGophers chan *Gopher
 
-	SelectedGopher *Gopher
-
-	gopherArray []*Gopher
-
-	Moments int
-
-	IsPaused bool
+	GopherWaitGroup *sync.WaitGroup
+	SelectedGopher  *Gopher
+	gopherArray     []*Gopher
+	Moments         int
+	IsPaused        bool
 
 	globalStopWatch  calc.StopWatch
 	inputStopWatch   calc.StopWatch
@@ -40,16 +36,25 @@ type World struct {
 }
 
 type Statistics struct {
-	width           int
-	height          int
-	numberOfGophers int
-	numberOfFood    int
+	width                int
+	height               int
+	numberOfGophers      int
+	maximumNumberOfGophs int
+	gopherBirthRate      int
+	numberOfFood         int
+}
+
+type Diagnostics struct {
+	globalStopWatch  calc.StopWatch
+	inputStopWatch   calc.StopWatch
+	gopherStopWatch  calc.StopWatch
+	processStopWatch calc.StopWatch
 }
 
 func CreateWorldCustom(width int, height int, numberOfGophers int, numberOfFood int) World {
 
 	world := World{width: width, height: height}
-	world.InputActions = make(chan func(), 2000000)
+	world.actionQueue = make(chan func(), maximumNumberOfGophs*2)
 
 	world.grid = make([][]*MapPoint, worldSize)
 
@@ -78,6 +83,8 @@ func CreateWorld() World {
 	return world
 }
 
+//SelectEntity Uses the given co-ordinates to select and return a gopher in the world
+//If there is not a gopher at the give coordinates this function returns zero.
 func (world *World) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	world.SelectedGopher = nil
@@ -104,7 +111,7 @@ func (world *World) GetMapPoint(x int, y int) (*MapPoint, bool) {
 
 //AddFunctionToWorldInputActions is used to store functions that write data to the world.
 func (world *World) AddFunctionToWorldInputActions(inputFunction func()) {
-	world.InputActions <- inputFunction
+	world.actionQueue <- inputFunction
 }
 
 //InsertGopher Inserts the given gopher into the world at the specified co-ordinate
@@ -182,13 +189,7 @@ func (world *World) UnSelectGopher() {
 
 func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
-	rand.Seed(1)
-
-	keys := calc.GenerateCoordinateArray(0, 0, worldSize, worldSize)
-
-	rand.Shuffle(len(keys), func(i, j int) {
-		keys[i], keys[j] = keys[j], keys[i]
-	})
+	keys := calc.GenerateRandomizedCoordinateArray(0, 0, worldSize, worldSize)
 
 	count := 0
 
@@ -258,10 +259,24 @@ func (world *World) ProcessWorld() bool {
 	}
 
 	world.processStopWatch.Start()
+	world.processGophers()
+	world.processQueuedTasks()
+
+	if world.numberOfGophers > 0 {
+		world.Moments++
+	}
+
+	world.processStopWatch.Stop()
+
+	return true
+
+}
+
+func (world *World) processGophers() {
+
 	world.gopherStopWatch.Start()
 
 	numGophers := len(world.ActiveGophers)
-
 	world.gopherArray = make([]*Gopher, numGophers)
 
 	secondChannel := make(chan *Gopher, numGophers*2)
@@ -272,50 +287,32 @@ func (world *World) ProcessWorld() bool {
 		go world.PerformEntityAction(gopher, world.GopherWaitGroup, secondChannel)
 
 	}
-
 	world.ActiveGophers = secondChannel
-
 	world.GopherWaitGroup.Wait()
+
 	world.gopherStopWatch.Stop()
-
-	world.inputStopWatch.Start()
-	readingInputActionsUsingJustChannel(world)
-	world.inputStopWatch.Stop()
-
-	if numGophers > 0 {
-		world.Moments++
-	}
-
-	world.processStopWatch.Stop()
-
-	return true
-
 }
 
-func readingInputActionsUsingJustChannel(world *World) {
+func (world *World) processQueuedTasks() {
+
+	world.inputStopWatch.Start()
 
 	wait := true
 	for wait {
 		select {
-		case action := <-world.InputActions:
+		case action := <-world.actionQueue:
 			action()
 		default:
 			wait = false
 		}
 	}
 
+	world.inputStopWatch.Stop()
 }
 
+//TogglePause Toggles the pause
 func (world *World) TogglePause() {
 	world.IsPaused = !world.IsPaused
-}
-
-func (world *World) AddNewGopher(gopher *Gopher) {
-
-	world.AddFunctionToWorldInputActions(func() {
-		world.ActiveGophers <- gopher
-	})
-
 }
 
 //QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
@@ -372,8 +369,14 @@ func (world *World) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 				for i := 0; i < litterNumber; i++ {
 
 					if i < len(emptySpaces) {
+						pos := emptySpaces[i]
 						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
-						world.AddNewGopher(&newborn)
+
+						if len(world.gopherArray) <= maximumNumberOfGophs {
+							if world.InsertGopher(&newborn, pos.GetX(), pos.GetY()) {
+								world.ActiveGophers <- &newborn
+							}
+						}
 					}
 
 				}
