@@ -1,4 +1,4 @@
-package food
+package world
 
 type Food struct {
 	Name   string

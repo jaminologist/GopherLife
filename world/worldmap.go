@@ -2,7 +2,6 @@ package world
 
 import (
 	"gopherlife/calc"
-	"gopherlife/food"
 	"gopherlife/names"
 	"math/rand"
 	"sync"
@@ -33,8 +32,6 @@ type World struct {
 	Moments int
 
 	IsPaused bool
-
-	avgProcessingTime int
 
 	globalStopWatch  calc.StopWatch
 	inputStopWatch   calc.StopWatch
@@ -125,7 +122,7 @@ func (world *World) InsertGopher(gopher *Gopher, x int, y int) bool {
 }
 
 //InsertFood Inserts the given food into the world at the specified co-ordinate
-func (world *World) InsertFood(food *food.Food, x int, y int) bool {
+func (world *World) InsertFood(food *Food, x int, y int) bool {
 
 	if mp, ok := world.GetMapPoint(x, y); ok {
 		if !mp.HasFood() {
@@ -137,7 +134,7 @@ func (world *World) InsertFood(food *food.Food, x int, y int) bool {
 }
 
 //RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
-func (world *World) RemoveFoodFromWorld(x int, y int) (*food.Food, bool) {
+func (world *World) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
 
 	if mapPoint, ok := world.GetMapPoint(x, y); ok {
 		if mapPoint.HasFood() {
@@ -213,7 +210,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 
 	for i := 0; i < numberOfFood; i++ {
 		pos := keys[count]
-		var food = food.NewPotato()
+		var food = NewPotato()
 		world.InsertFood(&food, pos.GetX(), pos.GetY())
 		count++
 	}
@@ -224,7 +221,7 @@ func (world *World) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
 	xrange, yrange := rand.Perm(size), rand.Perm(size)
-	food := food.NewPotato()
+	food := NewPotato()
 
 loop:
 	for i := 0; i < size; i++ {
