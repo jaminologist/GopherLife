@@ -2,6 +2,7 @@ package calc
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strconv"
 	s "strings"
@@ -109,6 +110,17 @@ func GenerateCoordinateArray(startX int, startY int, endX int, endY int) []Coord
 			slice = append(slice, NewCoordinate(i, j))
 		}
 	}
+
+	return slice
+}
+
+func GenerateRandomizedCoordinateArray(startX int, startY int, endX int, endY int) []Coordinates {
+
+	slice := GenerateCoordinateArray(0, 0, endX, endY)
+
+	rand.Shuffle(len(slice), func(i, j int) {
+		slice[i], slice[j] = slice[j], slice[i]
+	})
 
 	return slice
 }
