@@ -2,7 +2,6 @@ package world
 
 import (
 	"gopherlife/calc"
-	food "gopherlife/food"
 	"math/rand"
 )
 
@@ -31,7 +30,7 @@ type Gopher struct {
 
 	Position calc.Coordinates
 
-	HeldFood *food.Food
+	HeldFood *Food
 
 	FoodTargets []calc.Coordinates
 
@@ -189,9 +188,9 @@ func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck M
 			break
 		}
 
-		if coordinates.X == 0 && coordinates.Y == 0 {
+		/*if coordinates.X == 0 && coordinates.Y == 0 {
 			continue
-		}
+		}*/
 
 		relativeCoords := g.Position.RelativeCoordinate(coordinates.X, coordinates.Y)
 

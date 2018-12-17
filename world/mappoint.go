@@ -1,12 +1,8 @@
 package world
 
-import (
-	"gopherlife/food"
-)
-
 type MapPoint struct {
 	Gopher *Gopher
-	Food   *food.Food
+	Food   *Food
 }
 
 func (mp *MapPoint) isEmpty() bool {
@@ -25,7 +21,7 @@ func (mp *MapPoint) SetGopher(g *Gopher) {
 	mp.Gopher = g
 }
 
-func (mp *MapPoint) SetFood(f *food.Food) {
+func (mp *MapPoint) SetFood(f *Food) {
 	mp.Food = f
 }
 

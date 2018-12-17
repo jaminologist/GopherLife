@@ -21,6 +21,8 @@ type Spiral struct {
 	maxI int
 }
 
+//NewSpiral Creates a new spiral that can be used to step through coordinates of the
+//the given width and height
 func NewSpiral(width int, height int) Spiral {
 
 	return Spiral{
@@ -38,9 +40,10 @@ func NewSpiral(width int, height int) Spiral {
 
 }
 
+//Next Gets the next step in the spiral path. If there is no next step, returns false
 func (s *Spiral) Next() (Coordinates, bool) {
 
-	var coords = Coordinates{-1, -1}
+	var coords = Coordinates{}
 	var foundCoords = false
 
 	for s.i < s.maxI {
