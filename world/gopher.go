@@ -39,57 +39,26 @@ type Gopher struct {
 	MovementPath []calc.Coordinates
 }
 
-const (
-	Male   Gender = 0
-	Female Gender = 1
-)
-
-func (gender Gender) String() string {
-
-	names := [...]string{
-		"Male",
-		"Female"}
-
-	if gender < Male || gender > Female {
-		return "Unknown"
-	}
-
-	return names[gender]
-}
-
-func (gender Gender) Opposite() Gender {
-
-	switch gender {
-	case Male:
-		return Female
-	case Female:
-		return Male
-	default:
-		return Male
-	}
-}
-
-var genders = [2]Gender{Male, Female}
-
+//NewGopher Creates a new Gopher and the given co-ordinate
 func NewGopher(Name string, coord calc.Coordinates) Gopher {
-
-	i := rand.Intn(len(genders))
 
 	return Gopher{
 		Name:     Name,
 		Lifespan: 0,
 		Hunger:   rand.Intn(100) + 50,
 		Position: coord,
-		Gender:   genders[i],
+		Gender:   GetRandomGender(),
 	}
 }
 
-func (g *Gopher) SetName(Name string) {
-	g.Name = Name
+//SetName Sets the name of the gopher
+func (gopher *Gopher) SetName(Name string) {
+	gopher.Name = Name
 }
 
-func (g *Gopher) IsMature() bool {
-	return g.Lifespan >= 50
+//IsMature Checks if the gopher is no longer a child
+func (gopher *Gopher) IsMature() bool {
+	return gopher.Lifespan >= 50
 }
 
 func (gopher *Gopher) SetIsDead() {
@@ -141,10 +110,6 @@ func (g *Gopher) ApplyHunger() {
 	g.Hunger -= hungerPerMoment
 }
 
-func (g *Gopher) Move(x int, y int) {
-	g.Position.Add(x, y)
-}
-
 func (g *Gopher) Eat() {
 	if g.HeldFood != nil {
 		g.Hunger += g.HeldFood.Energy
@@ -171,39 +136,6 @@ func (gopher *Gopher) AdvanceLife() {
 		gopher.SetIsHungry()
 
 	}
-
-}
-
-func (g *Gopher) Find(world *World, radius int, maximumFind int, mapPointCheck MapPointCheck) []calc.Coordinates {
-
-	var coordsArray = []calc.Coordinates{}
-
-	spiral := calc.NewSpiral(radius, radius)
-
-	for {
-
-		coordinates, hasNext := spiral.Next()
-
-		if hasNext == false || len(coordsArray) > maximumFind {
-			break
-		}
-
-		/*if coordinates.X == 0 && coordinates.Y == 0 {
-			continue
-		}*/
-
-		relativeCoords := g.Position.RelativeCoordinate(coordinates.X, coordinates.Y)
-
-		if mapPoint, ok := world.GetMapPoint(relativeCoords.GetX(), relativeCoords.GetY()); ok {
-			if mapPointCheck(mapPoint) {
-				coordsArray = append(coordsArray, relativeCoords)
-			}
-		}
-	}
-
-	calc.SortByNearestFromCoordinate(g.Position, coordsArray)
-
-	return coordsArray
 
 }
 
@@ -236,7 +168,7 @@ func (g *Gopher) moveTowardsFood(world *World) {
 }
 
 func (g *Gopher) LookForFood(world *World) {
-	g.FoodTargets = g.Find(world, 25, 1, CheckMapPointForFood)
+	g.FoodTargets = Find(world, g.Position, 25, 1, CheckMapPointForFood)
 }
 
 func (g *Gopher) handleHunger(world *World) {
@@ -261,7 +193,7 @@ func (g *Gopher) PerformMoment(world *World) {
 		case g.Gender == Male:
 
 			if g.IsLookingForLove() {
-				g.GopherTargets = g.Find(world, 15, 1, g.CheckMapPointForPartner)
+				g.GopherTargets = Find(world, g.Position, 15, 1, g.CheckMapPointForPartner)
 				if len(g.GopherTargets) <= 0 {
 					g.Wander(world)
 				} else {
@@ -287,6 +219,7 @@ func (g *Gopher) PerformMoment(world *World) {
 	g.AdvanceLife()
 }
 
+//Wander Randomly decides a
 func (gopher *Gopher) Wander(world *World) {
 	x, y := rand.Intn(3)-1, rand.Intn(3)-1
 	world.QueueGopherMove(gopher, x, y)

@@ -1,6 +1,8 @@
 package world
 
-type MapPointCheck func(*MapPoint) bool
+import "gopherlife/calc"
+
+type MapPointQuery func(*MapPoint) bool
 
 //CheckMapPointForFood Checks if the Tile contains food and also does not have a gopher ontop of it
 func CheckMapPointForFood(mapPoint *MapPoint) bool {
@@ -15,4 +17,37 @@ func CheckMapPointForEmptySpace(mapPoint *MapPoint) bool {
 //CheckMapPointForPartner Checks if the Tile contains a sutible partner for the querying gopher
 func (gopher *Gopher) CheckMapPointForPartner(mapPoint *MapPoint) bool {
 	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove() && gopher.Gender.Opposite() == mapPoint.Gopher.Gender
+}
+
+func Find(world *World, startPosition calc.Coordinates, radius int, maximumFind int, mapPointCheck MapPointQuery) []calc.Coordinates {
+
+	var coordsArray = []calc.Coordinates{}
+
+	spiral := calc.NewSpiral(radius, radius)
+
+	for {
+
+		coordinates, hasNext := spiral.Next()
+
+		if hasNext == false || len(coordsArray) > maximumFind {
+			break
+		}
+
+		/*if coordinates.X == 0 && coordinates.Y == 0 {
+			continue
+		}*/
+
+		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
+
+		if mapPoint, ok := world.GetMapPoint(relativeCoords.GetX(), relativeCoords.GetY()); ok {
+			if mapPointCheck(mapPoint) {
+				coordsArray = append(coordsArray, relativeCoords)
+			}
+		}
+	}
+
+	calc.SortByNearestFromCoordinate(startPosition, coordsArray)
+
+	return coordsArray
+
 }

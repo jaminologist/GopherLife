@@ -360,7 +360,7 @@ func (world *World) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(gopherBirthRate)
 
-			emptySpaces := gopher.Find(world, 10, litterNumber, CheckMapPointForEmptySpace)
+			emptySpaces := Find(world, gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
