@@ -7,18 +7,8 @@ import (
 	"sync"
 )
 
-const numberOfGophs = 5000
-const maximumNumberOfGophs = 100000
-const numberOfFoods = 1000000
-const worldSize = 3000
-const gopherBirthRate = 20
-
 type World struct {
 	grid [][]*MapPoint
-
-	width           int
-	height          int
-	numberOfGophers int
 
 	actionQueue   chan func()
 	ActiveGophers chan *Gopher
@@ -29,6 +19,8 @@ type World struct {
 	Moments         int
 	IsPaused        bool
 
+	Statistics Statistics
+
 	globalStopWatch  calc.StopWatch
 	inputStopWatch   calc.StopWatch
 	gopherStopWatch  calc.StopWatch
@@ -36,12 +28,12 @@ type World struct {
 }
 
 type Statistics struct {
-	width                int
-	height               int
-	numberOfGophers      int
-	maximumNumberOfGophs int
-	gopherBirthRate      int
-	numberOfFood         int
+	Width                  int
+	Height                 int
+	NumberOfGophers        int
+	MaximumNumberOfGophers int
+	GopherBirthRate        int
+	NumberOfFood           int
 }
 
 type Diagnostics struct {
@@ -51,35 +43,45 @@ type Diagnostics struct {
 	processStopWatch calc.StopWatch
 }
 
-func CreateWorldCustom(width int, height int, numberOfGophers int, numberOfFood int) World {
+func CreateWorldCustom(statistics Statistics) World {
 
-	world := World{width: width, height: height}
-	world.actionQueue = make(chan func(), maximumNumberOfGophs*2)
+	world := World{}
+	world.Statistics = statistics
+	world.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
 
-	world.grid = make([][]*MapPoint, worldSize)
+	world.grid = make([][]*MapPoint, statistics.Width)
 
-	for i := 0; i < width; i++ {
-		world.grid[i] = make([]*MapPoint, height)
+	for i := 0; i < statistics.Width; i++ {
+		world.grid[i] = make([]*MapPoint, statistics.Height)
 
-		for j := 0; j < height; j++ {
+		for j := 0; j < statistics.Height; j++ {
 			mp := MapPoint{nil, nil}
 			world.grid[i][j] = &mp
 		}
 	}
 
-	world.ActiveGophers = make(chan *Gopher, numberOfGophers)
-	world.gopherArray = make([]*Gopher, numberOfGophers)
+	world.ActiveGophers = make(chan *Gopher, statistics.NumberOfGophers)
+	world.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
 
 	var wg sync.WaitGroup
 	world.GopherWaitGroup = &wg
 
-	world.SetUpMapPoints(numberOfGophers, numberOfFood)
+	world.SetUpMapPoints()
 	return world
 
 }
 
 func CreateWorld() World {
-	world := CreateWorldCustom(worldSize, worldSize, numberOfGophs, numberOfFoods)
+	world := CreateWorldCustom(
+		Statistics{
+			Width:                  3000,
+			Height:                 3000,
+			NumberOfGophers:        5000,
+			NumberOfFood:           1000000,
+			MaximumNumberOfGophers: 100000,
+			GopherBirthRate:        7,
+		},
+	)
 	return world
 }
 
@@ -102,7 +104,7 @@ func (world *World) SelectEntity(x int, y int) (*Gopher, bool) {
 //GetMapPoint Gets the given MapPoint at position (x,y)
 func (world *World) GetMapPoint(x int, y int) (*MapPoint, bool) {
 
-	if x < 0 || x >= worldSize || y < 0 || y >= worldSize {
+	if x < 0 || x >= world.Statistics.Width || y < 0 || y >= world.Statistics.Height {
 		return nil, false
 	}
 
@@ -187,13 +189,14 @@ func (world *World) UnSelectGopher() {
 	world.SelectedGopher = nil
 }
 
-func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
+func (world *World) SetUpMapPoints() {
 
-	keys := calc.GenerateRandomizedCoordinateArray(0, 0, worldSize, worldSize)
+	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
+		world.Statistics.Width, world.Statistics.Height)
 
 	count := 0
 
-	for i := 0; i < numberOfGophers; i++ {
+	for i := 0; i < world.Statistics.NumberOfGophers; i++ {
 
 		pos := keys[count]
 		var gopher = NewGopher(names.GetCuteName(), pos)
@@ -209,7 +212,7 @@ func (world *World) SetUpMapPoints(numberOfGophers int, numberOfFood int) {
 		count++
 	}
 
-	for i := 0; i < numberOfFood; i++ {
+	for i := 0; i < world.Statistics.NumberOfFood; i++ {
 		pos := keys[count]
 		var food = NewPotato()
 		world.InsertFood(&food, pos.GetX(), pos.GetY())
@@ -254,6 +257,10 @@ func (world *World) ProcessWorld() bool {
 		return false
 	}
 
+	if world.SelectedGopher != nil && world.SelectedGopher.IsDecayed() {
+		world.SelectRandomGopher()
+	}
+
 	if !world.globalStopWatch.IsStarted() {
 		world.globalStopWatch.Start()
 	}
@@ -262,7 +269,7 @@ func (world *World) ProcessWorld() bool {
 	world.processGophers()
 	world.processQueuedTasks()
 
-	if world.numberOfGophers > 0 {
+	if world.Statistics.NumberOfGophers > 0 {
 		world.Moments++
 	}
 
@@ -358,7 +365,7 @@ func (world *World) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 		if mapPoint, ok := world.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
 
 			mate := mapPoint.Gopher
-			litterNumber := rand.Intn(gopherBirthRate)
+			litterNumber := rand.Intn(world.Statistics.GopherBirthRate)
 
 			emptySpaces := Find(world, gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
 
@@ -372,7 +379,7 @@ func (world *World) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 						pos := emptySpaces[i]
 						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
 
-						if len(world.gopherArray) <= maximumNumberOfGophs {
+						if len(world.gopherArray) <= world.Statistics.MaximumNumberOfGophers {
 							if world.InsertGopher(&newborn, pos.GetX(), pos.GetY()) {
 								world.ActiveGophers <- &newborn
 							}

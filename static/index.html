@@ -10,37 +10,53 @@
 <body>
 
   <div class="text-center">
-    <h1>Gopherlife</h1>
+    <h1>G O P H E R L I F E</h1>
   </div>
 
   <div class="wrapper">
     <div class="item-a">
-      <div id="worldDiv"></div>
+        <canvas id="worldCanvas" tabindex="2"></canvas>
+        <div id="worldDiv"></div>
+      <!--<div id="worldDiv"></div>-->
     </div>
+    <br />
     <div class="item-b">
       <div class="gopher-wrapper">
-          <img class="gopher-image" src="static/images/gopher.png" alt="Image of a gopher"> 
+
+        <img class="gopher-image" src="static/images/gopher.png" alt="Image of a gopher"> 
           
-          <table>
-
-            <tr>
-                <th><h3>Name</h3></th>
-                <th><h3>Position</h3></th>
-                <th><h3>Hunger</h3></th>
-                <th><h3>Lifespan</h3></th>
-            </tr>
-
-            
-            <tr>
-                <td><h4 id="gopher-name" class="text-center"></h4></td>
-                <td><h4 id="gopher-position" class="text-center"></h4></td>
-                <td><h4 id="gopher-hunger" class="text-center"></h4></td>
-                <td><h4 id="gopher-lifespan" class="text-center"></h4></td>
-            </tr>
-            
-          </table>
+        <table>
+  
+          <tr>
+              <th><h3>Name</h3></th>
+              <th><h3>Position</h3></th>
+              <th><h3>Hunger</h3></th>
+              <th><h3>Lifespan</h3></th>
+          </tr>
+                
+          <tr>
+              <td><h4 id="gopher-name" class="text-center"></h4></td>
+              <td><h4 id="gopher-position" class="text-center"></h4></td>
+              <td><h4 id="gopher-hunger" class="text-center"></h4></td>
+              <td><h4 id="gopher-lifespan" class="text-center"></h4></td>
+          </tr>
+          
+        </table>
+  
       </div>
+      <form id="reset" action="/ResetWorld" method="post">
+        Width:<input type="number" name="width" value = "3000">
+        Height:<input type="number" name="height" value = "3000"> <br />
+        Starting Number Of Gophers:<input type="number" name="numberOfGophers" value = "5000">
+        Number Of Food:<input type="number" name="numberOfFood" value = "1000000"> <br/>
+        Birth rate: <input type="number" name="birthRate" value = "7"> <br />
+        Max Population: <input type="number" name="maxPopulation" value = "100000"> <br />
+        <input type="submit" value="Reset">
+      </form>
     </div>
+
+
+
   </div>
 </body>
 </html>
