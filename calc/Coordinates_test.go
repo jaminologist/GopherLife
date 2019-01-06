@@ -106,3 +106,10 @@ func TestSortByNearestFromCoordinate(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMapKey(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		CoordinateMapKey(1, 2)
+	}
+}
