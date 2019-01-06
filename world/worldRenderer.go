@@ -2,8 +2,6 @@ package world
 
 import (
 	"fmt"
-	"gopherlife/calc"
-	"strings"
 )
 
 type Renderer struct {
@@ -17,8 +15,14 @@ type Renderer struct {
 }
 
 type Render struct {
+	Grid [][]*Tile
+
 	WorldRender    string
 	SelectedGopher *Gopher
+}
+
+type Tile struct {
+	Color string
 }
 
 type span struct {
@@ -28,9 +32,16 @@ type span struct {
 	style string
 }
 
+var maleGopherColor = "#5adaff"
+var maleGopherSelectedColor = "#f5f5f5"
+var femaleGopherColor = "#FFFF00"
+var femaleGopherSelectedColor = "#ff9b9a"
+var foodColor = "#cc7000"
+var decayedGopherColor = "#000000"
+
 //NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer() Renderer {
-	return Renderer{RenderSizeX: 45, RenderSizeY: 15}
+	return Renderer{RenderSizeX: 250, RenderSizeY: 200}
 }
 
 func addSpanTagToRender(span span) string {
@@ -40,6 +51,18 @@ func addSpanTagToRender(span span) string {
 func (renderer *Renderer) RenderWorld(world *World) Render {
 
 	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
+
+	render.Grid = make([][]*Tile, renderer.RenderSizeX)
+
+	for i := 0; i < renderer.RenderSizeX; i++ {
+		render.Grid[i] = make([]*Tile, renderer.RenderSizeY)
+
+		for j := 0; j < renderer.RenderSizeY; j++ {
+			tile := Tile{Color: "Hello"}
+			render.Grid[i][j] = &tile
+		}
+	}
+
 	renderString := ""
 
 	startX := 0
@@ -58,75 +81,58 @@ func (renderer *Renderer) RenderWorld(world *World) Render {
 
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
 
+			tile := render.Grid[x-startX][y-startY]
+			tile.Color = "#41770f"
+
 			if mapPoint, ok := world.GetMapPoint(x, y); ok {
 
 				switch {
 				case mapPoint.isEmpty():
-					renderString += addSpanTagToRender(span{text: "/", class: "grass interactable"})
+					tile.Color = "#41770f"
 				case mapPoint.Gopher != nil:
-
 					isSelected := false
-
-					text := "G"
-					class := "gopher interactable"
-					style := "color:#ffffff"
-
 					if world.SelectedGopher != nil {
-
 						isSelected = world.SelectedGopher.Position.GetX() == x && world.SelectedGopher.Position.GetY() == y
-						class = "selected interactable"
-					}
-
-					if mapPoint.Gopher.IsDead {
-						text = "X"
 					}
 
 					switch mapPoint.Gopher.Gender {
 					case Male:
 
 						if isSelected {
-							style = "color:#f5f5f5"
+							tile.Color = maleGopherSelectedColor
 						} else {
-							style = "color:#A9A9A9"
+							tile.Color = maleGopherColor
 						}
 					case Female:
-
 						if isSelected {
-							style = "color:#ff9b9a"
+							tile.Color = femaleGopherSelectedColor
 						} else {
-							style = "color:#FF0080"
+							tile.Color = femaleGopherColor
 						}
+					}
+
+					if mapPoint.Gopher.IsDead {
+						tile.Color = decayedGopherColor
 					}
 
 					if !mapPoint.Gopher.IsMature() {
-						text = strings.ToLower(text)
+						//text = strings.ToLower(text)
 					}
-
-					renderString += addSpanTagToRender(span{text: text, id: calc.CoordinateMapKey(x, y), class: class, style: style})
-
 				case mapPoint.Food != nil:
-					renderString += addSpanTagToRender(span{text: "!", class: "food interactable"})
+					tile.Color = foodColor
 				}
 			} else {
-				renderString += "<span style='color:#89cff0'; >X</span>"
+				tile.Color = "#89cff0"
 			}
 
 		}
-		renderString += "<br />"
-
 	}
 	renderString += "<br />"
-	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Number of Gophers: %d </span>", len(world.gopherArray))
-
-	renderString += "<br />"
-	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Processing Time (s): %s </span>", world.processStopWatch.GetAverage().String())
-	renderString += "<br />"
-	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Gopher Time (s): %s </span>", world.gopherStopWatch.GetAverage().String())
-	renderString += "<br />"
-	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Avg Input Time (s): %s </span>", world.inputStopWatch.GetAverage().String())
-
-	renderString += "<br />"
-	renderString += fmt.Sprintf("<span style='color:#ffffff'; >Total Elasped Time (s): %s </span>", world.globalStopWatch.GetCurrentElaspedTime().String())
+	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", len(world.gopherArray))
+	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", world.processStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", world.gopherStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", world.inputStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", world.globalStopWatch.GetCurrentElaspedTime().String())
 
 	render.WorldRender = renderString
 

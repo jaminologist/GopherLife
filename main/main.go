@@ -9,6 +9,6 @@ import (
 func main() {
 	//runtime.GOMAXPROCS(1)
 	rand.Seed(time.Now().UnixNano())
-	rand.Seed(1)
+	//rand.Seed(1)
 	handlers.SetUpPage()
 }
