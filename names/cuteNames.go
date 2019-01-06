@@ -4,7 +4,8 @@ import (
 	"math/rand"
 )
 
-func GetCuteName() string {
+//CuteName Returns a random cute name
+func CuteName() string {
 	return collection[rand.Intn(len(collection))] + "-" + collection[rand.Intn(len(collection))]
 }
 

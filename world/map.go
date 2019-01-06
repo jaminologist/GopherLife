@@ -195,7 +195,7 @@ func (tileMap *TileMap) SetUpMapPoints() {
 	for i := 0; i < tileMap.Statistics.NumberOfGophers; i++ {
 
 		pos := keys[count]
-		var gopher = NewGopher(names.GetCuteName(), pos)
+		var gopher = NewGopher(names.CuteName(), pos)
 
 		tileMap.InsertGopher(&gopher, pos.GetX(), pos.GetY())
 
@@ -373,7 +373,7 @@ func (tileMap *TileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinate
 
 					if i < len(emptySpaces) {
 						pos := emptySpaces[i]
-						newborn := NewGopher(names.GetCuteName(), emptySpaces[i])
+						newborn := NewGopher(names.CuteName(), emptySpaces[i])
 
 						if len(tileMap.gopherArray) <= tileMap.Statistics.MaximumNumberOfGophers {
 							if tileMap.InsertGopher(&newborn, pos.GetX(), pos.GetY()) {
