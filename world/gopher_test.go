@@ -6,11 +6,8 @@ import (
 )
 
 func TestMovingGophers(t *testing.T) {
-
-	world := CreateWorld()
-
+	world := CreateTileMap()
 	world.MoveGopher(world.SelectedGopher, 1, 1)
-
 }
 
 func TestGender_Opposite(t *testing.T) {

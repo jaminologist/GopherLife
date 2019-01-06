@@ -19,7 +19,7 @@ func (gopher *Gopher) CheckMapPointForPartner(mapPoint *MapPoint) bool {
 	return mapPoint.Gopher != nil && mapPoint.Gopher.IsLookingForLove() && gopher.Gender.Opposite() == mapPoint.Gopher.Gender
 }
 
-func Find(world *World, startPosition calc.Coordinates, radius int, maximumFind int, mapPointCheck MapPointQuery) []calc.Coordinates {
+func Find(tileMap *TileMap, startPosition calc.Coordinates, radius int, maximumFind int, mapPointCheck MapPointQuery) []calc.Coordinates {
 
 	var coordsArray = []calc.Coordinates{}
 
@@ -39,7 +39,7 @@ func Find(world *World, startPosition calc.Coordinates, radius int, maximumFind 
 
 		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
 
-		if mapPoint, ok := world.GetMapPoint(relativeCoords.GetX(), relativeCoords.GetY()); ok {
+		if mapPoint, ok := tileMap.GetMapPoint(relativeCoords.GetX(), relativeCoords.GetY()); ok {
 			if mapPointCheck(mapPoint) {
 				coordsArray = append(coordsArray, relativeCoords)
 			}

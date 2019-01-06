@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopherlife/calc"
-	gopherlife "gopherlife/world"
+	"gopherlife/world"
 	"html/template"
 	"log"
 	"net/http"
@@ -12,13 +12,13 @@ import (
 )
 
 type container struct {
-	world    *gopherlife.World
-	renderer *gopherlife.Renderer
+	tileMap  *world.TileMap
+	renderer *world.Renderer
 }
 
 type SelectReturn struct {
 	WorldRender string
-	Gopher      *gopherlife.Gopher
+	Gopher      *world.Gopher
 }
 
 type PageVariables struct {
@@ -27,11 +27,11 @@ type PageVariables struct {
 
 func SetUpPage() {
 
-	var world = gopherlife.CreateWorld()
-	renderer := gopherlife.NewRenderer()
+	var tileMap = world.CreateTileMap()
+	renderer := world.NewRenderer()
 
 	container := container{
-		world:    &world,
+		tileMap:  &tileMap,
 		renderer: &renderer,
 	}
 
@@ -55,7 +55,7 @@ func worldToHTML(container *container) func(w http.ResponseWriter, r *http.Reque
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		pageVariables := PageVariables{
-			Data: template.HTML(container.renderer.RenderWorld(container.world).WorldRender),
+			Data: template.HTML(container.renderer.RenderWorld(container.tileMap).WorldRender),
 		}
 
 		t, err := template.ParseFiles("static/index.html")
@@ -78,10 +78,10 @@ func ajaxProcessWorld(container *container) func(w http.ResponseWriter, r *http.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		container.world.ProcessWorld()
+		container.tileMap.Update()
 
 		if true {
-			jsonData, _ := json.Marshal(container.renderer.RenderWorld(container.world))
+			jsonData, _ := json.Marshal(container.renderer.RenderWorld(container.tileMap))
 			w.Write(jsonData)
 		} else {
 			w.WriteHeader(404)
@@ -103,8 +103,8 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 		birthRate, _ := strconv.ParseInt(r.FormValue("birthRate"), 10, 64)
 		maxPopulation, _ := strconv.ParseInt(r.FormValue("maxPopulation"), 10, 64)
 
-		worldvar := gopherlife.CreateWorldCustom(
-			gopherlife.Statistics{
+		tileMap := world.CreateWorldCustom(
+			world.Statistics{
 				Width:                  int(width),
 				Height:                 int(height),
 				NumberOfGophers:        int(numberOfGophers),
@@ -114,7 +114,7 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 			},
 		)
 
-		container.world = &worldvar
+		container.tileMap = &tileMap
 	}
 }
 
@@ -126,9 +126,9 @@ func ajaxSelectGopher(container *container) func(w http.ResponseWriter, r *http.
 
 		position := calc.StringToCoordinates(r.FormValue("position"))
 
-		if _, ok := container.world.SelectEntity(position.GetX(), position.GetY()); ok {
+		if _, ok := container.tileMap.SelectEntity(position.GetX(), position.GetY()); ok {
 			w.Header().Set("Content-Type", "application/json")
-			jsonData, _ := json.Marshal(container.renderer.RenderWorld(container.world))
+			jsonData, _ := json.Marshal(container.renderer.RenderWorld(container.tileMap))
 
 			w.Write(jsonData)
 		} else {
@@ -158,11 +158,11 @@ func ajaxHandleWorldInput(container *container) func(w http.ResponseWriter, r *h
 
 		switch keydown {
 		case wKey:
-			container.world.UnSelectGopher()
+			container.tileMap.UnSelectGopher()
 		case qKey:
-			container.world.SelectRandomGopher()
+			container.tileMap.SelectRandomGopher()
 		case pKey:
-			container.world.TogglePause()
+			container.tileMap.TogglePause()
 		case leftArrow:
 			container.renderer.ShiftRenderer(-1, 0)
 		case rightArrow:
