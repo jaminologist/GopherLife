@@ -12,7 +12,7 @@ func BenchmarkFibProcessWorld(b *testing.B) {
 	world := CreateWorldCustom(3000, 3000, 50000, 10000)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		world.ProcessWorld()
+		world.Update()
 	}
 }
 
@@ -29,10 +29,10 @@ func BenchmarkHello(b *testing.B) {
 func BenchmarkFibProcessWorld1(b *testing.B) {
 	// run the Fib function b.N times
 
-	world := CreateWorld()
+	world := CreateTileMap()
 
 	for n := 0; n < b.N; n++ {
-		world.ProcessWorld()
+		world.Update()
 	}
 }
 
@@ -46,8 +46,8 @@ func TestWorld_ProcessWorld(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.world.ProcessWorld(); got != tt.want {
-				t.Errorf("World.ProcessWorld() = %v, want %v", got, tt.want)
+			if got := tt.world.Update(); got != tt.want {
+				t.Errorf("World.Update() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -139,79 +139,79 @@ func (gopher *Gopher) AdvanceLife() {
 
 }
 
-func (g *Gopher) moveTowardsFood(world *World) {
+func (g *Gopher) moveTowardsFood(tileMap *TileMap) {
 
 	if len(g.FoodTargets) > 0 {
 
 		target := g.FoodTargets[0]
 
-		mapPoint, _ := world.GetMapPoint(target.GetX(), target.GetY())
+		mapPoint, _ := tileMap.GetMapPoint(target.GetX(), target.GetY())
 
 		if mapPoint.Food == nil {
 			g.ClearFoodTargets()
 		} else {
 
 			if g.Position.IsInRange(target, 0, 0) {
-				world.QueuePickUpFood(g)
+				tileMap.QueuePickUpFood(g)
 				return
 			}
 
 			moveX, moveY := calc.FindNextStep(g.Position, target)
-			world.QueueGopherMove(g, moveX, moveY)
+			tileMap.QueueGopherMove(g, moveX, moveY)
 
 		}
 
 	} else {
-		g.LookForFood(world)
+		g.LookForFood(tileMap)
 	}
 
 }
 
-func (g *Gopher) LookForFood(world *World) {
-	g.FoodTargets = Find(world, g.Position, 25, 1, CheckMapPointForFood)
+func (g *Gopher) LookForFood(tileMap *TileMap) {
+	g.FoodTargets = Find(tileMap, g.Position, 25, 1, CheckMapPointForFood)
 }
 
-func (g *Gopher) handleHunger(world *World) {
+func (g *Gopher) handleHunger(tileMap *TileMap) {
 	switch {
 	case g.HeldFood != nil:
 		g.Eat()
 	default:
-		g.moveTowardsFood(world)
+		g.moveTowardsFood(tileMap)
 	}
 }
 
-func (g *Gopher) PerformMoment(world *World) {
+func (g *Gopher) PerformMoment(tileMap *TileMap) {
 
 	switch {
 	case g.IsDead:
 		g.Decay++
 	case g.IsHungry:
-		g.handleHunger(world)
+		g.handleHunger(tileMap)
 	case !g.IsHungry:
 
 		switch {
 		case g.Gender == Male:
 
 			if g.IsLookingForLove() {
-				g.GopherTargets = Find(world, g.Position, 15, 1, g.CheckMapPointForPartner)
+				g.GopherTargets = Find(tileMap, g.Position, 15, 1, g.CheckMapPointForPartner)
 				if len(g.GopherTargets) <= 0 {
-					g.Wander(world)
+					g.Wander(tileMap)
 				} else {
 					target := g.GopherTargets[0]
 
 					if g.Position.IsInRange(target, 1, 1) {
-						world.QueueMating(g, target)
+						tileMap.QueueMating(g, target)
 						break
 					}
 					moveX, moveY := calc.FindNextStep(g.Position, target)
-					world.QueueGopherMove(g, moveX, moveY)
+					tileMap.QueueGopherMove(g, moveX, moveY)
 				}
 			} else {
-				g.Wander(world)
+				g.Wander(tileMap)
 			}
 
 		default:
-			g.Wander(world)
+			g.Wander(tileMap)
 		}
 
 	}
@@ -219,12 +219,13 @@ func (g *Gopher) PerformMoment(world *World) {
 	g.AdvanceLife()
 }
 
-//Wander Randomly decides a
-func (gopher *Gopher) Wander(world *World) {
+//Wander Randomly decides a diretion for the gopher to move in
+func (gopher *Gopher) Wander(tileMap *TileMap) {
 	x, y := rand.Intn(3)-1, rand.Intn(3)-1
-	world.QueueGopherMove(gopher, x, y)
+	tileMap.QueueGopherMove(gopher, x, y)
 }
 
+//ClearFoodTargets Clears all food targets from the Gopher
 func (gopher *Gopher) ClearFoodTargets() {
 	gopher.FoodTargets = []calc.Coordinates{}
 }
