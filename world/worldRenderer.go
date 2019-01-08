@@ -15,13 +15,13 @@ type Renderer struct {
 }
 
 type Render struct {
-	Grid [][]*Tile
+	Grid [][]*RenderTile
 
 	WorldRender    string
 	SelectedGopher *Gopher
 }
 
-type Tile struct {
+type RenderTile struct {
 	Color string
 }
 
@@ -43,14 +43,14 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 
 	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
 
-	render.Grid = make([][]*Tile, renderer.RenderSizeX)
+	render.Grid = make([][]*RenderTile, renderer.RenderSizeX)
 
 	for i := 0; i < renderer.RenderSizeX; i++ {
-		render.Grid[i] = make([]*Tile, renderer.RenderSizeY)
+		render.Grid[i] = make([]*RenderTile, renderer.RenderSizeY)
 
 		for j := 0; j < renderer.RenderSizeY; j++ {
-			tile := Tile{Color: "Hello"}
-			render.Grid[i][j] = &tile
+			renderTile := RenderTile{Color: "Hello"}
+			render.Grid[i][j] = &renderTile
 		}
 	}
 
@@ -72,14 +72,14 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
 
-			tile := render.Grid[x-startX][y-startY]
-			tile.Color = "#41770f"
+			renderTile := render.Grid[x-startX][y-startY]
+			renderTile.Color = "#41770f"
 
-			if mapPoint, ok := tileMap.GetMapPoint(x, y); ok {
+			if mapPoint, ok := tileMap.GetTile(x, y); ok {
 
 				switch {
 				case mapPoint.isEmpty():
-					tile.Color = "#41770f"
+					renderTile.Color = "#41770f"
 				case mapPoint.Gopher != nil:
 					isSelected := false
 					if tileMap.SelectedGopher != nil {
@@ -90,30 +90,30 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 					case Male:
 
 						if isSelected {
-							tile.Color = maleGopherSelectedColor
+							renderTile.Color = maleGopherSelectedColor
 						} else {
-							tile.Color = maleGopherColor
+							renderTile.Color = maleGopherColor
 						}
 					case Female:
 						if isSelected {
-							tile.Color = femaleGopherSelectedColor
+							renderTile.Color = femaleGopherSelectedColor
 						} else {
-							tile.Color = femaleGopherColor
+							renderTile.Color = femaleGopherColor
 						}
 					}
 
 					if mapPoint.Gopher.IsDead {
-						tile.Color = decayedGopherColor
+						renderTile.Color = decayedGopherColor
 					}
 
 					if !mapPoint.Gopher.IsMature() {
 						//text = strings.ToLower(text)
 					}
 				case mapPoint.Food != nil:
-					tile.Color = foodColor
+					renderTile.Color = foodColor
 				}
 			} else {
-				tile.Color = "#89cff0"
+				renderTile.Color = "#89cff0"
 			}
 
 		}
