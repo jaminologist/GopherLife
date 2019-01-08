@@ -145,7 +145,7 @@ func (g *Gopher) moveTowardsFood(tileMap *TileMap) {
 
 		target := g.FoodTargets[0]
 
-		mapPoint, _ := tileMap.GetMapPoint(target.GetX(), target.GetY())
+		mapPoint, _ := tileMap.GetTile(target.GetX(), target.GetY())
 
 		if mapPoint.Food == nil {
 			g.ClearFoodTargets()

@@ -8,7 +8,7 @@ import (
 )
 
 type TileMap struct {
-	grid [][]*MapPoint
+	grid [][]*Tile
 
 	actionQueue   chan func()
 	ActiveGophers chan *Gopher
@@ -45,14 +45,14 @@ func CreateWorldCustom(statistics Statistics) TileMap {
 	tileMap.Statistics = statistics
 	tileMap.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
 
-	tileMap.grid = make([][]*MapPoint, statistics.Width)
+	tileMap.grid = make([][]*Tile, statistics.Width)
 
 	for i := 0; i < statistics.Width; i++ {
-		tileMap.grid[i] = make([]*MapPoint, statistics.Height)
+		tileMap.grid[i] = make([]*Tile, statistics.Height)
 
 		for j := 0; j < statistics.Height; j++ {
-			mp := MapPoint{nil, nil}
-			tileMap.grid[i][j] = &mp
+			tile := Tile{nil, nil}
+			tileMap.grid[i][j] = &tile
 		}
 	}
 
@@ -87,7 +87,7 @@ func (tileMap *TileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	tileMap.SelectedGopher = nil
 
-	if mapPoint, ok := tileMap.GetMapPoint(x, y); ok {
+	if mapPoint, ok := tileMap.GetTile(x, y); ok {
 		if mapPoint.Gopher != nil {
 			tileMap.SelectedGopher = mapPoint.Gopher
 			return mapPoint.Gopher, true
@@ -97,8 +97,8 @@ func (tileMap *TileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 	return nil, true
 }
 
-//GetMapPoint Gets the given MapPoint at position (x,y)
-func (tileMap *TileMap) GetMapPoint(x int, y int) (*MapPoint, bool) {
+//GetTile Gets the given MapPoint at position (x,y)
+func (tileMap *TileMap) GetTile(x int, y int) (*Tile, bool) {
 
 	if x < 0 || x >= tileMap.Statistics.Width || y < 0 || y >= tileMap.Statistics.Height {
 		return nil, false
@@ -115,9 +115,9 @@ func (tileMap *TileMap) AddFunctionToWorldInputActions(inputFunction func()) {
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
 func (tileMap *TileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
 
-	if mp, ok := tileMap.GetMapPoint(x, y); ok {
-		if !mp.HasGopher() {
-			mp.SetGopher(gopher)
+	if tile, ok := tileMap.GetTile(x, y); ok {
+		if !tile.HasGopher() {
+			tile.SetGopher(gopher)
 			return true
 		}
 	}
@@ -129,9 +129,9 @@ func (tileMap *TileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
 //InsertFood Inserts the given food into the tileMap at the specified co-ordinate
 func (tileMap *TileMap) InsertFood(food *Food, x int, y int) bool {
 
-	if mp, ok := tileMap.GetMapPoint(x, y); ok {
-		if !mp.HasFood() {
-			mp.SetFood(food)
+	if tile, ok := tileMap.GetTile(x, y); ok {
+		if !tile.HasFood() {
+			tile.SetFood(food)
 			return true
 		}
 	}
@@ -141,7 +141,7 @@ func (tileMap *TileMap) InsertFood(food *Food, x int, y int) bool {
 //RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
 func (tileMap *TileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
 
-	if mapPoint, ok := tileMap.GetMapPoint(x, y); ok {
+	if mapPoint, ok := tileMap.GetTile(x, y); ok {
 		if mapPoint.HasFood() {
 			var food = mapPoint.Food
 			mapPoint.ClearFood()
@@ -155,18 +155,18 @@ func (tileMap *TileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
 //MoveGopher Handles the movement of a give gopher, Attempts to move a gopher by moveX and moveY.
 func (tileMap *TileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
-	currentMapPoint, exists := tileMap.GetMapPoint(gopher.Position.GetX(), gopher.Position.GetY())
+	currentMapPoint, exists := tileMap.GetTile(gopher.Position.GetX(), gopher.Position.GetY())
 
 	if !exists {
 		return false
 	}
 
 	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
-	targetMapPoint, exists := tileMap.GetMapPoint(targetPosition.GetX(), targetPosition.GetY())
+	tarGetTile, exists := tileMap.GetTile(targetPosition.GetX(), targetPosition.GetY())
 
-	if exists && targetMapPoint.Gopher == nil {
+	if exists && tarGetTile.Gopher == nil {
 
-		targetMapPoint.Gopher = gopher
+		tarGetTile.Gopher = gopher
 		currentMapPoint.Gopher = nil
 
 		gopher.Position = targetPosition
@@ -323,7 +323,7 @@ func (tileMap *TileMap) QueueRemoveGopher(gopher *Gopher) {
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 		//gopher = nil
-		if mapPoint, ok := tileMap.GetMapPoint(gopher.Position.GetX(), gopher.Position.GetY()); ok {
+		if mapPoint, ok := tileMap.GetTile(gopher.Position.GetX(), gopher.Position.GetY()); ok {
 			mapPoint.Gopher = nil
 		}
 	})
@@ -358,7 +358,7 @@ func (tileMap *TileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinate
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 
-		if mapPoint, ok := tileMap.GetMapPoint(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
+		if mapPoint, ok := tileMap.GetTile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
 
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
