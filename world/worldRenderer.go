@@ -39,7 +39,7 @@ func NewRenderer() Renderer {
 	return Renderer{RenderSizeX: 250, RenderSizeY: 200}
 }
 
-func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
+func (renderer *Renderer) RenderWorld(tileMap TileMapInterface) Render {
 
 	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
 
@@ -59,10 +59,12 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 	startX := 0
 	startY := 0
 
-	if tileMap.SelectedGopher != nil {
-		render.SelectedGopher = tileMap.SelectedGopher
-		renderer.StartX = tileMap.SelectedGopher.Position.GetX() - renderer.RenderSizeX/2
-		renderer.StartY = tileMap.SelectedGopher.Position.GetY() - renderer.RenderSizeY/2
+	selectedTile, hasSelected := tileMap.SelectedTile()
+
+	if hasSelected {
+		render.SelectedGopher = selectedTile.Gopher
+		renderer.StartX = selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
+		renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
 	}
 
 	startX = renderer.StartX
@@ -75,15 +77,15 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 			renderTile := render.Grid[x-startX][y-startY]
 			renderTile.Color = "#41770f"
 
-			if mapPoint, ok := tileMap.GetTile(x, y); ok {
+			if mapPoint, ok := tileMap.Tile(x, y); ok {
 
 				switch {
 				case mapPoint.isEmpty():
 					renderTile.Color = "#41770f"
 				case mapPoint.Gopher != nil:
 					isSelected := false
-					if tileMap.SelectedGopher != nil {
-						isSelected = tileMap.SelectedGopher.Position.GetX() == x && tileMap.SelectedGopher.Position.GetY() == y
+					if hasSelected {
+						isSelected = selectedTile.Gopher.Position.GetX() == x && selectedTile.Gopher.Position.GetY() == y
 					}
 
 					switch mapPoint.Gopher.Gender {
@@ -118,12 +120,16 @@ func (renderer *Renderer) RenderWorld(tileMap *TileMap) Render {
 
 		}
 	}
+
+	stats := tileMap.Stats()
+	diagnostics := tileMap.Diagnostics()
+
 	renderString += "<br />"
-	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", len(tileMap.gopherArray))
-	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", tileMap.processStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", tileMap.gopherStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", tileMap.inputStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", tileMap.globalStopWatch.GetCurrentElaspedTime().String())
+	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", stats.NumberOfGophers)
+	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", diagnostics.processStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", diagnostics.gopherStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.inputStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", diagnostics.globalStopWatch.GetCurrentElaspedTime().String())
 
 	render.WorldRender = renderString
 

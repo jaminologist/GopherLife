@@ -39,7 +39,7 @@ func Find(tileMap *TileMap, startPosition calc.Coordinates, radius int, maximumF
 
 		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
 
-		if mapPoint, ok := tileMap.GetTile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
+		if mapPoint, ok := tileMap.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
 			if mapPointCheck(mapPoint) {
 				coordsArray = append(coordsArray, relativeCoords)
 			}
