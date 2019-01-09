@@ -12,7 +12,7 @@ import (
 )
 
 type container struct {
-	tileMap  *world.TileMap
+	tileMap  world.TileMapInterface
 	renderer *world.Renderer
 }
 
