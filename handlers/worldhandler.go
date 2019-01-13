@@ -12,7 +12,7 @@ import (
 )
 
 type container struct {
-	tileMap  world.TileMapInterface
+	tileMap  world.TileMap
 	renderer *world.Renderer
 }
 
@@ -27,7 +27,7 @@ type PageVariables struct {
 
 func SetUpPage() {
 
-	var tileMap = world.CreateTileMap()
+	var tileMap = world.CreatePartitionTileMap()
 	renderer := world.NewRenderer()
 
 	container := container{

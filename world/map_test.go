@@ -2,19 +2,8 @@ package world
 
 import (
 	"fmt"
-	"gopherlife/calc"
 	"testing"
 )
-
-func BenchmarkFibProcessWorld(b *testing.B) {
-	// run the Fib function b.N times
-
-	world := CreateWorldCustom(3000, 3000, 50000, 10000)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		world.Update()
-	}
-}
 
 func BenchmarkHello(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -36,7 +25,7 @@ func BenchmarkFibProcessWorld1(b *testing.B) {
 	}
 }
 
-func TestWorld_ProcessWorld(t *testing.T) {
+/*func TestWorld_ProcessWorld(t *testing.T) {
 	tests := []struct {
 		name  string
 		world *World
@@ -51,9 +40,9 @@ func TestWorld_ProcessWorld(t *testing.T) {
 			}
 		})
 	}
-}
+}*/
 
-func TestWorld_InsertGopher(t *testing.T) {
+/*func TestWorld_InsertGopher(t *testing.T) {
 
 	worldA := CreateWorldCustom(10, 10, 0, 0)
 	gopherA := NewGopher("Harry", calc.NewCoordinate(0, 0))
@@ -103,4 +92,4 @@ func TestWorld_InsertGopher(t *testing.T) {
 			}
 		})
 	}
-}
+} */
