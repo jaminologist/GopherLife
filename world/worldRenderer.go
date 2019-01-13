@@ -32,14 +32,15 @@ const (
 	femaleGopherSelectedColor = "#ff9b9a"
 	foodColor                 = "#cc7000"
 	decayedGopherColor        = "#000000"
+	grassColor                = "#41770f"
 )
 
 //NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer() Renderer {
-	return Renderer{RenderSizeX: 250, RenderSizeY: 200}
+	return Renderer{RenderSizeX: 100, RenderSizeY: 100}
 }
 
-func (renderer *Renderer) RenderWorld(tileMap TileMapInterface) Render {
+func (renderer *Renderer) RenderWorld(tileMap TileMap) Render {
 
 	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
 
@@ -75,13 +76,13 @@ func (renderer *Renderer) RenderWorld(tileMap TileMapInterface) Render {
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
 
 			renderTile := render.Grid[x-startX][y-startY]
-			renderTile.Color = "#41770f"
+			renderTile.Color = grassColor
 
 			if mapPoint, ok := tileMap.Tile(x, y); ok {
 
 				switch {
 				case mapPoint.isEmpty():
-					renderTile.Color = "#41770f"
+					renderTile.Color = grassColor
 				case mapPoint.Gopher != nil:
 					isSelected := false
 					if hasSelected {

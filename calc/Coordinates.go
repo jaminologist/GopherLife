@@ -86,6 +86,10 @@ func CoordinateMapKey(X int, Y int) string {
 	return fmt.Sprintf("%[1]d,%[2]d", X, Y)
 }
 
+func Hashcode(x int, y int) int {
+	return (31 * x) + y
+}
+
 //SortByNearestFromCoordinate Sorts an array of coordinates by nearest to the given coordinate
 func SortByNearestFromCoordinate(coords Coordinates, cs []Coordinates) {
 

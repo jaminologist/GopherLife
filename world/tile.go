@@ -5,6 +5,10 @@ type Tile struct {
 	Food   *Food
 }
 
+func NewTile(gopher *Gopher, food *Food) Tile {
+	return Tile{Gopher: gopher, Food: food}
+}
+
 func (tile *Tile) isEmpty() bool {
 	return tile.Gopher == nil && tile.Food == nil
 }

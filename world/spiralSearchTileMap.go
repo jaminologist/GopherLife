@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type TileMap struct {
+type SpiralSearchTileMap struct {
 	grid [][]*Tile
 
 	actionQueue   chan func()
@@ -23,25 +23,9 @@ type TileMap struct {
 	diagnostics Diagnostics
 }
 
-type Statistics struct {
-	Width                  int
-	Height                 int
-	NumberOfGophers        int
-	MaximumNumberOfGophers int
-	GopherBirthRate        int
-	NumberOfFood           int
-}
+func CreateWorldCustom(statistics Statistics) SpiralSearchTileMap {
 
-type Diagnostics struct {
-	globalStopWatch  calc.StopWatch
-	inputStopWatch   calc.StopWatch
-	gopherStopWatch  calc.StopWatch
-	processStopWatch calc.StopWatch
-}
-
-func CreateWorldCustom(statistics Statistics) TileMap {
-
-	tileMap := TileMap{}
+	tileMap := SpiralSearchTileMap{}
 	tileMap.Statistics = statistics
 	tileMap.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
 
@@ -62,12 +46,12 @@ func CreateWorldCustom(statistics Statistics) TileMap {
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
 
-	tileMap.SetUpMapPoints()
+	tileMap.setUpMapPoints()
 	return tileMap
 
 }
 
-func CreateTileMap() TileMap {
+func CreateTileMap() SpiralSearchTileMap {
 	tileMap := CreateWorldCustom(
 		Statistics{
 			Width:                  3000,
@@ -83,7 +67,7 @@ func CreateTileMap() TileMap {
 
 //SelectEntity Uses the given co-ordinates to select and return a gopher in the tileMap
 //If there is not a gopher at the give coordinates this function returns zero.
-func (tileMap *TileMap) SelectEntity(x int, y int) (*Gopher, bool) {
+func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	tileMap.SelectedGopher = nil
 
@@ -97,7 +81,7 @@ func (tileMap *TileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 	return nil, true
 }
 
-func (tileMap *TileMap) SelectedTile() (*Tile, bool) {
+func (tileMap *SpiralSearchTileMap) SelectedTile() (*Tile, bool) {
 
 	if tileMap.SelectedGopher != nil {
 		if tile, ok := tileMap.Tile(tileMap.SelectedGopher.Position.GetX(), tileMap.SelectedGopher.Position.GetY()); ok {
@@ -109,7 +93,7 @@ func (tileMap *TileMap) SelectedTile() (*Tile, bool) {
 }
 
 //GetTile Gets the given MapPoint at position (x,y)
-func (tileMap *TileMap) Tile(x int, y int) (*Tile, bool) {
+func (tileMap *SpiralSearchTileMap) Tile(x int, y int) (*Tile, bool) {
 
 	if x < 0 || x >= tileMap.Statistics.Width || y < 0 || y >= tileMap.Statistics.Height {
 		return nil, false
@@ -118,21 +102,13 @@ func (tileMap *TileMap) Tile(x int, y int) (*Tile, bool) {
 	return tileMap.grid[x][y], true
 }
 
-func (tileMap *TileMap) Stats() *Statistics {
-	return &tileMap.Statistics
-}
-
-func (tileMap *TileMap) Diagnostics() *Diagnostics {
-	return &tileMap.diagnostics
-}
-
 //AddFunctionToWorldInputActions is used to store functions that write data to the tileMap.
-func (tileMap *TileMap) AddFunctionToWorldInputActions(inputFunction func()) {
+func (tileMap *SpiralSearchTileMap) AddFunctionToWorldInputActions(inputFunction func()) {
 	tileMap.actionQueue <- inputFunction
 }
 
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
-func (tileMap *TileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
+func (tileMap *SpiralSearchTileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
 
 	if tile, ok := tileMap.Tile(x, y); ok {
 		if !tile.HasGopher() {
@@ -146,7 +122,7 @@ func (tileMap *TileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
 }
 
 //InsertFood Inserts the given food into the tileMap at the specified co-ordinate
-func (tileMap *TileMap) InsertFood(food *Food, x int, y int) bool {
+func (tileMap *SpiralSearchTileMap) InsertFood(food *Food, x int, y int) bool {
 
 	if tile, ok := tileMap.Tile(x, y); ok {
 		if !tile.HasFood() {
@@ -158,7 +134,7 @@ func (tileMap *TileMap) InsertFood(food *Food, x int, y int) bool {
 }
 
 //RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
-func (tileMap *TileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
+func (tileMap *SpiralSearchTileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
 
 	if mapPoint, ok := tileMap.Tile(x, y); ok {
 		if mapPoint.HasFood() {
@@ -172,7 +148,7 @@ func (tileMap *TileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
 }
 
 //MoveGopher Handles the movement of a give gopher, Attempts to move a gopher by moveX and moveY.
-func (tileMap *TileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
+func (tileMap *SpiralSearchTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
 	currentMapPoint, exists := tileMap.Tile(gopher.Position.GetX(), gopher.Position.GetY())
 
@@ -196,15 +172,23 @@ func (tileMap *TileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 	return false
 }
 
-func (tileMap *TileMap) SelectRandomGopher() {
+func (tileMap *SpiralSearchTileMap) SelectRandomGopher() {
 	tileMap.SelectedGopher = tileMap.gopherArray[rand.Intn(len(tileMap.gopherArray))]
 }
 
-func (tileMap *TileMap) UnSelectGopher() {
+func (tileMap *SpiralSearchTileMap) UnSelectGopher() {
 	tileMap.SelectedGopher = nil
 }
 
-func (tileMap *TileMap) SetUpMapPoints() {
+func (tileMap *SpiralSearchTileMap) Stats() *Statistics {
+	return &tileMap.Statistics
+}
+
+func (tileMap *SpiralSearchTileMap) Diagnostics() *Diagnostics {
+	return &tileMap.diagnostics
+}
+
+func (tileMap *SpiralSearchTileMap) setUpMapPoints() {
 
 	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
 		tileMap.Statistics.Width, tileMap.Statistics.Height)
@@ -236,7 +220,7 @@ func (tileMap *TileMap) SetUpMapPoints() {
 
 }
 
-func (tileMap *TileMap) onFoodPickUp(location calc.Coordinates) {
+func (tileMap *SpiralSearchTileMap) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
 	xrange, yrange := rand.Perm(size), rand.Perm(size)
@@ -253,7 +237,7 @@ loop:
 	}
 }
 
-func (tileMap *TileMap) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
+func (tileMap *SpiralSearchTileMap) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
 
 	gopher.PerformMoment(tileMap)
 
@@ -266,7 +250,7 @@ func (tileMap *TileMap) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, 
 	wg.Done()
 }
 
-func (tileMap *TileMap) Update() bool {
+func (tileMap *SpiralSearchTileMap) Update() bool {
 
 	if tileMap.IsPaused {
 		return false
@@ -283,7 +267,7 @@ func (tileMap *TileMap) Update() bool {
 	tileMap.diagnostics.processStopWatch.Start()
 	tileMap.processGophers()
 	tileMap.processQueuedTasks()
-
+	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveGophers)
 	if tileMap.Statistics.NumberOfGophers > 0 {
 		tileMap.Moments++
 	}
@@ -294,7 +278,7 @@ func (tileMap *TileMap) Update() bool {
 
 }
 
-func (tileMap *TileMap) processGophers() {
+func (tileMap *SpiralSearchTileMap) processGophers() {
 
 	tileMap.diagnostics.gopherStopWatch.Start()
 
@@ -315,7 +299,7 @@ func (tileMap *TileMap) processGophers() {
 	tileMap.diagnostics.gopherStopWatch.Stop()
 }
 
-func (tileMap *TileMap) processQueuedTasks() {
+func (tileMap *SpiralSearchTileMap) processQueuedTasks() {
 
 	tileMap.diagnostics.inputStopWatch.Start()
 
@@ -333,12 +317,12 @@ func (tileMap *TileMap) processQueuedTasks() {
 }
 
 //TogglePause Toggles the pause
-func (tileMap *TileMap) TogglePause() {
+func (tileMap *SpiralSearchTileMap) TogglePause() {
 	tileMap.IsPaused = !tileMap.IsPaused
 }
 
 //QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
-func (tileMap *TileMap) QueueRemoveGopher(gopher *Gopher) {
+func (tileMap *SpiralSearchTileMap) QueueRemoveGopher(gopher *Gopher) {
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 		//gopher = nil
@@ -349,7 +333,7 @@ func (tileMap *TileMap) QueueRemoveGopher(gopher *Gopher) {
 }
 
 //QueueGopherMove Adds the Move Gopher Method to the Input Queue.
-func (tileMap *TileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
+func (tileMap *SpiralSearchTileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 		success := tileMap.MoveGopher(gopher, moveX, moveY)
@@ -360,7 +344,7 @@ func (tileMap *TileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 
 //QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
 //held food variable
-func (tileMap *TileMap) QueuePickUpFood(gopher *Gopher) {
+func (tileMap *SpiralSearchTileMap) QueuePickUpFood(gopher *Gopher) {
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 		food, ok := tileMap.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
@@ -370,10 +354,9 @@ func (tileMap *TileMap) QueuePickUpFood(gopher *Gopher) {
 			gopher.ClearFoodTargets()
 		}
 	})
-
 }
 
-func (tileMap *TileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
+func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 
 	tileMap.AddFunctionToWorldInputActions(func() {
 
@@ -382,7 +365,7 @@ func (tileMap *TileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinate
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
 
-			emptySpaces := Find(tileMap, gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
+			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -408,4 +391,35 @@ func (tileMap *TileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinate
 		}
 	})
 
+}
+
+func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, query TileQuery) []calc.Coordinates {
+	var coordsArray = []calc.Coordinates{}
+
+	spiral := calc.NewSpiral(radius, radius)
+
+	for {
+
+		coordinates, hasNext := spiral.Next()
+
+		if hasNext == false || len(coordsArray) > maximumFind {
+			break
+		}
+
+		/*if coordinates.X == 0 && coordinates.Y == 0 {
+			continue
+		}*/
+
+		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
+
+		if tile, ok := tileMap.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
+			if query(tile) {
+				coordsArray = append(coordsArray, relativeCoords)
+			}
+		}
+	}
+
+	calc.SortByNearestFromCoordinate(startPosition, coordsArray)
+
+	return coordsArray
 }
