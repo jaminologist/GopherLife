@@ -12,6 +12,10 @@ func CheckMapPointForEmptySpace(tile *Tile) bool {
 	return tile.Food == nil && tile.Gopher == nil
 }
 
+func CheckMapPointForFemaleGopher(tile *Tile) bool {
+	return tile.Gopher != nil && tile.Gopher.IsLookingForLove() && Female == tile.Gopher.Gender
+}
+
 //CheckMapPointForPartner Checks if the Tile contains a sutible partner for the querying gopher
 func (gopher *Gopher) CheckMapPointForPartner(tile *Tile) bool {
 	return tile.Gopher != nil && tile.Gopher.IsLookingForLove() && gopher.Gender.Opposite() == tile.Gopher.Gender

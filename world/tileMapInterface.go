@@ -23,8 +23,17 @@ type TileMap interface {
 	QueueMating(mate *Gopher, coords calc.Coordinates)
 	QueueRemoveGopher(gopher *Gopher)
 
-	Search(startPosition calc.Coordinates, radius int, maximumFind int, query TileQuery) []calc.Coordinates
+	Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates
 }
+
+type SearchType int
+
+const (
+	SearchForFood SearchType = iota
+	SearchForEmptySpace
+	SearchForFemaleGopher
+	FemaleGopher
+)
 
 type Statistics struct {
 	Width                  int
