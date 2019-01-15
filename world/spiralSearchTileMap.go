@@ -365,7 +365,7 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
 
-			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
+			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, SearchForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -393,10 +393,21 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 
 }
 
-func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, query TileQuery) []calc.Coordinates {
+func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates {
 	var coordsArray = []calc.Coordinates{}
 
 	spiral := calc.NewSpiral(radius, radius)
+
+	var query TileQuery
+
+	switch searchType {
+	case SearchForFood:
+		query = CheckMapPointForFood
+	case SearchForEmptySpace:
+		query = CheckMapPointForEmptySpace
+	case SearchForFemaleGopher:
+		query = CheckMapPointForFemaleGopher
+	}
 
 	for {
 

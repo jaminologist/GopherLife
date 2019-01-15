@@ -81,10 +81,10 @@ func CreateBlahCustom(statistics Statistics) PartitionTileMap {
 func CreatePartitionTileMap() PartitionTileMap {
 	tileMap := CreateBlahCustom(
 		Statistics{
-			Width:                  100,
-			Height:                 100,
-			NumberOfGophers:        50,
-			NumberOfFood:           50,
+			Width:                  3000,
+			Height:                 3000,
+			NumberOfGophers:        5000,
+			NumberOfFood:           100000,
 			MaximumNumberOfGophers: 100000,
 			GopherBirthRate:        7,
 		},
@@ -405,7 +405,7 @@ func (tileMap *PartitionTileMap) QueueMating(gopher *Gopher, matePosition calc.C
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
 
-			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, CheckMapPointForEmptySpace)
+			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, SearchForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -443,10 +443,22 @@ func (tileMap *PartitionTileMap) QueueRemoveGopher(gopher *Gopher) {
 	})
 }
 
-func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, query TileQuery) []calc.Coordinates {
+func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates {
 	var coordsArray = []calc.Coordinates{}
 
 	spiral := calc.NewSpiral(radius, radius)
+
+	var query TileQuery
+
+	switch searchType {
+	case SearchForFood:
+		return queryForFood(tileMap, radius, startPosition.GetX(), startPosition.GetY())
+	case SearchForEmptySpace:
+		query = CheckMapPointForEmptySpace
+	case SearchForFemaleGopher:
+		return queryForFemalePartner(tileMap, radius, startPosition.GetX(), startPosition.GetY())
+
+	}
 
 	for {
 
@@ -455,10 +467,6 @@ func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius i
 		if hasNext == false || len(coordsArray) > maximumFind {
 			break
 		}
-
-		/*if coordinates.X == 0 && coordinates.Y == 0 {
-			continue
-		}*/
 
 		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
 
@@ -472,6 +480,72 @@ func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius i
 	calc.SortByNearestFromCoordinate(startPosition, coordsArray)
 
 	return coordsArray
+}
+
+func queryForFood(tileMap *PartitionTileMap, size int, x int, y int) []calc.Coordinates {
+
+	worldStartX, worldStartY, worldEndX, worldEndY := x-size, y-size, x+size, y+size
+
+	startX, startY := tileMap.convertToGridCoordinates(x-size, y-size)
+	endX, endY := tileMap.convertToGridCoordinates(x+size, y+size)
+
+	foodLocations := make([]calc.Coordinates, 0)
+
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+
+			if grid, ok := tileMap.getGridConvertedCoordinates(x, y); ok {
+				for key := range grid.foodTileLocations {
+
+					tile := grid.foodTileLocations[key]
+
+					i, j := tile.Food.Position.GetX(), tile.Food.Position.GetY()
+					if i >= worldStartX &&
+						i < worldEndX &&
+						j >= worldStartY &&
+						j < worldEndY {
+						foodLocations = append(foodLocations, tile.Food.Position)
+					}
+				}
+			}
+
+		}
+	}
+
+	return foodLocations
+}
+
+func queryForFemalePartner(tileMap *PartitionTileMap, size int, x int, y int) []calc.Coordinates {
+
+	worldStartX, worldStartY, worldEndX, worldEndY := x-size, y-size, x+size, y+size
+
+	startX, startY := tileMap.convertToGridCoordinates(x-size, y-size)
+	endX, endY := tileMap.convertToGridCoordinates(x+size, y+size)
+
+	locations := make([]calc.Coordinates, 0)
+
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+
+			if grid, ok := tileMap.getGridConvertedCoordinates(x, y); ok {
+				for key := range grid.gopherTileLocations {
+
+					tile := grid.gopherTileLocations[key]
+
+					i, j := tile.Gopher.Position.GetX(), tile.Gopher.Position.GetY()
+					if i >= worldStartX &&
+						i < worldEndX &&
+						j >= worldStartY &&
+						j < worldEndY && tile.Gopher.Gender == Female && tile.Gopher.IsLookingForLove() {
+						locations = append(locations, tile.Gopher.Position)
+					}
+				}
+			}
+
+		}
+	}
+
+	return locations
 }
 
 //AddFunctionToWorldInputActions is used to store functions that write data to the tileMap.
@@ -594,7 +668,7 @@ func (gridSection *GridSection) InsertGopher(x int, y int, gopher *Gopher) error
 		} else if !ok {
 			newTile := NewTile(gopher, nil)
 			gridSection.SetMapPoint(x, y, &newTile)
-			gridSection.addGopherTileLocation(x, y, tile)
+			gridSection.addGopherTileLocation(x, y, &newTile)
 		} else {
 			return errors.New("MapPoint already contains Gopher, Gopher can not be inserted")
 		}
@@ -641,7 +715,7 @@ func (gridSection *GridSection) InsertFood(x int, y int, food *Food) error {
 		} else if !ok {
 			newTile := NewTile(nil, food)
 			gridSection.SetMapPoint(x, y, &newTile)
-			gridSection.addFoodTileLocations(x, y, tile)
+			gridSection.addFoodTileLocations(x, y, &newTile)
 		} else {
 			return errors.New("Tile already contains Food, Food can not be inserted")
 		}

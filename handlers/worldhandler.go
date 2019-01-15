@@ -28,6 +28,7 @@ type PageVariables struct {
 func SetUpPage() {
 
 	var tileMap = world.CreatePartitionTileMap()
+	//var tileMap = world.CreateTileMap()
 	renderer := world.NewRenderer()
 
 	container := container{
