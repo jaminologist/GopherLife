@@ -37,7 +37,7 @@ type PartitionTileMap struct {
 	diagnostics Diagnostics
 }
 
-func CreateBlahCustom(statistics Statistics) PartitionTileMap {
+func CreatePartitionTileMapCustom(statistics Statistics) PartitionTileMap {
 
 	tileMap := PartitionTileMap{}
 	tileMap.Statistics = statistics
@@ -79,12 +79,12 @@ func CreateBlahCustom(statistics Statistics) PartitionTileMap {
 }
 
 func CreatePartitionTileMap() PartitionTileMap {
-	tileMap := CreateBlahCustom(
+	tileMap := CreatePartitionTileMapCustom(
 		Statistics{
 			Width:                  3000,
 			Height:                 3000,
 			NumberOfGophers:        5000,
-			NumberOfFood:           100000,
+			NumberOfFood:           50000,
 			MaximumNumberOfGophers: 100000,
 			GopherBirthRate:        7,
 		},
@@ -452,12 +452,15 @@ func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius i
 
 	switch searchType {
 	case SearchForFood:
-		return queryForFood(tileMap, radius, startPosition.GetX(), startPosition.GetY())
+		locations := queryForFood(tileMap, radius, startPosition.GetX(), startPosition.GetY())
+		calc.SortByNearestFromCoordinate(startPosition, locations)
+		return locations
 	case SearchForEmptySpace:
 		query = CheckMapPointForEmptySpace
 	case SearchForFemaleGopher:
-		return queryForFemalePartner(tileMap, radius, startPosition.GetX(), startPosition.GetY())
-
+		locations := queryForFemalePartner(tileMap, radius, startPosition.GetX(), startPosition.GetY())
+		calc.SortByNearestFromCoordinate(startPosition, locations)
+		return locations
 	}
 
 	for {

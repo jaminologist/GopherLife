@@ -394,6 +394,9 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 }
 
 func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates {
+
+	radius = 200
+
 	var coordsArray = []calc.Coordinates{}
 
 	spiral := calc.NewSpiral(radius, radius)

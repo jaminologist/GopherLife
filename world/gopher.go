@@ -153,6 +153,7 @@ func (gopher *Gopher) moveTowardsFood(tileMap TileMap) {
 
 			if gopher.Position.IsInRange(target, 0, 0) {
 				tileMap.QueuePickUpFood(gopher)
+				gopher.ClearFoodTargets()
 				return
 			}
 
@@ -197,6 +198,7 @@ func (gopher *Gopher) PerformMoment(tileMap TileMap) {
 				if len(gopher.GopherTargets) <= 0 {
 					gopher.Wander(tileMap)
 				} else {
+
 					target := gopher.GopherTargets[0]
 
 					if gopher.Position.IsInRange(target, 1, 1) {
@@ -205,6 +207,7 @@ func (gopher *Gopher) PerformMoment(tileMap TileMap) {
 					}
 					moveX, moveY := calc.FindNextStep(gopher.Position, target)
 					tileMap.QueueGopherMove(gopher, moveX, moveY)
+					gopher.ClearFoodTargets()
 				}
 			} else {
 				gopher.Wander(tileMap)
@@ -228,4 +231,8 @@ func (gopher *Gopher) Wander(tileMap TileMap) {
 //ClearFoodTargets Clears all food targets from the Gopher
 func (gopher *Gopher) ClearFoodTargets() {
 	gopher.FoodTargets = []calc.Coordinates{}
+}
+
+func (gopher *Gopher) ClearGopherTargets() {
+	gopher.GopherTargets = []calc.Coordinates{}
 }
