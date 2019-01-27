@@ -23,7 +23,7 @@ type SpiralSearchTileMap struct {
 	diagnostics Diagnostics
 }
 
-func CreateWorldCustom(statistics Statistics) SpiralSearchTileMap {
+func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 	tileMap := SpiralSearchTileMap{}
 	tileMap.Statistics = statistics
@@ -47,11 +47,11 @@ func CreateWorldCustom(statistics Statistics) SpiralSearchTileMap {
 	tileMap.GopherWaitGroup = &wg
 
 	tileMap.setUpMapPoints()
-	return tileMap
+	return &tileMap
 
 }
 
-func CreateTileMap() SpiralSearchTileMap {
+func CreateTileMap() *SpiralSearchTileMap {
 	tileMap := CreateWorldCustom(
 		Statistics{
 			Width:                  3000,
@@ -67,7 +67,7 @@ func CreateTileMap() SpiralSearchTileMap {
 
 //SelectEntity Uses the given co-ordinates to select and return a gopher in the tileMap
 //If there is not a gopher at the give coordinates this function returns zero.
-func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
+func (tileMap *SpiralSearchTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	tileMap.SelectedGopher = nil
 

@@ -14,6 +14,7 @@ import (
 type container struct {
 	tileMap  world.TileMap
 	renderer *world.Renderer
+	tileMaps map[string]func(world.Statistics) world.TileMap
 }
 
 type SelectReturn struct {
@@ -36,13 +37,22 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	//var tileMap = world.CreatePartitionTileMapCustom(stats)
 	var tileMap = world.CreateWorldCustom(stats)
 	renderer := world.NewRenderer()
 
+	tileMapFunctions := make(map[string]func(world.Statistics) world.TileMap)
+	tileMapFunctions["a"] = func(s world.Statistics) world.TileMap {
+		fmt.Println("custom")
+		return world.CreateWorldCustom(s)
+	}
+	tileMapFunctions["b"] = func(s world.Statistics) world.TileMap {
+		fmt.Println("partition custom")
+		return world.CreatePartitionTileMapCustom(s)
+	}
 	container := container{
-		tileMap:  &tileMap,
+		tileMap:  tileMap,
 		renderer: &renderer,
+		tileMaps: tileMapFunctions,
 	}
 
 	fs := http.FileServer(http.Dir("static"))
@@ -113,18 +123,26 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 		birthRate, _ := strconv.ParseInt(r.FormValue("birthRate"), 10, 64)
 		maxPopulation, _ := strconv.ParseInt(r.FormValue("maxPopulation"), 10, 64)
 
-		tileMap := world.CreateWorldCustom(
-			world.Statistics{
-				Width:                  int(width),
-				Height:                 int(height),
-				NumberOfGophers:        int(numberOfGophers),
-				NumberOfFood:           int(numberOfFood),
-				MaximumNumberOfGophers: int(maxPopulation),
-				GopherBirthRate:        int(birthRate),
-			},
-		)
+		mapSelection := r.FormValue("mapSelection")
 
-		container.tileMap = &tileMap
+		stats := world.Statistics{
+			Width:                  int(width),
+			Height:                 int(height),
+			NumberOfGophers:        int(numberOfGophers),
+			NumberOfFood:           int(numberOfFood),
+			MaximumNumberOfGophers: int(maxPopulation),
+			GopherBirthRate:        int(birthRate),
+		}
+
+		var tileMap world.TileMap
+
+		if tileMapFunc, ok := container.tileMaps[mapSelection]; ok {
+			tileMap = tileMapFunc(stats)
+		} else {
+			tileMap = world.CreateWorldCustom(stats)
+		}
+
+		container.tileMap = tileMap
 	}
 }
 
