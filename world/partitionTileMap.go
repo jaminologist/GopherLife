@@ -37,7 +37,7 @@ type PartitionTileMap struct {
 	diagnostics Diagnostics
 }
 
-func CreatePartitionTileMapCustom(statistics Statistics) PartitionTileMap {
+func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 
 	tileMap := PartitionTileMap{}
 	tileMap.Statistics = statistics
@@ -75,10 +75,10 @@ func CreatePartitionTileMapCustom(statistics Statistics) PartitionTileMap {
 	tileMap.GopherWaitGroup = &wg
 
 	tileMap.setUpTiles()
-	return tileMap
+	return &tileMap
 }
 
-func CreatePartitionTileMap() PartitionTileMap {
+func CreatePartitionTileMap() *PartitionTileMap {
 	tileMap := CreatePartitionTileMapCustom(
 		Statistics{
 			Width:                  3000,
@@ -269,7 +269,7 @@ func (tileMap *PartitionTileMap) SelectedTile() (*Tile, bool) {
 
 //SelectEntity Uses the given co-ordinates to select and return a gopher in the tileMap
 //If there is not a gopher at the give coordinates this function returns zero.
-func (tileMap *SpiralSearchTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
+func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 
 	tileMap.SelectedGopher = nil
 
