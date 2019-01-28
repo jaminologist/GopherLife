@@ -25,6 +25,13 @@ type RenderTile struct {
 	Color string
 }
 
+type Renderable interface {
+	SelectedTile() (*Tile, bool)
+	Tile(x int, y int) (*Tile, bool)
+	Stats() *Statistics
+	Diagnostics() *Diagnostics
+}
+
 const (
 	maleGopherColor           = "#5adaff"
 	maleGopherSelectedColor   = "#f5f5f5"
@@ -40,7 +47,7 @@ func NewRenderer() Renderer {
 	return Renderer{RenderSizeX: 100, RenderSizeY: 100}
 }
 
-func (renderer *Renderer) RenderWorld(tileMap TileMap) Render {
+func (renderer *Renderer) RenderWorld(tileMap Renderable) Render {
 
 	render := Render{WorldRender: "", SelectedGopher: &Gopher{}}
 
