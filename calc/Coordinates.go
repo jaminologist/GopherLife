@@ -38,6 +38,10 @@ func (c Coordinates) RelativeCoordinate(X int, Y int) Coordinates {
 	return Coordinates{c.X + X, c.Y + Y}
 }
 
+func RelativeCoordinate(c Coordinates, X int, Y int) Coordinates {
+	return Coordinates{c.X + X, c.Y + Y}
+}
+
 func (c *Coordinates) Add(X int, Y int) {
 	c.X += X
 	c.Y += Y

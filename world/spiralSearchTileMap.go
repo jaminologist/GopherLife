@@ -8,7 +8,8 @@ import (
 )
 
 type SpiralSearchTileMap struct {
-	grid [][]*Tile
+	Searchable
+	TileContainer
 
 	actionQueue   chan func()
 	ActiveGophers chan *Gopher
@@ -23,22 +24,19 @@ type SpiralSearchTileMap struct {
 	diagnostics Diagnostics
 }
 
+type SpiralTileSearch struct {
+	TileContainer
+}
+
 func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 	tileMap := SpiralSearchTileMap{}
+	a := NewBasic2DContainer(statistics.Width, statistics.Height)
+	tileMap.TileContainer = &a
+	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
+	tileMap.Searchable = &s
 	tileMap.Statistics = statistics
 	tileMap.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
-
-	tileMap.grid = make([][]*Tile, statistics.Width)
-
-	for i := 0; i < statistics.Width; i++ {
-		tileMap.grid[i] = make([]*Tile, statistics.Height)
-
-		for j := 0; j < statistics.Height; j++ {
-			tile := Tile{nil, nil}
-			tileMap.grid[i][j] = &tile
-		}
-	}
 
 	tileMap.ActiveGophers = make(chan *Gopher, statistics.NumberOfGophers)
 	tileMap.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
@@ -90,16 +88,6 @@ func (tileMap *SpiralSearchTileMap) SelectedTile() (*Tile, bool) {
 	}
 	return nil, false
 
-}
-
-//GetTile Gets the given MapPoint at position (x,y)
-func (tileMap *SpiralSearchTileMap) Tile(x int, y int) (*Tile, bool) {
-
-	if x < 0 || x >= tileMap.Statistics.Width || y < 0 || y >= tileMap.Statistics.Height {
-		return nil, false
-	}
-
-	return tileMap.grid[x][y], true
 }
 
 //AddFunctionToWorldInputActions is used to store functions that write data to the tileMap.
@@ -365,7 +353,7 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
 
-			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, SearchForEmptySpace)
+			emptySpaces := tileMap.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -393,13 +381,13 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 
 }
 
-func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates {
+func (spiralTileSearch *SpiralTileSearch) Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates {
 
 	//radius = 200
 
 	var coordsArray = []calc.Coordinates{}
 
-	spiral := calc.NewSpiral(radius, radius)
+	spiral := calc.NewSpiral(width, height)
 
 	var query TileQuery
 
@@ -416,7 +404,7 @@ func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radiu
 
 		coordinates, hasNext := spiral.Next()
 
-		if hasNext == false || len(coordsArray) > maximumFind {
+		if hasNext == false || len(coordsArray) > max {
 			break
 		}
 
@@ -424,16 +412,16 @@ func (tileMap *SpiralSearchTileMap) Search(startPosition calc.Coordinates, radiu
 			continue
 		}*/
 
-		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
+		relativeCoords := position.RelativeCoordinate(position.X, coordinates.Y)
 
-		if tile, ok := tileMap.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
+		if tile, ok := spiralTileSearch.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
 			if query(tile) {
 				coordsArray = append(coordsArray, relativeCoords)
 			}
 		}
 	}
 
-	calc.SortByNearestFromCoordinate(startPosition, coordsArray)
+	calc.SortByNearestFromCoordinate(position, coordsArray)
 
 	return coordsArray
 }

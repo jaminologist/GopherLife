@@ -405,7 +405,7 @@ func (tileMap *PartitionTileMap) QueueMating(gopher *Gopher, matePosition calc.C
 			mate := mapPoint.Gopher
 			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
 
-			emptySpaces := tileMap.Search(gopher.Position, 10, litterNumber, SearchForEmptySpace)
+			emptySpaces := tileMap.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -443,23 +443,25 @@ func (tileMap *PartitionTileMap) QueueRemoveGopher(gopher *Gopher) {
 	})
 }
 
-func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates {
+func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
 	var coordsArray = []calc.Coordinates{}
 
-	spiral := calc.NewSpiral(radius, radius)
+	x, y := position.GetX(), position.GetY()
+
+	spiral := calc.NewSpiral(width, height)
 
 	var query TileQuery
 
 	switch searchType {
 	case SearchForFood:
-		locations := queryForFood(tileMap, radius, startPosition.GetX(), startPosition.GetY())
-		calc.SortByNearestFromCoordinate(startPosition, locations)
+		locations := queryForFood(tileMap, width, height, x, y)
+		calc.SortByNearestFromCoordinate(position, locations)
 		return locations
 	case SearchForEmptySpace:
 		query = CheckMapPointForEmptySpace
 	case SearchForFemaleGopher:
-		locations := queryForFemalePartner(tileMap, radius, startPosition.GetX(), startPosition.GetY())
-		calc.SortByNearestFromCoordinate(startPosition, locations)
+		locations := queryForFemalePartner(tileMap, width, height, x, y)
+		calc.SortByNearestFromCoordinate(position, locations)
 		return locations
 	}
 
@@ -471,7 +473,7 @@ func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius i
 			break
 		}
 
-		relativeCoords := startPosition.RelativeCoordinate(coordinates.X, coordinates.Y)
+		relativeCoords := calc.RelativeCoordinate(coordinates, x, y)
 
 		if tile, ok := tileMap.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
 			if query(tile) {
@@ -480,17 +482,17 @@ func (tileMap *PartitionTileMap) Search(startPosition calc.Coordinates, radius i
 		}
 	}
 
-	calc.SortByNearestFromCoordinate(startPosition, coordsArray)
+	calc.SortByNearestFromCoordinate(position, coordsArray)
 
 	return coordsArray
 }
 
-func queryForFood(tileMap *PartitionTileMap, size int, x int, y int) []calc.Coordinates {
+func queryForFood(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
 
-	worldStartX, worldStartY, worldEndX, worldEndY := x-size, y-size, x+size, y+size
+	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
 
-	startX, startY := tileMap.convertToGridCoordinates(x-size, y-size)
-	endX, endY := tileMap.convertToGridCoordinates(x+size, y+size)
+	startX, startY := tileMap.convertToGridCoordinates(x-width, y-height)
+	endX, endY := tileMap.convertToGridCoordinates(x+width, y+height)
 
 	foodLocations := make([]calc.Coordinates, 0)
 
@@ -518,12 +520,12 @@ func queryForFood(tileMap *PartitionTileMap, size int, x int, y int) []calc.Coor
 	return foodLocations
 }
 
-func queryForFemalePartner(tileMap *PartitionTileMap, size int, x int, y int) []calc.Coordinates {
+func queryForFemalePartner(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
 
-	worldStartX, worldStartY, worldEndX, worldEndY := x-size, y-size, x+size, y+size
+	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
 
-	startX, startY := tileMap.convertToGridCoordinates(x-size, y-size)
-	endX, endY := tileMap.convertToGridCoordinates(x+size, y+size)
+	startX, startY := tileMap.convertToGridCoordinates(x-width, y-height)
+	endX, endY := tileMap.convertToGridCoordinates(x+width, y+height)
 
 	locations := make([]calc.Coordinates, 0)
 
