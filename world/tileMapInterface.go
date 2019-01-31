@@ -23,7 +23,11 @@ type TileMap interface {
 	QueueMating(mate *Gopher, coords calc.Coordinates)
 	QueueRemoveGopher(gopher *Gopher)
 
-	Search(startPosition calc.Coordinates, radius int, maximumFind int, searchType SearchType) []calc.Coordinates
+	Searchable
+}
+
+type Searchable interface {
+	Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates
 }
 
 type SearchType int

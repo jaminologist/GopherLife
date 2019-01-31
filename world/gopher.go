@@ -169,7 +169,7 @@ func (gopher *Gopher) moveTowardsFood(tileMap TileMap) {
 }
 
 func (gopher *Gopher) LookForFood(tileMap TileMap) {
-	gopher.FoodTargets = tileMap.Search(gopher.Position, 25, 1, SearchForFood)
+	gopher.FoodTargets = tileMap.Search(gopher.Position, 25, 25, 1, SearchForFood)
 }
 
 func (gopher *Gopher) handleHunger(tileMap TileMap) {
@@ -194,7 +194,7 @@ func (gopher *Gopher) PerformMoment(tileMap TileMap) {
 		case gopher.Gender == Male:
 
 			if gopher.IsLookingForLove() {
-				gopher.GopherTargets = tileMap.Search(gopher.Position, 15, 1, SearchForFemaleGopher)
+				gopher.GopherTargets = tileMap.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
 				if len(gopher.GopherTargets) <= 0 {
 					gopher.Wander(tileMap)
 				} else {
