@@ -32,7 +32,7 @@ func SetUpPage() {
 		Width:                  3000,
 		Height:                 3000,
 		NumberOfGophers:        5000,
-		NumberOfFood:           50000,
+		NumberOfFood:           1000000,
 		MaximumNumberOfGophers: 100000,
 		GopherBirthRate:        7,
 	}
