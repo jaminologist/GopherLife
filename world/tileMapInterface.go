@@ -8,7 +8,6 @@ type TileMap interface {
 
 	TogglePause()
 
-	Tile(x int, y int) (*Tile, bool)
 	SelectedTile() (*Tile, bool)
 
 	SelectEntity(x int, y int) (*Gopher, bool)
@@ -23,6 +22,7 @@ type TileMap interface {
 	QueueMating(mate *Gopher, coords calc.Coordinates)
 	QueueRemoveGopher(gopher *Gopher)
 
+	TileContainer
 	Searchable
 }
 

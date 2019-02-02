@@ -16,6 +16,8 @@ const (
 )
 
 type PartitionTileMap struct {
+	QueueableActions
+
 	grid [][]*GridSection
 
 	gridWidth  int
@@ -42,6 +44,9 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 	tileMap := PartitionTileMap{}
 	tileMap.Statistics = statistics
 	tileMap.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
+
+	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
+	tileMap.QueueableActions = &qa
 
 	tileMap.numberOfGridsWide = statistics.Width / gridWidth
 
