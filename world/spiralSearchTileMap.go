@@ -10,8 +10,8 @@ import (
 type SpiralSearchTileMap struct {
 	Searchable
 	TileContainer
+	QueueableActions
 
-	actionQueue   chan func()
 	ActiveGophers chan *Gopher
 
 	GopherWaitGroup *sync.WaitGroup
@@ -31,12 +31,17 @@ type SpiralTileSearch struct {
 func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 	tileMap := SpiralSearchTileMap{}
+
 	a := NewBasic2DContainer(statistics.Width, statistics.Height)
 	tileMap.TileContainer = &a
+
 	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
 	tileMap.Searchable = &s
+
+	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
+	tileMap.QueueableActions = &qa
+
 	tileMap.Statistics = statistics
-	tileMap.actionQueue = make(chan func(), statistics.MaximumNumberOfGophers*2)
 
 	tileMap.ActiveGophers = make(chan *Gopher, statistics.NumberOfGophers)
 	tileMap.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
@@ -88,11 +93,6 @@ func (tileMap *SpiralSearchTileMap) SelectedTile() (*Tile, bool) {
 	}
 	return nil, false
 
-}
-
-//AddFunctionToWorldInputActions is used to store functions that write data to the tileMap.
-func (tileMap *SpiralSearchTileMap) AddFunctionToWorldInputActions(inputFunction func()) {
-	tileMap.actionQueue <- inputFunction
 }
 
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
@@ -288,19 +288,8 @@ func (tileMap *SpiralSearchTileMap) processGophers() {
 }
 
 func (tileMap *SpiralSearchTileMap) processQueuedTasks() {
-
 	tileMap.diagnostics.inputStopWatch.Start()
-
-	wait := true
-	for wait {
-		select {
-		case action := <-tileMap.actionQueue:
-			action()
-		default:
-			wait = false
-		}
-	}
-
+	tileMap.QueueableActions.Process()
 	tileMap.diagnostics.inputStopWatch.Stop()
 }
 
@@ -312,7 +301,7 @@ func (tileMap *SpiralSearchTileMap) TogglePause() {
 //QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
 func (tileMap *SpiralSearchTileMap) QueueRemoveGopher(gopher *Gopher) {
 
-	tileMap.AddFunctionToWorldInputActions(func() {
+	tileMap.Add(func() {
 		//gopher = nil
 		if mapPoint, ok := tileMap.Tile(gopher.Position.GetX(), gopher.Position.GetY()); ok {
 			mapPoint.Gopher = nil
@@ -323,7 +312,7 @@ func (tileMap *SpiralSearchTileMap) QueueRemoveGopher(gopher *Gopher) {
 //QueueGopherMove Adds the Move Gopher Method to the Input Queue.
 func (tileMap *SpiralSearchTileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
 
-	tileMap.AddFunctionToWorldInputActions(func() {
+	tileMap.Add(func() {
 		success := tileMap.MoveGopher(gopher, moveX, moveY)
 		_ = success
 	})
@@ -334,7 +323,7 @@ func (tileMap *SpiralSearchTileMap) QueueGopherMove(gopher *Gopher, moveX int, m
 //held food variable
 func (tileMap *SpiralSearchTileMap) QueuePickUpFood(gopher *Gopher) {
 
-	tileMap.AddFunctionToWorldInputActions(func() {
+	tileMap.Add(func() {
 		food, ok := tileMap.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
 		if ok {
 			gopher.HeldFood = food
@@ -346,7 +335,7 @@ func (tileMap *SpiralSearchTileMap) QueuePickUpFood(gopher *Gopher) {
 
 func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
 
-	tileMap.AddFunctionToWorldInputActions(func() {
+	tileMap.Add(func() {
 
 		if mapPoint, ok := tileMap.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
 
