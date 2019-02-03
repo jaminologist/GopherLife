@@ -144,6 +144,8 @@ func (gopher *Gopher) moveTowardsFood(tileMap TileMap) {
 	if len(gopher.FoodTargets) > 0 {
 
 		target := gopher.FoodTargets[0]
+		//fmt.Println(gopher.Position.GetX(), gopher.Position.GetY())
+		//fmt.Println(target.GetX(), target.GetY())
 
 		mapPoint, _ := tileMap.Tile(target.GetX(), target.GetY())
 

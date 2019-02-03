@@ -29,15 +29,15 @@ type PageVariables struct {
 func SetUpPage() {
 
 	stats := world.Statistics{
-		Width:                  3000,
-		Height:                 3000,
-		NumberOfGophers:        5000,
-		NumberOfFood:           1000000,
+		Width:                  10,
+		Height:                 10,
+		NumberOfGophers:        1,
+		NumberOfFood:           20,
 		MaximumNumberOfGophers: 100000,
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.CreateWorldCustom(stats)
+	var tileMap = world.CreatePartitionTileMapCustom(stats)
 	renderer := world.NewRenderer()
 
 	tileMapFunctions := make(map[string]func(world.Statistics) world.TileMap)

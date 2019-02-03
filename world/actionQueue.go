@@ -30,3 +30,7 @@ func (basicActionQueue *BasicActionQueue) Process() {
 
 	basicActionQueue.actionQueue = make(chan func(), basicActionQueue.maxActions)
 }
+
+type GopherActions struct {
+	QueueableActions
+}

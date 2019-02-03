@@ -32,7 +32,7 @@ func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 	tileMap := SpiralSearchTileMap{}
 
-	a := NewBasic2DContainer(statistics.Width, statistics.Height)
+	a := NewBasic2DContainer(0, 0, statistics.Width, statistics.Height)
 	tileMap.TileContainer = &a
 
 	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
@@ -66,6 +66,38 @@ func CreateTileMap() *SpiralSearchTileMap {
 		},
 	)
 	return tileMap
+}
+
+func (tileMap *SpiralSearchTileMap) setUpMapPoints() {
+
+	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
+		tileMap.Statistics.Width, tileMap.Statistics.Height)
+
+	count := 0
+
+	for i := 0; i < tileMap.Statistics.NumberOfGophers; i++ {
+
+		pos := keys[count]
+		var gopher = NewGopher(names.CuteName(), pos)
+
+		tileMap.InsertGopher(&gopher, pos.GetX(), pos.GetY())
+
+		if i == 0 {
+			tileMap.SelectedGopher = &gopher
+		}
+
+		tileMap.gopherArray[i] = &gopher
+		tileMap.ActiveGophers <- &gopher
+		count++
+	}
+
+	for i := 0; i < tileMap.Statistics.NumberOfFood; i++ {
+		pos := keys[count]
+		var food = NewPotato()
+		tileMap.InsertFood(&food, pos.GetX(), pos.GetY())
+		count++
+	}
+
 }
 
 //SelectEntity Uses the given co-ordinates to select and return a gopher in the tileMap
@@ -174,38 +206,6 @@ func (tileMap *SpiralSearchTileMap) Stats() *Statistics {
 
 func (tileMap *SpiralSearchTileMap) Diagnostics() *Diagnostics {
 	return &tileMap.diagnostics
-}
-
-func (tileMap *SpiralSearchTileMap) setUpMapPoints() {
-
-	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
-		tileMap.Statistics.Width, tileMap.Statistics.Height)
-
-	count := 0
-
-	for i := 0; i < tileMap.Statistics.NumberOfGophers; i++ {
-
-		pos := keys[count]
-		var gopher = NewGopher(names.CuteName(), pos)
-
-		tileMap.InsertGopher(&gopher, pos.GetX(), pos.GetY())
-
-		if i == 0 {
-			tileMap.SelectedGopher = &gopher
-		}
-
-		tileMap.gopherArray[i] = &gopher
-		tileMap.ActiveGophers <- &gopher
-		count++
-	}
-
-	for i := 0; i < tileMap.Statistics.NumberOfFood; i++ {
-		pos := keys[count]
-		var food = NewPotato()
-		tileMap.InsertFood(&food, pos.GetX(), pos.GetY())
-		count++
-	}
-
 }
 
 func (tileMap *SpiralSearchTileMap) onFoodPickUp(location calc.Coordinates) {
