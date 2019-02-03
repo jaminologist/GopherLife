@@ -1,49 +1,75 @@
 package world
 
 import (
-	"fmt"
-	"reflect"
+	"gopherlife/calc"
 	"testing"
 )
 
 func TestPartitionTileMap_Tile(t *testing.T) {
 
-	tileMap := CreatePartitionTileMap()
-
-	tile, ok := tileMap.Tile(12, 29)
-
-	fmt.Println(len(tileMap.grid))
-	fmt.Println(len(tileMap.grid[0]))
-	fmt.Println("Hi?")
-	fmt.Println(tileMap.convertToGridCoordinates(12, 29))
-
-	fmt.Println(ok)
-	fmt.Println(tile.isEmpty())
 }
 
 func TestGridSection_Tile(t *testing.T) {
-	type args struct {
-		x int
-		y int
+}
+
+func TestPartitionTileMap_MoveGopher(t *testing.T) {
+
+	stats := Statistics{
+		Width:                  10,
+		Height:                 10,
+		NumberOfGophers:        0,
+		NumberOfFood:           20,
+		MaximumNumberOfGophers: 100000,
+		GopherBirthRate:        7,
 	}
-	tests := []struct {
-		name        string
-		gridSection *GridSection
-		args        args
-		want        *Tile
-		want1       bool
-	}{
-		// TODO: Add test cases.
+
+	var tileMap = CreatePartitionTileMapCustom(stats)
+
+	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	tileMap.InsertGopher(1, 2, &gopher)
+
+	tileMap.QueueGopherMove(&gopher, 0, 1)
+	tileMap.Update()
+
+	des, _ := tileMap.Tile(1, 3)
+
+	if des.Gopher == nil {
+		t.Errorf("Destination is empty")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := tt.gridSection.Tile(tt.args.x, tt.args.y)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GridSection.Tile() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("GridSection.Tile() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
+
+	prev, _ := tileMap.Tile(1, 2)
+
+	if prev.Gopher != nil {
+		t.Errorf("Previous Destination is not empty")
+	}
+
+}
+
+func TestPartitionTileMap_RemoveGopher(t *testing.T) {
+
+	stats := Statistics{
+		Width:                  10,
+		Height:                 10,
+		NumberOfGophers:        0,
+		NumberOfFood:           20,
+		MaximumNumberOfGophers: 100000,
+		GopherBirthRate:        7,
+	}
+
+	var tileMap = CreatePartitionTileMapCustom(stats)
+
+	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	tileMap.InsertGopher(1, 2, &gopher)
+
+	bool := tileMap.RemoveGopher(1, 2, &gopher)
+
+	if !bool {
+		t.Errorf("Gopher is not removed")
+	}
+
+	tile, _ := tileMap.Tile(1, 2)
+
+	if tile.Gopher != nil {
+		t.Errorf("Gopher is not removed")
 	}
 }
