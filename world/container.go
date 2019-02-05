@@ -107,7 +107,7 @@ func (container *TrackedTileContainer) InsertFood(x int, y int, food *Food) bool
 
 func (container *TrackedTileContainer) RemoveGopher(x int, y int, gopher *Gopher) bool {
 	if tile, ok := container.Tile(x, y); ok {
-		if !tile.HasFood() {
+		if tile.HasGopher() {
 			tile.ClearGopher()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
 			delete(container.foodTileLocations, calc.Hashcode(x, y))
@@ -119,7 +119,7 @@ func (container *TrackedTileContainer) RemoveGopher(x int, y int, gopher *Gopher
 
 func (container *TrackedTileContainer) RemoveFood(x int, y int, food *Food) bool {
 	if tile, ok := container.Tile(x, y); ok {
-		if !tile.HasFood() {
+		if tile.HasFood() {
 			tile.ClearFood()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
 			delete(container.foodTileLocations, calc.Hashcode(x, y))
@@ -226,6 +226,8 @@ type GridInsertable struct {
 
 func (container *BasicGridContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
 	if grid, ok := container.Grid(x, y); ok {
+		gopher.Position.X = x
+		gopher.Position.Y = y
 		return grid.InsertGopher(x, y, gopher)
 	}
 	return false

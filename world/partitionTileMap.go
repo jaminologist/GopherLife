@@ -250,7 +250,7 @@ func (tileMap *PartitionTileMap) Diagnostics() *Diagnostics {
 
 func (tileMap *PartitionTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
-	currentPosition := gopher.Position
+	currentPosition := calc.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
 	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
 
 	if tileMap.InsertGopher(targetPosition.GetX(), targetPosition.GetY(), gopher) {
