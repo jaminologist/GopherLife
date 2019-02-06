@@ -29,10 +29,10 @@ type PageVariables struct {
 func SetUpPage() {
 
 	stats := world.Statistics{
-		Width:                  10,
-		Height:                 10,
-		NumberOfGophers:        1,
-		NumberOfFood:           20,
+		Width:                  50,
+		Height:                 50,
+		NumberOfGophers:        5,
+		NumberOfFood:           200,
 		MaximumNumberOfGophers: 100000,
 		GopherBirthRate:        7,
 	}
