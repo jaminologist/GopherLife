@@ -69,7 +69,7 @@ func (gopher *Gopher) SetIsDead() {
 
 	chance := rand.Intn(101)
 
-	a := gopher.Lifespan - 500
+	a := gopher.Lifespan - 5000
 
 	if a > chance || gopher.Hunger <= 0 {
 		gopher.IsDead = true
@@ -143,6 +143,8 @@ func (gopher *Gopher) moveTowardsFood(tileMap TileMap) {
 
 	if len(gopher.FoodTargets) > 0 {
 
+		//	fmt.Println("Found food")
+
 		target := gopher.FoodTargets[0]
 		//fmt.Println(gopher.Position.GetX(), gopher.Position.GetY())
 		//fmt.Println(target.GetX(), target.GetY())
@@ -194,7 +196,6 @@ func (gopher *Gopher) PerformMoment(tileMap TileMap) {
 
 		switch {
 		case gopher.Gender == Male:
-
 			if gopher.IsLookingForLove() {
 				gopher.GopherTargets = tileMap.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
 				if len(gopher.GopherTargets) <= 0 {
@@ -222,6 +223,7 @@ func (gopher *Gopher) PerformMoment(tileMap TileMap) {
 	}
 
 	gopher.AdvanceLife()
+
 }
 
 //Wander Randomly decides a diretion for the gopher to move in

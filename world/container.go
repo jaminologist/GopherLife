@@ -19,7 +19,11 @@ type Basic2DContainer struct {
 
 func NewBasic2DContainer(x int, y int, width int, height int) Basic2DContainer {
 
-	container := Basic2DContainer{width: width, height: height}
+	container := Basic2DContainer{
+		x:      x,
+		y:      y,
+		width:  width,
+		height: height}
 
 	container.grid = make([][]*Tile, width)
 
@@ -36,12 +40,11 @@ func NewBasic2DContainer(x int, y int, width int, height int) Basic2DContainer {
 }
 
 func (container *Basic2DContainer) Tile(x int, y int) (*Tile, bool) {
-
-	if x < container.x || x >= container.width || y < container.y || y >= container.height {
+	if x < container.x || x >= container.width+container.x || y < container.y || y >= container.height+container.y {
 		return nil, false
 	}
 
-	return container.grid[x][y], true
+	return container.grid[x-container.x][y-container.y], true
 }
 
 type TrackedTileContainer struct {
@@ -81,6 +84,8 @@ func (container *TrackedTileContainer) InsertGopher(x int, y int, gopher *Gopher
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasGopher() {
 			tile.SetGopher(gopher)
+			gopher.Position.X = x
+			gopher.Position.Y = y
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
 			container.gopherTileLocations[calc.Hashcode(x, y)] = tile
 			return true
@@ -94,6 +99,8 @@ func (container *TrackedTileContainer) InsertGopher(x int, y int, gopher *Gopher
 func (container *TrackedTileContainer) InsertFood(x int, y int, food *Food) bool {
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasFood() {
+			food.Position.X = x
+			food.Position.Y = y
 			tile.SetFood(food)
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
 			container.foodTileLocations[calc.Hashcode(x, y)] = tile
@@ -110,7 +117,7 @@ func (container *TrackedTileContainer) RemoveGopher(x int, y int, gopher *Gopher
 		if tile.HasGopher() {
 			tile.ClearGopher()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			delete(container.foodTileLocations, calc.Hashcode(x, y))
+			delete(container.gopherTileLocations, calc.Hashcode(x, y))
 			return true
 		}
 	}
@@ -122,6 +129,7 @@ func (container *TrackedTileContainer) RemoveFood(x int, y int, food *Food) bool
 		if tile.HasFood() {
 			tile.ClearFood()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
+			//fmt.Println("FOOOD TILE LOCATIONS ", container.foodTileLocations)
 			delete(container.foodTileLocations, calc.Hashcode(x, y))
 			return true
 		}
@@ -150,11 +158,15 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 		numberOfGridsX++
 	}
 
+	fmt.Println("NUMER GRID X ", numberOfGridsX)
+
 	numberOfGridsY := height / gridHeight
 
 	if numberOfGridsY*gridHeight < height {
 		numberOfGridsY++
 	}
+
+	fmt.Println("NUMER GRID Y ", numberOfGridsY)
 
 	containers := make([][]*TrackedTileContainer, numberOfGridsX)
 
@@ -162,15 +174,16 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 		containers[i] = make([]*TrackedTileContainer, numberOfGridsY)
 
 		for j := 0; j < numberOfGridsY; j++ {
-
-			fmt.Println(i, j)
-			ttc := NewTrackedTileContainer(i*numberOfGridsX,
-				j*numberOfGridsY,
+			ttc := NewTrackedTileContainer(i*gridWidth,
+				j*gridHeight,
 				gridWidth,
 				gridHeight)
 			containers[i][j] = &ttc
 		}
 	}
+
+	fmt.Println(len(containers))
+	fmt.Println(len(containers[0]))
 
 	return BasicGridContainer{
 		containers: containers,
@@ -182,6 +195,7 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 }
 
 func (container *BasicGridContainer) Tile(x int, y int) (*Tile, bool) {
+
 	if grid, ok := container.Grid(x, y); ok {
 		if tile, ok := grid.Tile(x, y); ok {
 			return tile, ok
@@ -226,8 +240,6 @@ type GridInsertable struct {
 
 func (container *BasicGridContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
 	if grid, ok := container.Grid(x, y); ok {
-		gopher.Position.X = x
-		gopher.Position.Y = y
 		return grid.InsertGopher(x, y, gopher)
 	}
 	return false
@@ -235,8 +247,6 @@ func (container *BasicGridContainer) InsertGopher(x int, y int, gopher *Gopher) 
 
 func (container *BasicGridContainer) InsertFood(x int, y int, food *Food) bool {
 	if grid, ok := container.Grid(x, y); ok {
-		food.Position.X = x
-		food.Position.Y = y
 		return grid.InsertFood(x, y, food)
 	}
 	return false
