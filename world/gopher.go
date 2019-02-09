@@ -2,6 +2,7 @@ package world
 
 import (
 	"gopherlife/calc"
+	"gopherlife/names"
 	"math/rand"
 )
 
@@ -143,11 +144,7 @@ func (gopher *Gopher) moveTowardsFood(tileMap TileMap) {
 
 	if len(gopher.FoodTargets) > 0 {
 
-		//	fmt.Println("Found food")
-
 		target := gopher.FoodTargets[0]
-		//fmt.Println(gopher.Position.GetX(), gopher.Position.GetY())
-		//fmt.Println(target.GetX(), target.GetY())
 
 		mapPoint, _ := tileMap.Tile(target.GetX(), target.GetY())
 
@@ -239,4 +236,183 @@ func (gopher *Gopher) ClearFoodTargets() {
 
 func (gopher *Gopher) ClearGopherTargets() {
 	gopher.GopherTargets = []calc.Coordinates{}
+}
+
+type GopherActor struct {
+	*Gopher
+	QueueableActions
+	Searchable
+	TileContainer
+	Insertable
+	PickableTiles
+	MoveableActors
+	ActorGeneration
+	GopherBirthRate int
+}
+
+func (gopher *GopherActor) Update() {
+
+	switch {
+	case gopher.IsDead:
+		gopher.Decay++
+	case gopher.IsHungry:
+		gopher.handleHunger()
+	case !gopher.IsHungry:
+
+		switch {
+		case gopher.Gender == Male:
+			if gopher.IsLookingForLove() {
+				gopher.GopherTargets = gopher.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
+				if len(gopher.GopherTargets) <= 0 {
+					gopher.Wander()
+				} else {
+
+					target := gopher.GopherTargets[0]
+
+					if gopher.Position.IsInRange(target, 1, 1) {
+						gopher.QueueMating(target)
+						break
+					}
+					moveX, moveY := calc.FindNextStep(gopher.Position, target)
+					gopher.QueueGopherMove(moveX, moveY)
+					gopher.ClearFoodTargets()
+				}
+			} else {
+				gopher.Wander()
+			}
+
+		default:
+			gopher.Wander()
+		}
+
+	}
+
+	gopher.AdvanceLife()
+
+}
+
+func (gopher *GopherActor) handleHunger() {
+	switch {
+	case gopher.HeldFood != nil:
+		gopher.Eat()
+	default:
+		gopher.moveTowardsFood()
+	}
+}
+
+func (gopher *GopherActor) moveTowardsFood() {
+
+	if len(gopher.FoodTargets) > 0 {
+
+		target := gopher.FoodTargets[0]
+
+		mapPoint, _ := gopher.Tile(target.GetX(), target.GetY())
+
+		if mapPoint.Food == nil {
+			gopher.ClearFoodTargets()
+		} else {
+
+			if gopher.Position.IsInRange(target, 0, 0) {
+				gopher.QueuePickUpFood()
+				gopher.ClearFoodTargets()
+				return
+			}
+
+			moveX, moveY := calc.FindNextStep(gopher.Position, target)
+			gopher.QueueGopherMove(moveX, moveY)
+
+		}
+
+	} else {
+		gopher.LookForFood()
+	}
+
+}
+
+//Wander Randomly decides a diretion for the gopher to move in
+func (gopher *GopherActor) Wander() {
+	x, y := rand.Intn(3)-1, rand.Intn(3)-1
+	gopher.QueueGopherMove(x, y)
+}
+
+func (gopher *GopherActor) LookForFood() {
+	gopher.FoodTargets = gopher.Search(gopher.Position, 25, 25, 1, SearchForFood)
+}
+
+//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
+func (gopher *GopherActor) QueueRemoveGopher() {
+
+	gopher.Add(func() {
+		gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
+	})
+}
+
+//QueueGopherMove Adds the Move Gopher Method to the Input Queue.
+func (gopher *GopherActor) QueueGopherMove(moveX int, moveY int) {
+
+	gopher.Add(func() {
+		success := gopher.MoveGopher(gopher.Gopher, moveX, moveY)
+		_ = success
+	})
+
+}
+
+//QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
+//held food variable
+func (gopher *GopherActor) QueuePickUpFood() {
+
+	gopher.Add(func() {
+		food, ok := gopher.PickUpFood(gopher.Position.GetX(), gopher.Position.GetY())
+		if ok {
+			gopher.HeldFood = food
+			gopher.ClearFoodTargets()
+		}
+	})
+}
+
+func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
+
+	gopher.Add(func() {
+
+		if mapPoint, ok := gopher.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
+
+			mate := mapPoint.Gopher
+			litterNumber := rand.Intn(gopher.GopherBirthRate)
+
+			emptySpaces := gopher.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
+
+			if mate.Gender == Female && len(emptySpaces) > 0 {
+				mate.IsMated = true
+				mate.CounterTillReadyToFindLove = 0
+
+				for i := 0; i < litterNumber; i++ {
+
+					if i < len(emptySpaces) {
+
+						pos := emptySpaces[i]
+						newborn := NewGopher(names.CuteName(), emptySpaces[i])
+
+						var gopherActor = GopherActor{
+							Gopher:           &newborn,
+							GopherBirthRate:  gopher.GopherBirthRate,
+							QueueableActions: gopher.QueueableActions,
+							Searchable:       gopher.Searchable,
+							TileContainer:    gopher.TileContainer,
+							Insertable:       gopher.Insertable,
+							PickableTiles:    gopher.PickableTiles,
+							MoveableActors:   gopher.MoveableActors,
+							ActorGeneration:  gopher.ActorGeneration,
+						}
+
+						gopher.AddNewGopher(pos.GetX(), pos.GetY(), &gopherActor)
+
+					}
+
+				}
+
+			}
+
+		}
+	})
+
 }

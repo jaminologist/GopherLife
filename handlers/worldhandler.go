@@ -37,7 +37,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.CreatePartitionTileMapCustom(stats)
+	var tileMap = world.CreateWorldCustom(stats)
 	renderer := world.NewRenderer()
 
 	tileMapFunctions := make(map[string]func(world.Statistics) world.TileMap)

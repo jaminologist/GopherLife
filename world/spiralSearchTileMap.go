@@ -11,8 +11,11 @@ type SpiralSearchTileMap struct {
 	Searchable
 	TileContainer
 	QueueableActions
+	FoodRespawnPickup
+	GopherGeneration
+	Insertable
 
-	ActiveGophers chan *Gopher
+	ActiveActors chan *GopherActor
 
 	GopherWaitGroup *sync.WaitGroup
 	SelectedGopher  *Gopher
@@ -41,10 +44,25 @@ func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
 	tileMap.QueueableActions = &qa
 
+	frp := FoodRespawnPickup{Insertable: &tileMap}
+	tileMap.FoodRespawnPickup = frp
+
+	tileMap.Insertable = &a
+
 	tileMap.Statistics = statistics
 
-	tileMap.ActiveGophers = make(chan *Gopher, statistics.NumberOfGophers)
+	tileMap.ActiveActors = make(chan *GopherActor, statistics.MaximumNumberOfGophers*2)
+
 	tileMap.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
+
+	ag := GopherGeneration{
+		Insertable:     tileMap.Insertable,
+		maxGenerations: tileMap.Statistics.MaximumNumberOfGophers,
+		ActiveGophers:  tileMap.ActiveActors,
+		gopherArray:    tileMap.gopherArray,
+	}
+
+	tileMap.GopherGeneration = ag
 
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
@@ -80,21 +98,33 @@ func (tileMap *SpiralSearchTileMap) setUpMapPoints() {
 		pos := keys[count]
 		var gopher = NewGopher(names.CuteName(), pos)
 
-		tileMap.InsertGopher(&gopher, pos.GetX(), pos.GetY())
+		tileMap.InsertGopher(pos.GetX(), pos.GetY(), &gopher)
 
 		if i == 0 {
 			tileMap.SelectedGopher = &gopher
 		}
 
+		var gopherActor = GopherActor{
+			Gopher:           &gopher,
+			GopherBirthRate:  tileMap.Statistics.GopherBirthRate,
+			QueueableActions: tileMap.QueueableActions,
+			Searchable:       tileMap.Searchable,
+			TileContainer:    tileMap.TileContainer,
+			Insertable:       tileMap.Insertable,
+			PickableTiles:    tileMap,
+			MoveableActors:   tileMap,
+			ActorGeneration:  &tileMap.GopherGeneration,
+		}
+
 		tileMap.gopherArray[i] = &gopher
-		tileMap.ActiveGophers <- &gopher
+		tileMap.ActiveActors <- &gopherActor
 		count++
 	}
 
 	for i := 0; i < tileMap.Statistics.NumberOfFood; i++ {
 		pos := keys[count]
 		var food = NewPotato()
-		tileMap.InsertFood(&food, pos.GetX(), pos.GetY())
+		tileMap.InsertFood(pos.GetX(), pos.GetY(), &food)
 		count++
 	}
 
@@ -127,44 +157,8 @@ func (tileMap *SpiralSearchTileMap) SelectedTile() (*Tile, bool) {
 
 }
 
-//InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
-func (tileMap *SpiralSearchTileMap) InsertGopher(gopher *Gopher, x int, y int) bool {
-
-	if tile, ok := tileMap.Tile(x, y); ok {
-		if !tile.HasGopher() {
-			tile.SetGopher(gopher)
-			return true
-		}
-	}
-
-	return false
-
-}
-
-//InsertFood Inserts the given food into the tileMap at the specified co-ordinate
-func (tileMap *SpiralSearchTileMap) InsertFood(food *Food, x int, y int) bool {
-
-	if tile, ok := tileMap.Tile(x, y); ok {
-		if !tile.HasFood() {
-			tile.SetFood(food)
-			return true
-		}
-	}
-	return false
-}
-
-//RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
-func (tileMap *SpiralSearchTileMap) RemoveFoodFromWorld(x int, y int) (*Food, bool) {
-
-	if mapPoint, ok := tileMap.Tile(x, y); ok {
-		if mapPoint.HasFood() {
-			var food = mapPoint.Food
-			mapPoint.ClearFood()
-			return food, true
-		}
-	}
-
-	return nil, false
+type MoveableActors interface {
+	MoveGopher(gopher *Gopher, moveX int, moveY int) bool
 }
 
 //MoveGopher Handles the movement of a give gopher, Attempts to move a gopher by moveX and moveY.
@@ -208,6 +202,64 @@ func (tileMap *SpiralSearchTileMap) Diagnostics() *Diagnostics {
 	return &tileMap.diagnostics
 }
 
+type PickableTiles interface {
+	PickUpFood(x int, y int) (*Food, bool)
+}
+
+type FoodRespawnPickup struct {
+	Insertable
+}
+
+func (frp *FoodRespawnPickup) PickUpFood(x int, y int) (*Food, bool) {
+
+	food, ok := frp.RemoveFood(x, y)
+	defer func() {
+
+		if ok {
+
+			size := 50
+			xrange, yrange := rand.Perm(size), rand.Perm(size)
+			food := NewPotato()
+
+		loop:
+			for i := 0; i < size; i++ {
+				for j := 0; j < size; j++ {
+					newX, newY := x+xrange[i]-size/2, y+yrange[j]-size/2
+					if frp.InsertFood(newX, newY, &food) {
+						break loop
+					}
+				}
+			}
+
+		}
+
+	}()
+	return food, ok
+}
+
+type ActorGeneration interface {
+	AddNewGopher(x int, y int, g *GopherActor) bool
+}
+
+type GopherGeneration struct {
+	Insertable
+	maxGenerations int
+	ActiveGophers  chan *GopherActor
+	gopherArray    []*Gopher
+}
+
+func (gg *GopherGeneration) AddNewGopher(x int, y int, g *GopherActor) bool {
+
+	if len(gg.gopherArray) <= gg.maxGenerations {
+		if gg.InsertGopher(x, y, g.Gopher) {
+			gg.ActiveGophers <- g
+			return true
+		}
+	}
+
+	return false
+}
+
 func (tileMap *SpiralSearchTileMap) onFoodPickUp(location calc.Coordinates) {
 
 	size := 50
@@ -218,7 +270,7 @@ loop:
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
 			newX, newY := location.GetX()+xrange[i]-size/2, location.GetY()+yrange[j]-size/2
-			if tileMap.InsertFood(&food, newX, newY) {
+			if tileMap.InsertFood(newX, newY, &food) {
 				break loop
 			}
 		}
@@ -235,6 +287,16 @@ func (tileMap *SpiralSearchTileMap) PerformEntityAction(gopher *Gopher, wg *sync
 		tileMap.QueueRemoveGopher(gopher)
 	}
 
+	wg.Done()
+}
+
+func (tileMap *SpiralSearchTileMap) Act(gopher *GopherActor, wg *sync.WaitGroup, channel chan *GopherActor) {
+	gopher.Update()
+	if !gopher.IsDecayed() {
+		channel <- gopher
+	} else {
+		gopher.QueueRemoveGopher()
+	}
 	wg.Done()
 }
 
@@ -255,7 +317,7 @@ func (tileMap *SpiralSearchTileMap) Update() bool {
 	tileMap.diagnostics.processStopWatch.Start()
 	tileMap.processGophers()
 	tileMap.processQueuedTasks()
-	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveGophers)
+	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveActors)
 	if tileMap.Statistics.NumberOfGophers > 0 {
 		tileMap.Moments++
 	}
@@ -270,18 +332,20 @@ func (tileMap *SpiralSearchTileMap) processGophers() {
 
 	tileMap.diagnostics.gopherStopWatch.Start()
 
-	numGophers := len(tileMap.ActiveGophers)
+	numGophers := len(tileMap.ActiveActors)
 	tileMap.gopherArray = make([]*Gopher, numGophers)
+	tileMap.GopherGeneration.gopherArray = tileMap.gopherArray
 
-	secondChannel := make(chan *Gopher, numGophers*2)
+	secondChannel := make(chan *GopherActor, numGophers*2)
 	for i := 0; i < numGophers; i++ {
-		gopher := <-tileMap.ActiveGophers
-		tileMap.gopherArray[i] = gopher
+		gopher := <-tileMap.ActiveActors
+		tileMap.gopherArray[i] = gopher.Gopher
 		tileMap.GopherWaitGroup.Add(1)
-		go tileMap.PerformEntityAction(gopher, tileMap.GopherWaitGroup, secondChannel)
+		go tileMap.Act(gopher, tileMap.GopherWaitGroup, secondChannel)
 
 	}
-	tileMap.ActiveGophers = secondChannel
+	tileMap.ActiveActors = secondChannel
+	tileMap.GopherGeneration.ActiveGophers = tileMap.ActiveActors
 	tileMap.GopherWaitGroup.Wait()
 
 	tileMap.diagnostics.gopherStopWatch.Stop()
@@ -324,7 +388,7 @@ func (tileMap *SpiralSearchTileMap) QueueGopherMove(gopher *Gopher, moveX int, m
 func (tileMap *SpiralSearchTileMap) QueuePickUpFood(gopher *Gopher) {
 
 	tileMap.Add(func() {
-		food, ok := tileMap.RemoveFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
+		food, ok := tileMap.RemoveFood(gopher.Position.GetX(), gopher.Position.GetY())
 		if ok {
 			gopher.HeldFood = food
 			tileMap.onFoodPickUp(gopher.Position)
@@ -354,11 +418,19 @@ func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition cal
 						pos := emptySpaces[i]
 						newborn := NewGopher(names.CuteName(), emptySpaces[i])
 
-						if len(tileMap.gopherArray) <= tileMap.Statistics.MaximumNumberOfGophers {
-							if tileMap.InsertGopher(&newborn, pos.GetX(), pos.GetY()) {
-								tileMap.ActiveGophers <- &newborn
-							}
+						var gopherActor = GopherActor{
+							Gopher:           &newborn,
+							GopherBirthRate:  tileMap.GopherBirthRate,
+							QueueableActions: tileMap,
+							Searchable:       tileMap.Searchable,
+							TileContainer:    tileMap.TileContainer,
+							Insertable:       tileMap,
+							PickableTiles:    &tileMap.FoodRespawnPickup,
+							MoveableActors:   tileMap,
+							ActorGeneration:  &tileMap.GopherGeneration,
 						}
+
+						tileMap.GopherGeneration.AddNewGopher(pos.GetX(), pos.GetY(), &gopherActor)
 					}
 
 				}

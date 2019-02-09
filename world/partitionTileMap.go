@@ -390,15 +390,15 @@ func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, he
 	case SearchForEmptySpace:
 		query = CheckMapPointForEmptySpace
 	case SearchForFemaleGopher:
-		/*locations := queryForFemalePartner(tileMap, width, height, x, y)
+		locations := queryForFemalePartner(tileMap, width, height, x, y)
 		calc.SortByNearestFromCoordinate(position, locations)
 
 		if len(locations) >= maximumFind {
 			return locations[:maximumFind]
 		} else {
 			return locations[:len(locations)]
-		}*/
-		query = CheckMapPointForFemaleGopher
+		}
+		//query = CheckMapPointForFemaleGopher
 	}
 
 	for {
