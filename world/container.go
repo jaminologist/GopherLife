@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"gopherlife/calc"
 )
 
@@ -45,6 +44,59 @@ func (container *Basic2DContainer) Tile(x int, y int) (*Tile, bool) {
 	}
 
 	return container.grid[x-container.x][y-container.y], true
+}
+
+//InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
+func (container *Basic2DContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
+
+	if tile, ok := container.Tile(x, y); ok {
+		if !tile.HasGopher() {
+			tile.SetGopher(gopher)
+			return true
+		}
+	}
+
+	return false
+
+}
+
+//InsertFood Inserts the given food into the tileMap at the specified co-ordinate
+func (container *Basic2DContainer) InsertFood(x int, y int, food *Food) bool {
+
+	if tile, ok := container.Tile(x, y); ok {
+		if !tile.HasFood() {
+			tile.SetFood(food)
+			return true
+		}
+	}
+	return false
+}
+
+//RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
+func (container *Basic2DContainer) RemoveGopher(x int, y int) bool {
+
+	if mapPoint, ok := container.Tile(x, y); ok {
+		if mapPoint.HasGopher() {
+			mapPoint.ClearGopher()
+			return true
+		}
+	}
+
+	return false
+}
+
+//RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
+func (container *Basic2DContainer) RemoveFood(x int, y int) (*Food, bool) {
+
+	if mapPoint, ok := container.Tile(x, y); ok {
+		if mapPoint.HasFood() {
+			var food = mapPoint.Food
+			mapPoint.ClearFood()
+			return food, true
+		}
+	}
+
+	return nil, false
 }
 
 type TrackedTileContainer struct {
@@ -129,7 +181,6 @@ func (container *TrackedTileContainer) RemoveFood(x int, y int, food *Food) bool
 		if tile.HasFood() {
 			tile.ClearFood()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			//fmt.Println("FOOOD TILE LOCATIONS ", container.foodTileLocations)
 			delete(container.foodTileLocations, calc.Hashcode(x, y))
 			return true
 		}
@@ -158,15 +209,11 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 		numberOfGridsX++
 	}
 
-	fmt.Println("NUMER GRID X ", numberOfGridsX)
-
 	numberOfGridsY := height / gridHeight
 
 	if numberOfGridsY*gridHeight < height {
 		numberOfGridsY++
 	}
-
-	fmt.Println("NUMER GRID Y ", numberOfGridsY)
 
 	containers := make([][]*TrackedTileContainer, numberOfGridsX)
 
@@ -181,9 +228,6 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 			containers[i][j] = &ttc
 		}
 	}
-
-	fmt.Println(len(containers))
-	fmt.Println(len(containers[0]))
 
 	return BasicGridContainer{
 		containers: containers,
@@ -230,8 +274,8 @@ func (container *BasicGridContainer) convertToGridCoordinates(x int, y int) (int
 type Insertable interface {
 	InsertGopher(x int, y int, gopher *Gopher) bool
 	InsertFood(x int, y int, food *Food) bool
-	RemoveGopher(x int, y int, gopher *Gopher) bool
-	RemoveFood(x int, y int, food *Food) (Food bool)
+	RemoveGopher(x int, y int) bool
+	RemoveFood(x int, y int) (*Food, bool)
 }
 
 type GridInsertable struct {
