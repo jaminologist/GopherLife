@@ -51,6 +51,7 @@ func (container *Basic2DContainer) InsertGopher(x int, y int, gopher *Gopher) bo
 
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasGopher() {
+			gopher.Position.Set(x, y)
 			tile.SetGopher(gopher)
 			return true
 		}
