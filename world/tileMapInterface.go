@@ -17,11 +17,6 @@ type TileMap interface {
 	Stats() *Statistics
 	Diagnostics() *Diagnostics
 
-	QueueGopherMove(gopher *Gopher, x int, y int)
-	QueuePickUpFood(gopher *Gopher)
-	QueueMating(mate *Gopher, coords calc.Coordinates)
-	QueueRemoveGopher(gopher *Gopher)
-
 	TileContainer
 	Searchable
 }

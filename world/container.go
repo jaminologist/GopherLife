@@ -164,7 +164,7 @@ func (container *TrackedTileContainer) InsertFood(x int, y int, food *Food) bool
 
 }
 
-func (container *TrackedTileContainer) RemoveGopher(x int, y int, gopher *Gopher) bool {
+func (container *TrackedTileContainer) RemoveGopher(x int, y int) bool {
 	if tile, ok := container.Tile(x, y); ok {
 		if tile.HasGopher() {
 			tile.ClearGopher()
@@ -176,16 +176,17 @@ func (container *TrackedTileContainer) RemoveGopher(x int, y int, gopher *Gopher
 	return false
 }
 
-func (container *TrackedTileContainer) RemoveFood(x int, y int, food *Food) bool {
+func (container *TrackedTileContainer) RemoveFood(x int, y int) (*Food, bool) {
 	if tile, ok := container.Tile(x, y); ok {
 		if tile.HasFood() {
+			food := tile.Food
 			tile.ClearFood()
 			x, y = container.ConvertToTrackedTileCoordinates(x, y)
 			delete(container.foodTileLocations, calc.Hashcode(x, y))
-			return true
+			return food, true
 		}
 	}
-	return false
+	return nil, false
 }
 
 type GridContainer interface {
@@ -296,16 +297,16 @@ func (container *BasicGridContainer) InsertFood(x int, y int, food *Food) bool {
 	return false
 }
 
-func (container *BasicGridContainer) RemoveGopher(x int, y int, gopher *Gopher) bool {
+func (container *BasicGridContainer) RemoveGopher(x int, y int) bool {
 	if grid, ok := container.Grid(x, y); ok {
-		return grid.RemoveGopher(x, y, gopher)
+		return grid.RemoveGopher(x, y)
 	}
 	return false
 }
 
-func (container *BasicGridContainer) RemoveFood(x int, y int, food *Food) bool {
+func (container *BasicGridContainer) RemoveFood(x int, y int) (*Food, bool) {
 	if grid, ok := container.Grid(x, y); ok {
-		return grid.RemoveFood(x, y, food)
+		return grid.RemoveFood(x, y)
 	}
-	return false
+	return nil, false
 }

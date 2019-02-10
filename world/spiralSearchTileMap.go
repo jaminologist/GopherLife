@@ -27,10 +27,6 @@ type SpiralSearchTileMap struct {
 	diagnostics Diagnostics
 }
 
-type SpiralTileSearch struct {
-	TileContainer
-}
-
 func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 	tileMap := SpiralSearchTileMap{}
@@ -260,44 +256,14 @@ func (gg *GopherGeneration) AddNewGopher(x int, y int, g *GopherActor) bool {
 	return false
 }
 
-func (tileMap *SpiralSearchTileMap) onFoodPickUp(location calc.Coordinates) {
-
-	size := 50
-	xrange, yrange := rand.Perm(size), rand.Perm(size)
-	food := NewPotato()
-
-loop:
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			newX, newY := location.GetX()+xrange[i]-size/2, location.GetY()+yrange[j]-size/2
-			if tileMap.InsertFood(newX, newY, &food) {
-				break loop
-			}
-		}
-	}
-}
-
-func (tileMap *SpiralSearchTileMap) PerformEntityAction(gopher *Gopher, wg *sync.WaitGroup, channel chan *Gopher) {
-
-	gopher.PerformMoment(tileMap)
-
-	if !gopher.IsDecayed() {
-		channel <- gopher
-	} else {
-		tileMap.QueueRemoveGopher(gopher)
-	}
-
-	wg.Done()
-}
-
-func (tileMap *SpiralSearchTileMap) Act(gopher *GopherActor, wg *sync.WaitGroup, channel chan *GopherActor) {
+func (tileMap *SpiralSearchTileMap) Act(gopher *GopherActor, channel chan *GopherActor) {
 	gopher.Update()
 	if !gopher.IsDecayed() {
 		channel <- gopher
 	} else {
 		gopher.QueueRemoveGopher()
 	}
-	wg.Done()
+	tileMap.GopherWaitGroup.Done()
 }
 
 func (tileMap *SpiralSearchTileMap) Update() bool {
@@ -341,7 +307,7 @@ func (tileMap *SpiralSearchTileMap) processGophers() {
 		gopher := <-tileMap.ActiveActors
 		tileMap.gopherArray[i] = gopher.Gopher
 		tileMap.GopherWaitGroup.Add(1)
-		go tileMap.Act(gopher, tileMap.GopherWaitGroup, secondChannel)
+		go tileMap.Act(gopher, secondChannel)
 
 	}
 	tileMap.ActiveActors = secondChannel
@@ -362,84 +328,8 @@ func (tileMap *SpiralSearchTileMap) TogglePause() {
 	tileMap.IsPaused = !tileMap.IsPaused
 }
 
-//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
-func (tileMap *SpiralSearchTileMap) QueueRemoveGopher(gopher *Gopher) {
-
-	tileMap.Add(func() {
-		//gopher = nil
-		if mapPoint, ok := tileMap.Tile(gopher.Position.GetX(), gopher.Position.GetY()); ok {
-			mapPoint.Gopher = nil
-		}
-	})
-}
-
-//QueueGopherMove Adds the Move Gopher Method to the Input Queue.
-func (tileMap *SpiralSearchTileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
-
-	tileMap.Add(func() {
-		success := tileMap.MoveGopher(gopher, moveX, moveY)
-		_ = success
-	})
-
-}
-
-//QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
-//held food variable
-func (tileMap *SpiralSearchTileMap) QueuePickUpFood(gopher *Gopher) {
-
-	tileMap.Add(func() {
-		food, ok := tileMap.RemoveFood(gopher.Position.GetX(), gopher.Position.GetY())
-		if ok {
-			gopher.HeldFood = food
-			tileMap.onFoodPickUp(gopher.Position)
-			gopher.ClearFoodTargets()
-		}
-	})
-}
-
-func (tileMap *SpiralSearchTileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
-
-	tileMap.Add(func() {
-
-		if mapPoint, ok := tileMap.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
-
-			mate := mapPoint.Gopher
-			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
-
-			emptySpaces := tileMap.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
-
-			if mate.Gender == Female && len(emptySpaces) > 0 {
-				mate.IsMated = true
-				mate.CounterTillReadyToFindLove = 0
-
-				for i := 0; i < litterNumber; i++ {
-
-					if i < len(emptySpaces) {
-						pos := emptySpaces[i]
-						newborn := NewGopher(names.CuteName(), emptySpaces[i])
-
-						var gopherActor = GopherActor{
-							Gopher:           &newborn,
-							GopherBirthRate:  tileMap.GopherBirthRate,
-							QueueableActions: tileMap,
-							Searchable:       tileMap.Searchable,
-							TileContainer:    tileMap.TileContainer,
-							Insertable:       tileMap,
-							PickableTiles:    &tileMap.FoodRespawnPickup,
-							MoveableActors:   tileMap,
-							ActorGeneration:  &tileMap.GopherGeneration,
-						}
-
-						tileMap.GopherGeneration.AddNewGopher(pos.GetX(), pos.GetY(), &gopherActor)
-					}
-
-				}
-
-			}
-
-		}
-	})
-
+type SpiralTileSearch struct {
+	TileContainer
 }
 
 func (spiralTileSearch *SpiralTileSearch) Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates {
@@ -466,10 +356,6 @@ func (spiralTileSearch *SpiralTileSearch) Search(position calc.Coordinates, widt
 		if hasNext == false || len(coordsArray) > max {
 			break
 		}
-
-		/*if coordinates.X == 0 && coordinates.Y == 0 {
-			continue
-		}*/
 
 		relativeCoords := position.RelativeCoordinate(coordinates.X, coordinates.Y)
 
