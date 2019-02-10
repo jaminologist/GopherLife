@@ -17,14 +17,10 @@ const (
 type PartitionTileMap struct {
 	QueueableActions
 	BasicGridContainer
+	FoodRespawnPickup
+	GopherGeneration
 
-	gridWidth  int
-	gridHeight int
-
-	numberOfGridsWide   int
-	numberOfGridsHeight int
-
-	ActiveGophers chan *Gopher
+	ActiveActors chan *GopherActor
 
 	GopherWaitGroup *sync.WaitGroup
 	SelectedGopher  *Gopher
@@ -44,29 +40,26 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
 	tileMap.QueueableActions = &qa
 
-	tileMap.numberOfGridsWide = statistics.Width / gridWidth
-
-	if tileMap.numberOfGridsWide*gridWidth < statistics.Width {
-		tileMap.numberOfGridsWide++
-	}
-
-	tileMap.numberOfGridsHeight = statistics.Height / gridHeight
-
-	if tileMap.numberOfGridsWide*gridHeight < statistics.Height {
-		tileMap.numberOfGridsHeight++
-	}
-
-	tileMap.gridWidth = gridWidth
-	tileMap.gridHeight = gridHeight
-
 	tileMap.BasicGridContainer = NewBasicGridContainer(statistics.Width,
 		statistics.Height,
 		gridWidth,
 		gridHeight,
 	)
 
-	tileMap.ActiveGophers = make(chan *Gopher, statistics.NumberOfGophers)
+	tileMap.ActiveActors = make(chan *GopherActor, statistics.MaximumNumberOfGophers*2)
 	tileMap.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
+
+	frp := FoodRespawnPickup{Insertable: &tileMap.BasicGridContainer}
+	tileMap.FoodRespawnPickup = frp
+
+	ag := GopherGeneration{
+		Insertable:     &tileMap.BasicGridContainer,
+		maxGenerations: tileMap.Statistics.MaximumNumberOfGophers,
+		ActiveGophers:  tileMap.ActiveActors,
+		gopherArray:    tileMap.gopherArray,
+	}
+
+	tileMap.GopherGeneration = ag
 
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
@@ -108,8 +101,20 @@ func (tileMap *PartitionTileMap) setUpTiles() {
 			tileMap.SelectedGopher.Position = pos
 		}
 
+		var gopherActor = GopherActor{
+			Gopher:           &gopher,
+			GopherBirthRate:  tileMap.Statistics.GopherBirthRate,
+			QueueableActions: tileMap.QueueableActions,
+			Searchable:       tileMap,
+			TileContainer:    &tileMap.BasicGridContainer,
+			Insertable:       &tileMap.BasicGridContainer,
+			PickableTiles:    tileMap,
+			MoveableActors:   tileMap,
+			ActorGeneration:  &tileMap.GopherGeneration,
+		}
+
 		tileMap.gopherArray[i] = &gopher
-		tileMap.ActiveGophers <- &gopher
+		tileMap.ActiveActors <- &gopherActor
 		count++
 	}
 
@@ -158,46 +163,33 @@ func (tileMap *PartitionTileMap) processGophers() {
 
 	tileMap.diagnostics.gopherStopWatch.Start()
 
-	numGophers := len(tileMap.ActiveGophers)
+	numGophers := len(tileMap.ActiveActors)
 	tileMap.gopherArray = make([]*Gopher, numGophers)
+	tileMap.GopherGeneration.gopherArray = tileMap.gopherArray
 
-	secondChannel := make(chan *Gopher, numGophers*2)
+	secondChannel := make(chan *GopherActor, numGophers*2)
 	for i := 0; i < numGophers; i++ {
-		gopher := <-tileMap.ActiveGophers
-		tileMap.gopherArray[i] = gopher
+		gopher := <-tileMap.ActiveActors
+		tileMap.gopherArray[i] = gopher.Gopher
 		tileMap.GopherWaitGroup.Add(1)
-		go tileMap.performEntityAction(gopher, secondChannel)
+		go tileMap.Act(gopher, secondChannel)
 
 	}
-	tileMap.ActiveGophers = secondChannel
+	tileMap.ActiveActors = secondChannel
+	tileMap.GopherGeneration.ActiveGophers = tileMap.ActiveActors
 	tileMap.GopherWaitGroup.Wait()
 
 	tileMap.diagnostics.gopherStopWatch.Stop()
 }
 
-func (tileMap *PartitionTileMap) performEntityAction(gopher *Gopher, channel chan *Gopher) {
-
-	gopher.PerformMoment(tileMap)
-
+func (tileMap *PartitionTileMap) Act(gopher *GopherActor, channel chan *GopherActor) {
+	gopher.Update()
 	if !gopher.IsDecayed() {
-
-		wait := true
-
-		for wait {
-			select {
-			case channel <- gopher:
-				wait = false
-			default:
-				//	fmt.Println("Can't Write")
-			}
-		}
-
+		channel <- gopher
 	} else {
-		tileMap.QueueRemoveGopher(gopher)
+		gopher.QueueRemoveGopher()
 	}
-
 	tileMap.GopherWaitGroup.Done()
-
 }
 
 func (tileMap *PartitionTileMap) processQueuedTasks() {
@@ -257,7 +249,7 @@ func (tileMap *PartitionTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int
 	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
 
 	if tileMap.InsertGopher(targetPosition.GetX(), targetPosition.GetY(), gopher) {
-		tileMap.RemoveGopher(currentPosition.GetX(), currentPosition.GetY(), gopher)
+		tileMap.RemoveGopher(currentPosition.GetX(), currentPosition.GetY())
 		return true
 	}
 	return false
@@ -270,99 +262,6 @@ func (tileMap *PartitionTileMap) QueueGopherMove(gopher *Gopher, moveX int, move
 		success := tileMap.MoveGopher(gopher, moveX, moveY)
 		_ = success
 	})
-}
-
-//QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
-//held food variable
-func (tileMap *PartitionTileMap) QueuePickUpFood(gopher *Gopher) {
-	tileMap.Add(func() {
-		food, ok := tileMap.removeFoodFromWorld(gopher.Position.GetX(), gopher.Position.GetY())
-		if ok {
-			gopher.HeldFood = food
-			tileMap.onFoodPickUp(gopher.Position)
-			gopher.ClearFoodTargets()
-		}
-	})
-}
-
-//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
-func (tileMap *PartitionTileMap) QueueRemoveGopher(gopher *Gopher) {
-
-	tileMap.Add(func() {
-		tileMap.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY(), gopher)
-	})
-}
-
-func (tileMap *PartitionTileMap) removeFoodFromWorld(x int, y int) (*Food, bool) {
-
-	if tile, ok := tileMap.Tile(x, y); ok {
-		food := tile.Food
-		tileMap.RemoveFood(x, y, food)
-		return food, true
-	}
-
-	return nil, false
-}
-
-func (tileMap *PartitionTileMap) onFoodPickUp(location calc.Coordinates) {
-
-	size := 50
-
-	xrange := rand.Perm(size)
-	yrange := rand.Perm(size)
-
-loop:
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-
-			newX := location.GetX() + xrange[i] - size/2
-			newY := location.GetY() + yrange[j] - size/2
-
-			food := NewPotato()
-			if tileMap.InsertFood(newX, newY, &food) {
-				break loop
-			}
-
-		}
-	}
-
-}
-
-func (tileMap *PartitionTileMap) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
-
-	tileMap.Add(func() {
-
-		if mapPoint, ok := tileMap.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
-
-			mate := mapPoint.Gopher
-			litterNumber := rand.Intn(tileMap.Statistics.GopherBirthRate)
-
-			emptySpaces := tileMap.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
-
-			if mate.Gender == Female && len(emptySpaces) > 0 {
-				mate.IsMated = true
-				mate.CounterTillReadyToFindLove = 0
-
-				for i := 0; i < litterNumber; i++ {
-
-					if i < len(emptySpaces) {
-						pos := emptySpaces[i]
-						newborn := NewGopher(names.CuteName(), emptySpaces[i])
-
-						if len(tileMap.gopherArray) <= tileMap.Statistics.MaximumNumberOfGophers {
-							if tileMap.InsertGopher(pos.GetX(), pos.GetY(), &newborn) {
-								tileMap.ActiveGophers <- &newborn
-							}
-						}
-					}
-
-				}
-
-			}
-
-		}
-	})
-
 }
 
 func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
