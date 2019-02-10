@@ -70,7 +70,7 @@ func (gopher *Gopher) SetIsDead() {
 
 	chance := rand.Intn(101)
 
-	a := gopher.Lifespan - 5000
+	a := gopher.Lifespan - 500
 
 	if a > chance || gopher.Hunger <= 0 {
 		gopher.IsDead = true

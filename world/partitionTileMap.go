@@ -20,13 +20,13 @@ type PartitionTileMap struct {
 	FoodRespawnPickup
 	GopherGeneration
 
-	ActiveActors chan *GopherActor
+	GopherSliceAndChannel
 
 	GopherWaitGroup *sync.WaitGroup
 	SelectedGopher  *Gopher
-	gopherArray     []*Gopher
-	Moments         int
-	IsPaused        bool
+
+	Moments  int
+	IsPaused bool
 
 	Statistics
 	diagnostics Diagnostics
@@ -46,17 +46,18 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 		gridHeight,
 	)
 
-	tileMap.ActiveActors = make(chan *GopherActor, statistics.MaximumNumberOfGophers*2)
-	tileMap.gopherArray = make([]*Gopher, statistics.NumberOfGophers)
+	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{
+		ActiveActors: make(chan *GopherActor, statistics.MaximumNumberOfGophers*2),
+		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
+	}
 
 	frp := FoodRespawnPickup{Insertable: &tileMap.BasicGridContainer}
 	tileMap.FoodRespawnPickup = frp
 
 	ag := GopherGeneration{
-		Insertable:     &tileMap.BasicGridContainer,
-		maxGenerations: tileMap.Statistics.MaximumNumberOfGophers,
-		ActiveGophers:  tileMap.ActiveActors,
-		gopherArray:    tileMap.gopherArray,
+		Insertable:            &tileMap.BasicGridContainer,
+		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
+		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
 	}
 
 	tileMap.GopherGeneration = ag
@@ -113,7 +114,7 @@ func (tileMap *PartitionTileMap) setUpTiles() {
 			ActorGeneration:  &tileMap.GopherGeneration,
 		}
 
-		tileMap.gopherArray[i] = &gopher
+		tileMap.ActiveArray[i] = &gopherActor
 		tileMap.ActiveActors <- &gopherActor
 		count++
 	}
@@ -148,7 +149,7 @@ func (tileMap *PartitionTileMap) Update() bool {
 	tileMap.diagnostics.processStopWatch.Start()
 	tileMap.processGophers()
 	tileMap.processQueuedTasks()
-	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveGophers)
+	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveActors)
 	if tileMap.Statistics.NumberOfGophers > 0 {
 		tileMap.Moments++
 	}
@@ -164,19 +165,17 @@ func (tileMap *PartitionTileMap) processGophers() {
 	tileMap.diagnostics.gopherStopWatch.Start()
 
 	numGophers := len(tileMap.ActiveActors)
-	tileMap.gopherArray = make([]*Gopher, numGophers)
-	tileMap.GopherGeneration.gopherArray = tileMap.gopherArray
+	tileMap.GopherSliceAndChannel.ActiveArray = make([]*GopherActor, numGophers)
 
 	secondChannel := make(chan *GopherActor, numGophers*2)
 	for i := 0; i < numGophers; i++ {
 		gopher := <-tileMap.ActiveActors
-		tileMap.gopherArray[i] = gopher.Gopher
+		tileMap.ActiveArray[i] = gopher
 		tileMap.GopherWaitGroup.Add(1)
 		go tileMap.Act(gopher, secondChannel)
 
 	}
 	tileMap.ActiveActors = secondChannel
-	tileMap.GopherGeneration.ActiveGophers = tileMap.ActiveActors
 	tileMap.GopherWaitGroup.Wait()
 
 	tileMap.diagnostics.gopherStopWatch.Stop()
@@ -228,7 +227,7 @@ func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 }
 
 func (tileMap *PartitionTileMap) SelectRandomGopher() {
-	tileMap.SelectedGopher = tileMap.gopherArray[rand.Intn(len(tileMap.gopherArray))]
+	tileMap.SelectedGopher = tileMap.ActiveArray[rand.Intn(len(tileMap.ActiveArray))].Gopher
 }
 
 func (tileMap *PartitionTileMap) UnSelectGopher() {
@@ -255,107 +254,69 @@ func (tileMap *PartitionTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int
 	return false
 }
 
-//QueueGopherMove Adds the Move Gopher Method to the Input Queue.
-func (tileMap *PartitionTileMap) QueueGopherMove(gopher *Gopher, moveX int, moveY int) {
-
-	tileMap.Add(func() {
-		success := tileMap.MoveGopher(gopher, moveX, moveY)
-		_ = success
-	})
-}
-
 func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
-	var coordsArray = []calc.Coordinates{}
 
 	x, y := position.GetX(), position.GetY()
 
-	spiral := calc.NewSpiral(width, height)
-
-	var query TileQuery
+	var locations []calc.Coordinates
 
 	switch searchType {
 	case SearchForFood:
-		locations := queryForFood(tileMap, width, height, x, y)
-		calc.SortByNearestFromCoordinate(position, locations)
-
-		if len(locations) >= maximumFind {
-			return locations[:maximumFind]
-		} else {
-			return locations[:len(locations)]
-		}
-
-		query = CheckMapPointForFood
-
-	case SearchForEmptySpace:
-		query = CheckMapPointForEmptySpace
+		locations = queryForFood(tileMap, width, height, x, y)
 	case SearchForFemaleGopher:
-		locations := queryForFemalePartner(tileMap, width, height, x, y)
-		calc.SortByNearestFromCoordinate(position, locations)
-
-		if len(locations) >= maximumFind {
-			return locations[:maximumFind]
-		} else {
-			return locations[:len(locations)]
-		}
-		//query = CheckMapPointForFemaleGopher
+		locations = queryForFemalePartner(tileMap, width, height, x, y)
+	case SearchForEmptySpace:
+		sts := SpiralTileSearch{TileContainer: &tileMap.BasicGridContainer}
+		return sts.Search(position, width, height, maximumFind, searchType)
 	}
 
-	for {
+	calc.SortByNearestFromCoordinate(position, locations)
 
-		coordinates, hasNext := spiral.Next()
-
-		if hasNext == false || len(coordsArray) > maximumFind {
-			break
-		}
-
-		relativeCoords := calc.RelativeCoordinate(coordinates, x, y)
-
-		if tile, ok := tileMap.Tile(relativeCoords.GetX(), relativeCoords.GetY()); ok {
-			if query(tile) {
-				coordsArray = append(coordsArray, relativeCoords)
-			}
-		}
+	if len(locations) >= maximumFind {
+		return locations[:maximumFind]
 	}
-
-	calc.SortByNearestFromCoordinate(position, coordsArray)
-
-	return coordsArray
+	return locations[:len(locations)]
 }
 
 func queryForFood(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
+	return gridQuery(tileMap, width, height, x, y,
 
-	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
+		func(container *TrackedTileContainer) map[int]*Tile {
+			return container.foodTileLocations
+		},
 
-	startX, startY := tileMap.convertToGridCoordinates(worldStartX, worldStartY)
-	endX, endY := tileMap.convertToGridCoordinates(worldEndX, worldEndY)
+		func(tile *Tile) (int, int) {
+			return tile.Food.Position.GetX(), tile.Food.Position.GetY()
+		},
 
-	foodLocations := make([]calc.Coordinates, 0)
-
-	for x := startX; x <= endX; x++ {
-		for y := startY; y <= endY; y++ {
-			if grid, ok := tileMap.Grid(x*tileMap.BasicGridContainer.gridWidth, y*tileMap.BasicGridContainer.gridHeight); ok {
-				for key := range grid.foodTileLocations {
-
-					tile := grid.foodTileLocations[key]
-
-					i, j := tile.Food.Position.GetX(), tile.Food.Position.GetY()
-
-					if i >= worldStartX &&
-						i < worldEndX &&
-						j >= worldStartY &&
-						j < worldEndY {
-						foodLocations = append(foodLocations, tile.Food.Position)
-					}
-				}
-			}
-
-		}
-	}
-
-	return foodLocations
+		func(tile *Tile) bool {
+			return true
+		},
+	)
 }
 
 func queryForFemalePartner(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
+
+	return gridQuery(tileMap, width, height, x, y,
+
+		func(container *TrackedTileContainer) map[int]*Tile {
+			return container.gopherTileLocations
+		},
+
+		func(tile *Tile) (int, int) {
+			return tile.Gopher.Position.GetX(), tile.Gopher.Position.GetY()
+		},
+
+		func(tile *Tile) bool {
+			return tile.Gopher.Gender == Female && tile.Gopher.IsLookingForLove()
+		},
+	)
+}
+
+func gridQuery(tileMap *PartitionTileMap, width int, height int, x int, y int,
+	gridSearchFunc func(*TrackedTileContainer) map[int]*Tile,
+	coordsFromTile func(*Tile) (int, int),
+	tileCheck func(*Tile) bool) []calc.Coordinates {
 
 	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
 
@@ -368,17 +329,21 @@ func queryForFemalePartner(tileMap *PartitionTileMap, width int, height int, x i
 		for y := startY; y <= endY; y++ {
 
 			if grid, ok := tileMap.Grid(x*tileMap.BasicGridContainer.gridWidth, y*tileMap.BasicGridContainer.gridHeight); ok {
-				for key := range grid.gopherTileLocations {
+				potentialLocations := gridSearchFunc(grid)
 
-					tile := grid.gopherTileLocations[key]
+				for key := range potentialLocations {
 
-					i, j := tile.Gopher.Position.GetX(), tile.Gopher.Position.GetY()
+					tile := potentialLocations[key]
+
+					i, j := coordsFromTile(tile)
+
 					if i >= worldStartX &&
 						i < worldEndX &&
 						j >= worldStartY &&
-						j < worldEndY && tile.Gopher.Gender == Female && tile.Gopher.IsLookingForLove() {
-						locations = append(locations, tile.Gopher.Position)
+						j < worldEndY && tileCheck(tile) {
+						locations = append(locations, calc.Coordinates{i, j})
 					}
+
 				}
 			}
 
