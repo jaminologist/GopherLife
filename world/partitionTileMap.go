@@ -3,7 +3,6 @@ package world
 import (
 	"gopherlife/calc"
 	"gopherlife/names"
-	"math/rand"
 	"sync"
 )
 
@@ -15,21 +14,10 @@ const (
 )
 
 type PartitionTileMap struct {
-	QueueableActions
 	BasicGridContainer
 	FoodRespawnPickup
 	GopherGeneration
-
-	GopherSliceAndChannel
-
-	GopherWaitGroup *sync.WaitGroup
-	SelectedGopher  *Gopher
-
-	Moments  int
-	IsPaused bool
-
-	Statistics
-	diagnostics Diagnostics
+	GopherMapUpdater
 }
 
 func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
@@ -46,7 +34,7 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 		gridHeight,
 	)
 
-	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{
+	tileMap.GopherMapUpdater.GopherSliceAndChannel = GopherSliceAndChannel{
 		ActiveActors: make(chan *GopherActor, statistics.MaximumNumberOfGophers*2),
 		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
 	}
@@ -57,7 +45,7 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 	ag := GopherGeneration{
 		Insertable:            &tileMap.BasicGridContainer,
 		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
-		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
+		GopherSliceAndChannel: &tileMap.GopherMapUpdater.GopherSliceAndChannel,
 	}
 
 	tileMap.GopherGeneration = ag
@@ -67,20 +55,6 @@ func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
 
 	tileMap.setUpTiles()
 	return &tileMap
-}
-
-func CreatePartitionTileMap() *PartitionTileMap {
-	tileMap := CreatePartitionTileMapCustom(
-		Statistics{
-			Width:                  3000,
-			Height:                 3000,
-			NumberOfGophers:        5000,
-			NumberOfFood:           50000,
-			MaximumNumberOfGophers: 100000,
-			GopherBirthRate:        7,
-		},
-	)
-	return tileMap
 }
 
 func (tileMap *PartitionTileMap) setUpTiles() {
@@ -114,8 +88,8 @@ func (tileMap *PartitionTileMap) setUpTiles() {
 			ActorGeneration:  &tileMap.GopherGeneration,
 		}
 
-		tileMap.ActiveArray[i] = &gopherActor
-		tileMap.ActiveActors <- &gopherActor
+		tileMap.GopherMapUpdater.ActiveArray[i] = &gopherActor
+		tileMap.GopherMapUpdater.ActiveActors <- &gopherActor
 		count++
 	}
 
@@ -125,76 +99,6 @@ func (tileMap *PartitionTileMap) setUpTiles() {
 		tileMap.BasicGridContainer.InsertFood(pos.GetX(), pos.GetY(), &food)
 		count++
 	}
-}
-
-//TogglePause Toggles the pause
-func (tileMap *PartitionTileMap) TogglePause() {
-	tileMap.IsPaused = !tileMap.IsPaused
-}
-
-func (tileMap *PartitionTileMap) Update() bool {
-
-	if tileMap.IsPaused {
-		return false
-	}
-
-	if tileMap.SelectedGopher != nil && tileMap.SelectedGopher.IsDecayed() {
-		tileMap.SelectRandomGopher()
-	}
-
-	if !tileMap.diagnostics.globalStopWatch.IsStarted() {
-		tileMap.diagnostics.globalStopWatch.Start()
-	}
-
-	tileMap.diagnostics.processStopWatch.Start()
-	tileMap.processGophers()
-	tileMap.processQueuedTasks()
-	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveActors)
-	if tileMap.Statistics.NumberOfGophers > 0 {
-		tileMap.Moments++
-	}
-
-	tileMap.diagnostics.processStopWatch.Stop()
-
-	return true
-
-}
-
-func (tileMap *PartitionTileMap) processGophers() {
-
-	tileMap.diagnostics.gopherStopWatch.Start()
-
-	numGophers := len(tileMap.ActiveActors)
-	tileMap.GopherSliceAndChannel.ActiveArray = make([]*GopherActor, numGophers)
-
-	secondChannel := make(chan *GopherActor, numGophers*2)
-	for i := 0; i < numGophers; i++ {
-		gopher := <-tileMap.ActiveActors
-		tileMap.ActiveArray[i] = gopher
-		tileMap.GopherWaitGroup.Add(1)
-		go tileMap.Act(gopher, secondChannel)
-
-	}
-	tileMap.ActiveActors = secondChannel
-	tileMap.GopherWaitGroup.Wait()
-
-	tileMap.diagnostics.gopherStopWatch.Stop()
-}
-
-func (tileMap *PartitionTileMap) Act(gopher *GopherActor, channel chan *GopherActor) {
-	gopher.Update()
-	if !gopher.IsDecayed() {
-		channel <- gopher
-	} else {
-		gopher.QueueRemoveGopher()
-	}
-	tileMap.GopherWaitGroup.Done()
-}
-
-func (tileMap *PartitionTileMap) processQueuedTasks() {
-	tileMap.diagnostics.inputStopWatch.Start()
-	tileMap.QueueableActions.Process()
-	tileMap.diagnostics.inputStopWatch.Stop()
 }
 
 func (tileMap *PartitionTileMap) SelectedTile() (*Tile, bool) {
@@ -224,22 +128,6 @@ func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
 	}
 
 	return nil, true
-}
-
-func (tileMap *PartitionTileMap) SelectRandomGopher() {
-	tileMap.SelectedGopher = tileMap.ActiveArray[rand.Intn(len(tileMap.ActiveArray))].Gopher
-}
-
-func (tileMap *PartitionTileMap) UnSelectGopher() {
-	tileMap.SelectedGopher = nil
-}
-
-func (tileMap *PartitionTileMap) Stats() *Statistics {
-	return &tileMap.Statistics
-}
-
-func (tileMap *PartitionTileMap) Diagnostics() *Diagnostics {
-	return &tileMap.diagnostics
 }
 
 func (tileMap *PartitionTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {

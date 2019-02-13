@@ -58,20 +58,6 @@ func CreateWorldCustom(statistics Statistics) *SpiralSearchTileMap {
 
 }
 
-func CreateTileMap() *SpiralSearchTileMap {
-	tileMap := CreateWorldCustom(
-		Statistics{
-			Width:                  3000,
-			Height:                 3000,
-			NumberOfGophers:        5000,
-			NumberOfFood:           1000000,
-			MaximumNumberOfGophers: 100000,
-			GopherBirthRate:        7,
-		},
-	)
-	return tileMap
-}
-
 func (tileMap *SpiralSearchTileMap) setUpMapPoints() {
 
 	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
@@ -162,11 +148,19 @@ func (tileMap *SpiralSearchTileMap) MoveGopher(gopher *Gopher, moveX int, moveY 
 }
 
 func (tileMap *GopherMapUpdater) SelectRandomGopher() {
-	tileMap.SelectedGopher = tileMap.ActiveArray[0].Gopher
+	tileMap.SelectedGopher = tileMap.ActiveArray[rand.Intn(len(tileMap.ActiveArray))].Gopher
 }
 
-func (tileMap *SpiralSearchTileMap) UnSelectGopher() {
+func (tileMap *GopherMapUpdater) UnSelectGopher() {
 	tileMap.SelectedGopher = nil
+}
+
+func (tileMap *GopherMapUpdater) Stats() *Statistics {
+	return &tileMap.Statistics
+}
+
+func (tileMap *GopherMapUpdater) Diagnostics() *Diagnostics {
+	return &tileMap.diagnostics
 }
 
 func (tileMap *SpiralSearchTileMap) Stats() *Statistics {
