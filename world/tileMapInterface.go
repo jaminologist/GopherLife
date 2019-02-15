@@ -21,19 +21,6 @@ type TileMap interface {
 	Searchable
 }
 
-type Searchable interface {
-	Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates
-}
-
-type SearchType int
-
-const (
-	SearchForFood SearchType = iota
-	SearchForEmptySpace
-	SearchForFemaleGopher
-	FemaleGopher
-)
-
 type Statistics struct {
 	Width                  int
 	Height                 int

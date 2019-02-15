@@ -305,3 +305,22 @@ func (container *BasicGridContainer) RemoveFood(x int, y int) (*Food, bool) {
 	}
 	return nil, false
 }
+
+type Searchable interface {
+	Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates
+}
+
+type SearchType int
+
+const (
+	SearchForFood SearchType = iota
+	SearchForEmptySpace
+	SearchForFemaleGopher
+	FemaleGopher
+)
+
+type InsertableSearchableTileContainer interface {
+	Insertable
+	Searchable
+	TileContainer
+}
