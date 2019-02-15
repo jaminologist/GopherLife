@@ -2,7 +2,6 @@ package world
 
 import (
 	"gopherlife/calc"
-	"gopherlife/names"
 	"sync"
 )
 
@@ -13,136 +12,54 @@ const (
 	gridHeight = 5
 )
 
-type PartitionTileMap struct {
-	BasicGridContainer
-	FoodRespawnPickup
-	GopherGeneration
-	GopherMapUpdater
-}
+func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 
-func CreatePartitionTileMapCustom(statistics Statistics) *PartitionTileMap {
-
-	tileMap := PartitionTileMap{}
+	tileMap := GopherMap{}
 	tileMap.Statistics = statistics
 
 	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
 	tileMap.QueueableActions = &qa
 
-	tileMap.BasicGridContainer = NewBasicGridContainer(statistics.Width,
+	gridContainer := NewBasicGridContainer(statistics.Width,
 		statistics.Height,
 		gridWidth,
 		gridHeight,
 	)
 
-	tileMap.GopherMapUpdater.GopherSliceAndChannel = GopherSliceAndChannel{
+	tileMap.TileContainer = &gridContainer
+	tileMap.Insertable = &gridContainer
+	tileMap.Searchable = &GridTileSearch{
+		BasicGridContainer: gridContainer,
+	}
+
+	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{
 		ActiveActors: make(chan *GopherActor, statistics.MaximumNumberOfGophers*2),
 		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
 	}
 
-	frp := FoodRespawnPickup{Insertable: &tileMap.BasicGridContainer}
+	frp := FoodRespawnPickup{Insertable: tileMap.Insertable}
 	tileMap.FoodRespawnPickup = frp
-
-	ag := GopherGeneration{
-		Insertable:            &tileMap.BasicGridContainer,
-		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
-		GopherSliceAndChannel: &tileMap.GopherMapUpdater.GopherSliceAndChannel,
-	}
-
-	tileMap.GopherGeneration = ag
 
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
+
+	ag := GopherGeneration{
+		Insertable:            tileMap.Insertable,
+		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
+		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
+	}
+
+	tileMap.GopherGeneration = ag
 
 	tileMap.setUpTiles()
 	return &tileMap
 }
 
-func (tileMap *PartitionTileMap) setUpTiles() {
-
-	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
-		tileMap.Statistics.Width, tileMap.Statistics.Height)
-
-	count := 0
-
-	for i := 0; i < tileMap.Statistics.NumberOfGophers; i++ {
-
-		pos := keys[count]
-		var gopher = NewGopher(names.CuteName(), pos)
-
-		tileMap.BasicGridContainer.InsertGopher(pos.GetX(), pos.GetY(), &gopher)
-
-		if i == 0 {
-			tileMap.SelectedGopher = &gopher
-			tileMap.SelectedGopher.Position = pos
-		}
-
-		var gopherActor = GopherActor{
-			Gopher:           &gopher,
-			GopherBirthRate:  tileMap.Statistics.GopherBirthRate,
-			QueueableActions: tileMap.QueueableActions,
-			Searchable:       tileMap,
-			TileContainer:    &tileMap.BasicGridContainer,
-			Insertable:       &tileMap.BasicGridContainer,
-			PickableTiles:    tileMap,
-			MoveableActors:   tileMap,
-			ActorGeneration:  &tileMap.GopherGeneration,
-		}
-
-		tileMap.GopherMapUpdater.ActiveArray[i] = &gopherActor
-		tileMap.GopherMapUpdater.ActiveActors <- &gopherActor
-		count++
-	}
-
-	for i := 0; i < tileMap.Statistics.NumberOfFood; i++ {
-		pos := keys[count]
-		var food = NewPotato()
-		tileMap.BasicGridContainer.InsertFood(pos.GetX(), pos.GetY(), &food)
-		count++
-	}
+type GridTileSearch struct {
+	BasicGridContainer
 }
 
-func (tileMap *PartitionTileMap) SelectedTile() (*Tile, bool) {
-
-	if tileMap.SelectedGopher != nil {
-		if tile, ok := tileMap.Tile(tileMap.SelectedGopher.Position.GetX(), tileMap.SelectedGopher.Position.GetY()); ok {
-			if tile.HasGopher() {
-				return tile, ok
-			}
-		}
-	}
-	return nil, false
-
-}
-
-//SelectEntity Uses the given co-ordinates to select and return a gopher in the tileMap
-//If there is not a gopher at the give coordinates this function returns zero.
-func (tileMap *PartitionTileMap) SelectEntity(x int, y int) (*Gopher, bool) {
-
-	tileMap.SelectedGopher = nil
-
-	if mapPoint, ok := tileMap.Tile(x, y); ok {
-		if mapPoint.Gopher != nil {
-			tileMap.SelectedGopher = mapPoint.Gopher
-			return mapPoint.Gopher, true
-		}
-	}
-
-	return nil, true
-}
-
-func (tileMap *PartitionTileMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
-
-	currentPosition := calc.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
-	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
-
-	if tileMap.InsertGopher(targetPosition.GetX(), targetPosition.GetY(), gopher) {
-		tileMap.RemoveGopher(currentPosition.GetX(), currentPosition.GetY())
-		return true
-	}
-	return false
-}
-
-func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
+func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
 
 	x, y := position.GetX(), position.GetY()
 
@@ -150,11 +67,11 @@ func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, he
 
 	switch searchType {
 	case SearchForFood:
-		locations = queryForFood(tileMap, width, height, x, y)
+		locations = queryForFood(searcher, width, height, x, y)
 	case SearchForFemaleGopher:
-		locations = queryForFemalePartner(tileMap, width, height, x, y)
+		locations = queryForFemalePartner(searcher, width, height, x, y)
 	case SearchForEmptySpace:
-		sts := SpiralTileSearch{TileContainer: &tileMap.BasicGridContainer}
+		sts := SpiralTileSearch{TileContainer: &searcher.BasicGridContainer}
 		return sts.Search(position, width, height, maximumFind, searchType)
 	}
 
@@ -166,7 +83,7 @@ func (tileMap *PartitionTileMap) Search(position calc.Coordinates, width int, he
 	return locations[:len(locations)]
 }
 
-func queryForFood(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
+func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) []calc.Coordinates {
 	return gridQuery(tileMap, width, height, x, y,
 
 		func(container *TrackedTileContainer) map[int]*Tile {
@@ -183,7 +100,7 @@ func queryForFood(tileMap *PartitionTileMap, width int, height int, x int, y int
 	)
 }
 
-func queryForFemalePartner(tileMap *PartitionTileMap, width int, height int, x int, y int) []calc.Coordinates {
+func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int, y int) []calc.Coordinates {
 
 	return gridQuery(tileMap, width, height, x, y,
 
@@ -201,7 +118,7 @@ func queryForFemalePartner(tileMap *PartitionTileMap, width int, height int, x i
 	)
 }
 
-func gridQuery(tileMap *PartitionTileMap, width int, height int, x int, y int,
+func gridQuery(tileMap *GridTileSearch, width int, height int, x int, y int,
 	gridSearchFunc func(*TrackedTileContainer) map[int]*Tile,
 	coordsFromTile func(*Tile) (int, int),
 	tileCheck func(*Tile) bool) []calc.Coordinates {
