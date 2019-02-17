@@ -5,6 +5,7 @@ type Tile struct {
 	Food   *Food
 }
 
+//NewTile Returns a new tile which hold the given gopher and food
 func NewTile(gopher *Gopher, food *Food) Tile {
 	return Tile{Gopher: gopher, Food: food}
 }
@@ -13,10 +14,12 @@ func (tile *Tile) isEmpty() bool {
 	return tile.Gopher == nil && tile.Food == nil
 }
 
+//HasGopher Checks if this tile contains a gopher
 func (tile *Tile) HasGopher() bool {
 	return tile.Gopher != nil
 }
 
+//HasFood Checks if this tile contains food
 func (tile *Tile) HasFood() bool {
 	return tile.Food != nil
 }

@@ -29,7 +29,7 @@ func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 	tileMap.TileContainer = &gridContainer
 	tileMap.Insertable = &gridContainer
 	tileMap.Searchable = &GridTileSearch{
-		BasicGridContainer: gridContainer,
+		BasicGridContainer: &gridContainer,
 	}
 
 	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{
@@ -56,7 +56,7 @@ func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 }
 
 type GridTileSearch struct {
-	BasicGridContainer
+	*BasicGridContainer
 }
 
 func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
@@ -71,7 +71,7 @@ func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, hei
 	case SearchForFemaleGopher:
 		locations = queryForFemalePartner(searcher, width, height, x, y)
 	case SearchForEmptySpace:
-		sts := SpiralTileSearch{TileContainer: &searcher.BasicGridContainer}
+		sts := SpiralTileSearch{TileContainer: searcher.BasicGridContainer}
 		return sts.Search(position, width, height, maximumFind, searchType)
 	}
 

@@ -10,8 +10,6 @@ type Renderer struct {
 
 	RenderSizeX int
 	RenderSizeY int
-
-	TileMap *TileMap
 }
 
 type Render struct {

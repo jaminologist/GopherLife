@@ -36,10 +36,11 @@ func CreateWorldCustom(statistics Statistics) *GopherMap {
 
 	a := NewBasic2DContainer(0, 0, statistics.Width, statistics.Height)
 
-	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
-
 	tileMap.TileContainer = &a
 	tileMap.Insertable = &a
+
+	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
+
 	tileMap.Searchable = &s
 
 	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{

@@ -2,25 +2,8 @@ package world
 
 import "gopherlife/calc"
 
-//TileMap is cool
-type TileMap interface {
-	Update() bool
-
-	TogglePause()
-
-	SelectedTile() (*Tile, bool)
-
-	SelectEntity(x int, y int) (*Gopher, bool)
-	SelectRandomGopher()
-	UnSelectGopher()
-
-	Stats() *Statistics
-	Diagnostics() *Diagnostics
-
-	TileContainer
-	Searchable
-}
-
+//Statistics is used primarily by the 'GopherMap' struct and details
+//all editable variables of the map
 type Statistics struct {
 	Width                  int
 	Height                 int
@@ -30,6 +13,8 @@ type Statistics struct {
 	NumberOfFood           int
 }
 
+//Diagnostics is used primarily by the 'GopherMap' struct and is used to track
+//how long different parts of the 'Update' method take
 type Diagnostics struct {
 	globalStopWatch  calc.StopWatch
 	inputStopWatch   calc.StopWatch
