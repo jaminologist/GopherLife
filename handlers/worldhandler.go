@@ -62,6 +62,10 @@ func SetUpPage() {
 		d := world.NewGopherMapWithParitionGridAndSearch(s)
 		return &d
 	}
+	tileMapFunctions["c"] = func(s world.Statistics) UpdateableRender {
+		d := world.NewSpiralMapController(s)
+		return &d
+	}
 	container := container{
 		tileMap:  &tileMap,
 		tileMaps: tileMapFunctions,
@@ -173,7 +177,8 @@ func ajaxHandleWorldInput(container *container) func(w http.ResponseWriter, r *h
 		r.ParseForm()
 		keydown := r.FormValue("keydown")
 		key, err := strconv.ParseInt(keydown, 10, 64)
-		if err != nil {
+
+		if err == nil {
 			container.tileMap.KeyPress(world.Keys(key))
 		}
 	}

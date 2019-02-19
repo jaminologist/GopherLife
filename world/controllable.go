@@ -61,6 +61,8 @@ func (controller *GopherMapController) Click(x int, y int) {
 
 func (controller *GopherMapController) KeyPress(key Keys) {
 
+	//fmt.Println(key)
+
 	switch key {
 	case WKey:
 		controller.UnSelectGopher()
@@ -156,6 +158,16 @@ type SpiralMapController struct {
 }
 
 func NewSpiralMapController(stats Statistics) SpiralMapController {
+
+	stats = Statistics{
+		Width:                  50,
+		Height:                 50,
+		NumberOfGophers:        5,
+		NumberOfFood:           200,
+		MaximumNumberOfGophers: 100000,
+		GopherBirthRate:        7,
+	}
+
 	sMap := NewSpiralMap(stats)
 	renderer := NewRendererSetUp(stats.Width*2, stats.Height*2)
 
