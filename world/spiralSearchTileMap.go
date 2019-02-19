@@ -135,7 +135,6 @@ func (tileMap *GopherMap) SelectedTile() (*Tile, bool) {
 		}
 	}
 	return nil, false
-
 }
 
 type MoveableActors interface {

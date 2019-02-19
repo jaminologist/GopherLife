@@ -51,7 +51,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}*/
 
-	var tileMap = world.NewGopherMapWithSpiralSearch(stats)
+	var tileMap = world.NewSpiralMapController(stats)
 
 	tileMapFunctions := make(map[string]func(world.Statistics) UpdateableRender)
 	tileMapFunctions["a"] = func(s world.Statistics) UpdateableRender {

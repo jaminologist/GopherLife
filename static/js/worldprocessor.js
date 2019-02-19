@@ -95,7 +95,10 @@ function DrawGrid(Grid) {
 
     for (var i = 0; i < Grid.length; i++) {
         for (var j = 0; j < Grid[i].length; j++) {
-            c.fillStyle = Grid[i][j].Color;
+
+            //console.log(Grid[i][j])
+
+            c.fillStyle = `rgba(${Grid[i][j].R}, ${Grid[i][j].G}, ${Grid[i][j].B}, ${Grid[i][j].A})`; 
 
             var x = startX + (i * tileWidth)
             var y = startY + (j * tileHeight)

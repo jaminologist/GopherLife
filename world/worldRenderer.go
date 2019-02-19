@@ -1,7 +1,17 @@
 package world
 
 import (
-	"fmt"
+	"image/color"
+)
+
+var (
+	maleGopherColor           = color.RGBA{90, 218, 255, 1}
+	maleGopherSelectedColor   = color.RGBA{245, 245, 245, 1}
+	femaleGopherColor         = color.RGBA{255, 255, 0, 1}
+	femaleGopherSelectedColor = color.RGBA{255, 155, 154, 1}
+	foodColor                 = color.RGBA{204, 112, 0, 1}
+	decayedGopherColor        = color.RGBA{0, 0, 0, 1}
+	grassColor                = color.RGBA{65, 119, 15, 1}
 )
 
 type Renderer struct {
@@ -13,36 +23,28 @@ type Renderer struct {
 }
 
 type Render struct {
-	Grid [][]*RenderTile
-
+	Grid           [][]*RenderTile
 	WorldRender    string
 	SelectedGopher *Gopher
 }
 
 type RenderTile struct {
-	Color string
+	color.RGBA
 }
 
 type Renderable interface {
-	SelectedTile() (*Tile, bool)
-	Tile(x int, y int) (*Tile, bool)
-	Stats() *Statistics
-	Diagnostics() *Diagnostics
+	RenderTile(x int, y int) color.RGBA
 }
-
-const (
-	maleGopherColor           = "#5adaff"
-	maleGopherSelectedColor   = "#f5f5f5"
-	femaleGopherColor         = "#FFFF00"
-	femaleGopherSelectedColor = "#ff9b9a"
-	foodColor                 = "#cc7000"
-	decayedGopherColor        = "#000000"
-	grassColor                = "#41770f"
-)
 
 //NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer() Renderer {
+	s := color.RGBA{0, 0, 0, 0}
+	_ = s
 	return Renderer{RenderSizeX: 100, RenderSizeY: 100}
+}
+
+func NewRendererSetUp(width int, height int) Renderer {
+	return Renderer{RenderSizeX: width, RenderSizeY: height}
 }
 
 func (renderer *Renderer) RenderWorld(tileMap Renderable) Render {
@@ -55,89 +57,19 @@ func (renderer *Renderer) RenderWorld(tileMap Renderable) Render {
 		render.Grid[i] = make([]*RenderTile, renderer.RenderSizeY)
 
 		for j := 0; j < renderer.RenderSizeY; j++ {
-			renderTile := RenderTile{Color: "Hello"}
+			renderTile := RenderTile{}
 			render.Grid[i][j] = &renderTile
 		}
 	}
 
-	renderString := ""
-
-	startX := 0
-	startY := 0
-
-	selectedTile, hasSelected := tileMap.SelectedTile()
-
-	if hasSelected {
-		render.SelectedGopher = selectedTile.Gopher
-		renderer.StartX = selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
-		renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
-	}
-
-	startX = renderer.StartX
-	startY = renderer.StartY
+	startX := renderer.StartX
+	startY := renderer.StartY
 
 	for y := startY; y < startY+renderer.RenderSizeY; y++ {
-
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {
-
-			renderTile := render.Grid[x-startX][y-startY]
-			renderTile.Color = grassColor
-
-			if mapPoint, ok := tileMap.Tile(x, y); ok {
-
-				switch {
-				case mapPoint.isEmpty():
-					renderTile.Color = grassColor
-				case mapPoint.Gopher != nil:
-					isSelected := false
-					if hasSelected {
-						isSelected = selectedTile.Gopher.Position.GetX() == x && selectedTile.Gopher.Position.GetY() == y
-					}
-
-					switch mapPoint.Gopher.Gender {
-					case Male:
-
-						if isSelected {
-							renderTile.Color = maleGopherSelectedColor
-						} else {
-							renderTile.Color = maleGopherColor
-						}
-					case Female:
-						if isSelected {
-							renderTile.Color = femaleGopherSelectedColor
-						} else {
-							renderTile.Color = femaleGopherColor
-						}
-					}
-
-					if mapPoint.Gopher.IsDead {
-						renderTile.Color = decayedGopherColor
-					}
-
-					if !mapPoint.Gopher.IsMature() {
-						//text = strings.ToLower(text)
-					}
-				case mapPoint.Food != nil:
-					renderTile.Color = foodColor
-				}
-			} else {
-				renderTile.Color = "#89cff0"
-			}
-
+			render.Grid[x-startX][y-startY].RGBA = tileMap.RenderTile(x, y)
 		}
 	}
-
-	stats := tileMap.Stats()
-	diagnostics := tileMap.Diagnostics()
-
-	renderString += "<br />"
-	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", stats.NumberOfGophers)
-	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", diagnostics.processStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", diagnostics.gopherStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.inputStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", diagnostics.globalStopWatch.GetCurrentElaspedTime().String())
-
-	render.WorldRender = renderString
 
 	return render
 }
