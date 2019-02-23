@@ -1,5 +1,10 @@
 package world
 
+/*type Tile interface {
+	Insert(interface{})
+	Remove(interface{})
+}*/
+
 type Tile struct {
 	Gopher *Gopher
 	Food   *Food

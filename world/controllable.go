@@ -134,7 +134,10 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	}
 
 	render := controller.Renderer.RenderWorld(controller)
-	render.SelectedGopher = controller.SelectedGopher
+
+	if controller.SelectedGopher != nil {
+		render.SelectedGopher = controller.SelectedGopher
+	}
 
 	stats := controller.Stats()
 	diagnostics := controller.Diagnostics()

@@ -28,7 +28,9 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 	gopher := NewGopher("a", calc.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	tileMap.QueueGopherMove(&gopher, 0, 1)
+	tileMap.QueueableActions.Add(func() {
+		tileMap.MoveGopher(&gopher, 0, 1)
+	})
 	tileMap.Update()
 
 	des, _ := tileMap.Tile(1, 3)
@@ -61,7 +63,7 @@ func TestPartitionTileMap_RemoveGopher(t *testing.T) {
 	gopher := NewGopher("a", calc.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	bool := tileMap.RemoveGopher(1, 2, &gopher)
+	bool := tileMap.RemoveGopher(1, 2)
 
 	if !bool {
 		t.Errorf("Gopher is not removed")
