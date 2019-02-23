@@ -51,7 +51,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}*/
 
-	var tileMap = world.NewSpiralMapController(stats)
+	var tileMap = world.NewGopherMapWithSpiralSearch(stats)
 
 	tileMapFunctions := make(map[string]func(world.Statistics) UpdateableRender)
 	tileMapFunctions["a"] = func(s world.Statistics) UpdateableRender {
@@ -83,23 +83,22 @@ func SetUpPage() {
 
 }
 
+type WorldPageData struct {
+	PageTitle string
+}
+
 func worldToHTML(container *container) func(w http.ResponseWriter, r *http.Request) {
 
 	//	renderer := gopherlife.NewRenderer()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		pageVariables := PageVariables{
-			//Data: template.HTML(container.tileMap.Render()),
+		data := WorldPageData{
+			PageTitle: "G O P H E R L I F E",
 		}
 
-		t, err := template.ParseFiles("static/index.html")
-
-		if err != nil {
-			log.Print("Template parsing error: ", err)
-		}
-
-		err = t.Execute(w, pageVariables)
+		tmpl := template.Must(template.ParseFiles("static/index.html"))
+		err := tmpl.Execute(w, data)
 
 		if err != nil {
 			log.Printf("Template executing error: ", err)
