@@ -167,6 +167,11 @@ type Insertable interface {
 	RemoveFood(x int, y int) (*Food, bool)
 }
 
+type Positionable interface {
+	Position() (x int, y int)
+	SetPosition(x int, y int)
+}
+
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
 func (container *Basic2DContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
 

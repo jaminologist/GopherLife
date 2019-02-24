@@ -26,7 +26,7 @@ $(document).ready(function () {
         e.preventDefault()
     });
 
-    $(document).on("submit", "form#reset", function (e) {
+   /* $(document).on("submit", "form#reset", function (e) {
         var form = $(this);
         var url = form.attr('action');
 
@@ -36,7 +36,7 @@ $(document).ready(function () {
             data: form.serialize(),
         });
         e.preventDefault(); 
-    })
+    }) */
 
     $(document).keydown(function (e) {
         var key = e.which;

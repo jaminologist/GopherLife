@@ -60,40 +60,20 @@
       <div class="row">
           <div class="col-2"></div>
           <div class="col">
-              
               <form id="reset" action="/ResetWorld" method="post">
-
                 <div class="form-row">
-                    <div class="form-group col-md-1">
-                        <label for="width">Width</label>
-                        <input type="number" class="form-control" name="width" value="3000" />
-                    </div>
-                    <div class="form-group col-md-1">
-                          <label for="height">Height</label>
-                          <input type="number" class="form-control" name="height" value="3000" />
-                    </div>
-                    <div class="form-group col-md-2">
-                        <label for="numberOfGophers">Inital Population</label>
-                        <input type="number" class="form-control" name="numberOfGophers" value="5000" />
-                    </div>
-                    <div class="form-group col-md-2">
-                        <label for="maxPopulation">Max Population</label>
-                        <input type="number" class="form-control" name="maxPopulation" value="100000" />
-                  </div>
-                  <div class="form-group col-md-2">
-                      <label for="birthRate">Birth Rate</label>
-                      <input type="number" class="form-control" name="birthRate" value="7" />
-                  </div>
-                  <div class="form-group col-md-2">
-                      <label for="numberOfFood">Food</label>
-                      <input type="number" class="form-control" name="numberOfFood" value="1000000" />
-                  </div>
+                    {{range .FormData}}
+                        <div class="form-group col-md-{{.BootStrapFormWidth}}">
+                            <label for={{.Name}}>{{.DisplayName}}</label>
+                            <input type={{.Type}} class="form-control" name={{.Name}} value={{.Value}} />
+                        </div>
+                    {{end}}
                   <div class="form-group col-md-2">
                       <label for="mapSelection">Map Selection</label>
                       <select class="form-control" name="mapSelection">
-                        <option value="a">Sprial Search</option>
-                        <option value="b">Grid Partition</option>
-                        <option value="c">Cool Black and White Spiral Thing</option>
+                        {{range .MapData}}
+                            <option value={{.Value}}>{{.DisplayName}}</option>
+                        {{end}}
                       </select>
                   </div>
                 </div>
