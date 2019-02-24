@@ -4,11 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/color"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 type Controllable interface {
 	Click(x int, y int)
 	KeyPress(key Keys)
+}
+
+type WorldPageData struct {
+	PageTitle   string
+	FormData    []FormData
+	IsGopherMap bool
+}
+
+type FormData struct {
+	DisplayName        string
+	Name               string
+	Value              string
+	Type               string
+	BootStrapFormWidth int
 }
 
 //Keys used to denote correct number for keys on a keyboard when called e.which in js
@@ -29,6 +46,7 @@ const (
 type GopherMapController struct {
 	*GopherMap
 	*Renderer
+	CreateNew func(Statistics) *GopherMap
 }
 
 func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
@@ -37,6 +55,7 @@ func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,
+		CreateNew: CreateWorldCustom,
 	}
 }
 
@@ -46,6 +65,7 @@ func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,
+		CreateNew: CreatePartitionTileMapCustom,
 	}
 }
 
@@ -155,6 +175,90 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(render)
 }
 
+func (controller *GopherMapController) PageLayout() WorldPageData {
+
+	stats := controller.Statistics
+
+	formdataArray := []FormData{
+		FormData{
+			DisplayName:        "Width",
+			Type:               "Number",
+			Name:               "width",
+			Value:              strconv.Itoa(stats.Width),
+			BootStrapFormWidth: 1,
+		},
+		FormData{
+			DisplayName:        "Height",
+			Type:               "Number",
+			Name:               "height",
+			Value:              strconv.Itoa(stats.Height),
+			BootStrapFormWidth: 1,
+		},
+		FormData{
+			DisplayName:        "Initial Population",
+			Type:               "Number",
+			Name:               "numberOfGophers",
+			Value:              strconv.Itoa(stats.NumberOfGophers),
+			BootStrapFormWidth: 2,
+		},
+		FormData{
+			DisplayName:        "Max Population",
+			Type:               "Number",
+			Name:               "maxPopulation",
+			Value:              strconv.Itoa(stats.MaximumNumberOfGophers),
+			BootStrapFormWidth: 2,
+		},
+		FormData{
+			DisplayName:        "Birth Rate",
+			Type:               "Number",
+			Name:               "birthRate",
+			Value:              strconv.Itoa(stats.GopherBirthRate),
+			BootStrapFormWidth: 2,
+		},
+		FormData{
+			DisplayName:        "Food",
+			Type:               "Number",
+			Name:               "numberOfFood",
+			Value:              strconv.Itoa(stats.NumberOfFood),
+			BootStrapFormWidth: 2,
+		},
+	}
+
+	return WorldPageData{
+		PageTitle:   "G O P H E R L I F E",
+		FormData:    formdataArray,
+		IsGopherMap: true,
+	}
+}
+
+func (controller *GopherMapController) HandleForm(values url.Values) bool {
+
+	if strings.Contains(values.Encode(), "numberOfGophers") {
+
+		width, _ := strconv.ParseInt(values.Get("width"), 10, 64)
+		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
+		numberOfGophers, _ := strconv.ParseInt(values.Get("numberOfGophers"), 10, 64)
+		numberOfFood, _ := strconv.ParseInt(values.Get("numberOfFood"), 10, 64)
+		birthRate, _ := strconv.ParseInt(values.Get("birthRate"), 10, 64)
+		maxPopulation, _ := strconv.ParseInt(values.Get("maxPopulation"), 10, 64)
+
+		stats := Statistics{
+			Width:                  int(width),
+			Height:                 int(height),
+			NumberOfGophers:        int(numberOfGophers),
+			NumberOfFood:           int(numberOfFood),
+			MaximumNumberOfGophers: int(maxPopulation),
+			GopherBirthRate:        int(birthRate),
+		}
+
+		gmc := controller.CreateNew(stats)
+		controller.GopherMap = gmc
+
+	}
+
+	return true
+}
+
 type SpiralMapController struct {
 	*SpiralMap
 	*Renderer
@@ -206,4 +310,14 @@ func (controller *SpiralMapController) RenderTile(x int, y int) color.RGBA {
 	} else {
 		return color.RGBA{0, 0, 0, 1}
 	}
+}
+
+func (controller *SpiralMapController) PageLayout() WorldPageData {
+	return WorldPageData{}
+}
+
+func (controller *SpiralMapController) HandleForm(values url.Values) bool {
+	sm := NewSpiralMapController(Statistics{}).SpiralMap
+	controller.SpiralMap = sm
+	return false
 }

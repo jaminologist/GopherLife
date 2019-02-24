@@ -26,18 +26,6 @@ $(document).ready(function () {
         e.preventDefault()
     });
 
-   /* $(document).on("submit", "form#reset", function (e) {
-        var form = $(this);
-        var url = form.attr('action');
-
-        $.ajax({
-            type: "GET",
-            url: url,
-            data: form.serialize(),
-        });
-        e.preventDefault(); 
-    }) */
-
     $(document).keydown(function (e) {
         var key = e.which;
         $.ajax({
@@ -76,8 +64,6 @@ Grid = function(canvas){
 
 
 }
-
-
 
 function DrawGrid(Grid) {
 
