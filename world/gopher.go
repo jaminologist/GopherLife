@@ -12,32 +12,21 @@ const timeToDecay = 10
 type Gender int
 
 type Gopher struct {
-	Name     string
-	Lifespan int
-
-	Gender Gender
-
-	Decay int
-
-	Hunger int
-
-	IsMated bool
-
-	IsDead bool
-
-	IsHungry bool
-
+	Name                       string
+	Lifespan                   int
+	Gender                     Gender
+	Decay                      int
+	Hunger                     int
+	IsMated                    bool
+	IsDead                     bool
+	IsHungry                   bool
 	CounterTillReadyToFindLove int
+	Position                   calc.Coordinates
+	HeldFood                   *Food
 
-	Position calc.Coordinates
-
-	HeldFood *Food
-
-	FoodTargets []calc.Coordinates
-
+	FoodTargets   []calc.Coordinates
 	GopherTargets []calc.Coordinates
-
-	MovementPath []calc.Coordinates
+	MovementPath  []calc.Coordinates
 }
 
 //NewGopher Creates a new Gopher and the given co-ordinate
