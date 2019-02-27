@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"gopherlife/calc"
 	"gopherlife/world"
 	"html/template"
 	"log"
@@ -40,15 +39,15 @@ type MapData struct {
 func SetUpPage() {
 
 	stats := world.Statistics{
-		Width:                  50,
-		Height:                 50,
-		NumberOfGophers:        5,
-		NumberOfFood:           200,
+		Width:                  2000,
+		Height:                 2000,
+		NumberOfGophers:        5000,
+		NumberOfFood:           1000000,
 		MaximumNumberOfGophers: 100000,
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.NewSpiralMapController(stats)
+	var tileMap = world.NewGopherMapWithSpiralSearch(stats)
 
 	tileMapFunctions := make(map[string]UpdateableRender)
 	ss := world.NewGopherMapWithSpiralSearch(stats)
@@ -79,7 +78,7 @@ func SetUpPage() {
 	http.HandleFunc("/", worldToHTML(&container))
 	http.HandleFunc("/ProcessWorld", ajaxProcessWorld(&container))
 	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&container))
-	http.HandleFunc("/SelectGopher", ajaxSelectGopher(&container))
+	http.HandleFunc("/Click", HandleClick(&container))
 	http.HandleFunc("/ResetWorld", resetWorld(&container))
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8080", nil)
@@ -87,8 +86,6 @@ func SetUpPage() {
 }
 
 func worldToHTML(container *container) func(w http.ResponseWriter, r *http.Request) {
-
-	//	renderer := gopherlife.NewRenderer()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -145,12 +142,18 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func ajaxSelectGopher(container *container) func(w http.ResponseWriter, r *http.Request) {
+func HandleClick(container *container) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
-		position := calc.StringToCoordinates(r.FormValue("position"))
-		container.tileMap.Click(position.GetX(), position.GetY())
+
+		x, y := r.FormValue("x"), r.FormValue("y")
+
+		xNum, _ := strconv.Atoi(x)
+		yNum, _ := strconv.Atoi(y)
+
+		container.tileMap.Click(xNum, yNum)
+		w.WriteHeader(200)
 	}
 }
 
@@ -164,6 +167,7 @@ func ajaxHandleWorldInput(container *container) func(w http.ResponseWriter, r *h
 		if err == nil {
 			container.tileMap.KeyPress(world.Keys(key))
 		}
+		w.WriteHeader(200)
 	}
 
 }

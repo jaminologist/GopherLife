@@ -51,7 +51,7 @@ type GopherMapController struct {
 
 func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 	gMap := CreateWorldCustom(stats)
-	renderer := NewRenderer()
+	renderer := NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,
@@ -61,7 +61,7 @@ func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 
 func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController {
 	gMap := CreatePartitionTileMapCustom(stats)
-	renderer := NewRenderer()
+	renderer := NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,
@@ -73,7 +73,12 @@ func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController
 func (controller *GopherMapController) Click(x int, y int) {
 
 	action := func() {
-		controller.SelectEntity(x, y)
+		_, ok := controller.SelectEntity(x, y)
+
+		if !ok {
+			controller.Renderer.StartX = x - controller.Renderer.RenderSizeX/2
+			controller.Renderer.StartY = y - controller.Renderer.RenderSizeY/2
+		}
 	}
 
 	controller.GopherMap.Add(action)
@@ -225,7 +230,7 @@ func (controller *GopherMapController) PageLayout() WorldPageData {
 	}
 
 	return WorldPageData{
-		PageTitle:   "G O P H E R L I F E",
+		PageTitle:   "G O P H E R L I F E <b>2.0</b>",
 		FormData:    formdataArray,
 		IsGopherMap: true,
 	}
@@ -276,7 +281,7 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 	}
 
 	sMap := NewSpiralMap(stats)
-	renderer := NewRendererSetUp(stats.Width*2, stats.Height*2)
+	renderer := NewRenderer(stats.Width*2, stats.Height*2)
 
 	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
 	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2

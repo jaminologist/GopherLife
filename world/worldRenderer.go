@@ -26,6 +26,8 @@ type Render struct {
 	Grid           [][]*RenderTile
 	WorldRender    string
 	SelectedGopher *Gopher
+	StartX         int
+	StartY         int
 }
 
 type RenderTile struct {
@@ -37,13 +39,7 @@ type Renderable interface {
 }
 
 //NewRenderer returns a new Render struct of size 45x and 15 y
-func NewRenderer() Renderer {
-	s := color.RGBA{0, 0, 0, 0}
-	_ = s
-	return Renderer{RenderSizeX: 100, RenderSizeY: 100}
-}
-
-func NewRendererSetUp(width int, height int) Renderer {
+func NewRenderer(width int, height int) Renderer {
 	return Renderer{RenderSizeX: width, RenderSizeY: height}
 }
 
@@ -64,6 +60,9 @@ func (renderer *Renderer) RenderWorld(tileMap Renderable) Render {
 
 	startX := renderer.StartX
 	startY := renderer.StartY
+
+	render.StartX = startX
+	render.StartY = startY
 
 	for y := startY; y < startY+renderer.RenderSizeY; y++ {
 		for x := startX; x < startX+renderer.RenderSizeX; x++ {

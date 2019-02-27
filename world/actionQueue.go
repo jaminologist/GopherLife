@@ -22,13 +22,12 @@ func (basicActionQueue *BasicActionQueue) Add(action func()) {
 }
 
 func (basicActionQueue *BasicActionQueue) Process() {
-	close(basicActionQueue.actionQueue)
-
-	for action := range basicActionQueue.actionQueue {
+	actionChannel := basicActionQueue.actionQueue
+	basicActionQueue.actionQueue = make(chan func(), basicActionQueue.maxActions)
+	close(actionChannel)
+	for action := range actionChannel {
 		action()
 	}
-
-	basicActionQueue.actionQueue = make(chan func(), basicActionQueue.maxActions)
 }
 
 type GopherActions struct {
