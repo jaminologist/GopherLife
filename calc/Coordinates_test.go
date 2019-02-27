@@ -113,3 +113,7 @@ func BenchmarkMapKey(b *testing.B) {
 		CoordinateMapKey(1, 2)
 	}
 }
+
+func BenchmarkTypeSwitch(b *testing.B) {
+
+}
