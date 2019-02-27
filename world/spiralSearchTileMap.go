@@ -124,7 +124,7 @@ func (tileMap *GopherMap) SelectEntity(x int, y int) (*Gopher, bool) {
 		}
 	}
 
-	return nil, true
+	return nil, false
 }
 
 func (tileMap *GopherMap) SelectedTile() (*Tile, bool) {

@@ -288,7 +288,12 @@ func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
 		if mapPoint, ok := gopher.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
 
 			mate := mapPoint.Gopher
-			litterNumber := rand.Intn(gopher.GopherBirthRate)
+
+			litterNumber := 0
+
+			if gopher.GopherBirthRate > 0 {
+				litterNumber = rand.Intn(gopher.GopherBirthRate)
+			}
 
 			emptySpaces := gopher.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
 
