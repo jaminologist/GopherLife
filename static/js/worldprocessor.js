@@ -1,120 +1,139 @@
-var tileWidth = 5
-var tileHeight = 5
-
 $(document).ready(function () {
 
-
-    OpenWorld()
-
+    var ci = new CanvasInformation()
+    OpenWorld(ci)
 
     var $canvas = $("#worldCanvas");
 
     $canvas.on('wheel', function (event) {
-
-        if (event.originalEvent.deltaY < 0) { //Wheel Up
-            tileWidth += 1
-            tileHeight += 1
-        } else { //Wheel Down
-            tileWidth -= 1
-            tileHeight -= 1
-
-            if (tileWidth <= 1) {
-                tileWidth = 1
-                tileHeight = 1
-            }
-        }
-        e.preventDefault()
+        ScrollCanvas(event, ci)
+        event.preventDefault()
     });
 
-    $(document).on("submit", "form#reset", function (e) {
-        var form = $(this);
-        var url = form.attr('action');
-
-        $.ajax({
-            type: "GET",
-            url: url,
-            data: form.serialize(),
-        });
-        e.preventDefault(); 
-    })
-
-    $(document).keydown(function (e) {
-        var key = e.which;
+    $canvas.on('keydown', function(event) {
+        var key = event.which;
         $.ajax({
             type: 'GET',
             url: '/ShiftWorldView?keydown=' + key,
         })
     });
+
+    $canvas.on('click', function(event) {
+        HandleClick(event, ci)
+    });
 })
 
-function UpdateWorldDisplay(data) {
+
+function ScrollCanvas(event, CanvasInformation){
+    if (event.originalEvent.deltaY < 0) { //Wheel Up
+        CanvasInformation.TileWidth = CanvasInformation.TileWidth + 1
+        CanvasInformation.TileHeight = CanvasInformation.TileHeight + 1
+    } else { //Wheel Down
+        CanvasInformation.TileWidth -= 1
+        CanvasInformation.TileHeight -= 1
+
+        if (CanvasInformation.TileWidth <= 1) {
+            CanvasInformation.TileWidth = 1
+            CanvasInformation.TileHeight = 1
+        }
+    }
+}
+
+
+function UpdateWorldDisplay(data, CanvasInformation) {
     $("#worldDiv").html(data.WorldRender)
-    DrawGrid(data.Grid)
+    DrawGrid(data.Grid, CanvasInformation)
     DisplaySelectedGopher(data.SelectedGopher)
 }
 
-function OpenWorld() {
+
+function CanvasInformation(){
+    this.TileWidth = 5;
+    this.TileHeight = 5;
+    this.StartX = 0;
+    this.StartY = 0;
+    this.RenderWidth = 0;
+    this.RenderHeight = 0;
+    this.Grid = {}
+    this.OtherStartX = 0
+    this.OtherStartY = 0
+}
+
+
+
+function OpenWorld(CanvasInformation) {
     $.ajax({
         url: '/ProcessWorld',
         dataType: 'json',
         type: 'GET',
         success: function (data) {
-            UpdateWorldDisplay(data)
-            OpenWorld()
+            CanvasInformation.OtherStartX = data.StartX;
+            CanvasInformation.OtherStartY = data.StartY;
+            UpdateWorldDisplay(data, CanvasInformation);
+            OpenWorld(CanvasInformation);
         },
-    }).always(function () {
-        //setTimeout(OpenWorld(), 5000);
+    })
+}
+
+function HandleClick(event, CanvasInformation) {
+    var canvas = document.querySelector('canvas')
+    var rect = canvas.getBoundingClientRect();
+
+    //Convert click event x and y to canvas coordinates
+    var canvasX = event.clientX - rect.left;
+    var canvasY = event.clientY - rect.top;
+
+    //Convert canvas x and y to render coordinates
+    var x = Math.ceil((canvasX - CanvasInformation.StartX) / CanvasInformation.TileWidth);
+    var y = Math.ceil((canvasY - CanvasInformation.StartY) / CanvasInformation.TileHeight);
+
+    //Convert render x and y to world coordinates
+    x = (CanvasInformation.OtherStartX + x) - 1
+    y = (CanvasInformation.OtherStartY + y) - 1
+
+    $.ajax({
+        type: 'GET',
+        url: `/Click?x=${x}&y=${y}`,
+        contentType: "application/json",
     });
-}
-
-Grid = function(canvas){
-
-    this.canvas = canvas
-    this.draw = function(){
-
-    }
-
 
 }
 
-
-
-function DrawGrid(Grid) {
+function DrawGrid(Grid, CanvasInformation) {
 
     var canvas = document.querySelector('canvas')
-    resizeCanvasToDisplaySize(canvas)
-    var c = canvas.getContext('2d');
+    ResizeCanvasToDisplaySize(canvas)
+    var cxt = canvas.getContext('2d');
 
-    c.clearRect(0, 0, canvas.width, canvas.height);
+    cxt.clearRect(0, 0, canvas.width, canvas.height);
 
-    var renderWidth = tileWidth * Grid.length
-    var renderHeight = tileHeight * Grid[0].length
+    CanvasInformation.Grid = Grid
+    CanvasInformation.RenderWidth = CanvasInformation.TileWidth * Grid.length
+    CanvasInformation.RenderHeight = CanvasInformation.TileHeight * Grid[0].length
 
-    var startX = (canvas.width - renderWidth) / 2
-    var startY = (canvas.height - renderHeight) / 2
+    CanvasInformation.StartX = (canvas.width - CanvasInformation.RenderWidth) / 2
+    CanvasInformation.StartY = (canvas.height - CanvasInformation.RenderHeight) / 2
 
     for (var i = 0; i < Grid.length; i++) {
         for (var j = 0; j < Grid[i].length; j++) {
-            c.fillStyle = Grid[i][j].Color;
 
-            var x = startX + (i * tileWidth)
-            var y = startY + (j * tileHeight)
-            c.fillRect(x, y, tileWidth, tileHeight);
+            cxt.fillStyle = `rgba(${Grid[i][j].R}, ${Grid[i][j].G}, ${Grid[i][j].B}, ${Grid[i][j].A})`; 
+
+            var x = CanvasInformation.StartX + (i * CanvasInformation.TileWidth)
+            var y = CanvasInformation.StartY + (j * CanvasInformation.TileHeight)
+            cxt.fillRect(x, y, CanvasInformation.TileWidth, CanvasInformation.TileHeight);
         }
     }
 }
 
-function resizeCanvasToDisplaySize(canvas) {
+function ResizeCanvasToDisplaySize(canvas) {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
     if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
-        return true;
     }
-
-    return false;
 }
 
 

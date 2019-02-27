@@ -38,6 +38,10 @@ func (c Coordinates) RelativeCoordinate(X int, Y int) Coordinates {
 	return Coordinates{c.X + X, c.Y + Y}
 }
 
+func RelativeCoordinate(c Coordinates, X int, Y int) Coordinates {
+	return Coordinates{c.X + X, c.Y + Y}
+}
+
 func (c *Coordinates) Add(X int, Y int) {
 	c.X += X
 	c.Y += Y
@@ -84,6 +88,10 @@ func (c *Coordinates) MapKey() string {
 //CoordinateMapKey converts an x and y value into a map key
 func CoordinateMapKey(X int, Y int) string {
 	return fmt.Sprintf("%[1]d,%[2]d", X, Y)
+}
+
+func Hashcode(x int, y int) int {
+	return (31 * x) + y
 }
 
 //SortByNearestFromCoordinate Sorts an array of coordinates by nearest to the given coordinate

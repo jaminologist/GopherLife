@@ -2,6 +2,7 @@ package world
 
 import "math/rand"
 
+//Genders, Male or Female
 const (
 	Male   Gender = 0
 	Female Gender = 1

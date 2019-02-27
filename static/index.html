@@ -1,62 +1,95 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>A static page</title>
   <link rel="stylesheet" href="static/css/style.css">
+  <link rel="stylesheet" href="static/css/bootstrap.min.css">
   <script src="static/js/jquery.js" ></script>
   <script src="static/js/worldprocessor.js" ></script>
+  <script src="static/js/bootstrap.min.js" ></script>
 </head>
 <body>
 
-  <div class="text-center">
-    <h1>G O P H E R L I F E</h1>
-  </div>
-
-  <div class="wrapper">
-    <div class="item-a">
-        <canvas id="worldCanvas" tabindex="2"></canvas>
-        <div id="worldDiv"></div>
-      <!--<div id="worldDiv"></div>-->
-    </div>
-    <br />
-    <div class="item-b">
-      <div class="gopher-wrapper">
-
-        <img class="gopher-image" src="static/images/gopher.png" alt="Image of a gopher"> 
-          
-        <table>
-  
-          <tr>
-              <th><h3>Name</h3></th>
-              <th><h3>Position</h3></th>
-              <th><h3>Hunger</h3></th>
-              <th><h3>Lifespan</h3></th>
-          </tr>
-                
-          <tr>
-              <td><h4 id="gopher-name" class="text-center"></h4></td>
-              <td><h4 id="gopher-position" class="text-center"></h4></td>
-              <td><h4 id="gopher-hunger" class="text-center"></h4></td>
-              <td><h4 id="gopher-lifespan" class="text-center"></h4></td>
-          </tr>
-          
-        </table>
-  
+  <div class="container-fluid">
+      <div class="row mt-2">
+          <div class="col-sm text-center">
+              <h1>{{.PageTitle}}</h1>
+          </div>
       </div>
-      <form id="reset" action="/ResetWorld" method="post">
-        Width:<input type="number" name="width" value = "3000">
-        Height:<input type="number" name="height" value = "3000"> <br />
-        Starting Number Of Gophers:<input type="number" name="numberOfGophers" value = "5000">
-        Number Of Food:<input type="number" name="numberOfFood" value = "1000000"> <br/>
-        Birth rate: <input type="number" name="birthRate" value = "7"> <br />
-        Max Population: <input type="number" name="maxPopulation" value = "100000"> <br />
-        <input type="submit" value="Reset">
-      </form>
-    </div>
+      <div class="row text-center">
+          <div class="col-sm">
+              <canvas id="worldCanvas" tabindex="2"></canvas>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col-sm text-center">
+              <div id="worldDiv"></div>
+          </div>
+      </div>
 
+      <div class="row mb-4">
+          <div class="col-sm text-center">
+              <div id="worldDiv"></div>
+          </div>
+      </div>
 
+      {{if .IsGopherMap}}
+      <div class="row">
+          <div class="col-2"></div>
+          <div class="col text-center">
+              <table class="table table-bordered">
+                  <thead>
+                      <tr>
+                          <th scope="col">Name</th>
+                          <th scope="col">Position</th>
+                          <th scope="col">Hunger</th>
+                          <th scope="col">Lifespan</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr>
+                          <td id="gopher-name"></td>
+                          <td id="gopher-position"></td>
+                          <td id="gopher-hunger"></td>
+                          <td id="gopher-lifespan"></td>
+                      </tr>
+                  </tbody> 
+                </table>
+          </div>
+          <div class="col-2"></div>
+      </div>
+      {{end}}
 
+      <div class="row">
+          <div class="col-2"></div>
+          <div class="col">
+              <form id="reset" action="/ResetWorld" method="post">
+                <div class="form-row">
+                    {{range .FormData}}
+                        <div class="form-group col-md-{{.BootStrapFormWidth}}">
+                            <label for={{.Name}}>{{.DisplayName}}</label>
+                            <input type={{.Type}} class="form-control" name={{.Name}} value={{.Value}} />
+                        </div>
+                    {{end}}
+                  <div class="form-group col-md-2">
+                      <label for="mapSelection">Map Selection</label>
+                      <select class="form-control" name="mapSelection">
+                        {{range $index, $element := $.MapData}}
+                            <option value={{.Value}} {{if eq $element.Value $.Selected}} selected="selected" {{end}}>{{.DisplayName}}</option>
+                        {{end}}
+                      </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-sm-6 offset-sm-3">
+                        <button type="submit" class="btn btn-block btn-outline-primary">Reset</button>
+                    </div>
+                </div>
+              </form>
+          </div>
+          <div class="col-2"></div>
+      </div>
   </div>
 </body>
 </html>

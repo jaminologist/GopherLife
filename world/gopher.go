@@ -2,41 +2,31 @@ package world
 
 import (
 	"gopherlife/calc"
+	"gopherlife/names"
 	"math/rand"
 )
 
-const hungerPerMoment = 5
+const hungerPerMoment = 1
 const timeToDecay = 10
 
 type Gender int
 
 type Gopher struct {
-	Name     string
-	Lifespan int
-
-	Gender Gender
-
-	Decay int
-
-	Hunger int
-
-	IsMated bool
-
-	IsDead bool
-
-	IsHungry bool
-
+	Name                       string
+	Lifespan                   int
+	Gender                     Gender
+	Decay                      int
+	Hunger                     int
+	IsMated                    bool
+	IsDead                     bool
+	IsHungry                   bool
 	CounterTillReadyToFindLove int
+	Position                   calc.Coordinates
+	HeldFood                   *Food
 
-	Position calc.Coordinates
-
-	HeldFood *Food
-
-	FoodTargets []calc.Coordinates
-
+	FoodTargets   []calc.Coordinates
 	GopherTargets []calc.Coordinates
-
-	MovementPath []calc.Coordinates
+	MovementPath  []calc.Coordinates
 }
 
 //NewGopher Creates a new Gopher and the given co-ordinate
@@ -94,26 +84,26 @@ func (gopher *Gopher) SetIsHungry() {
 
 }
 
-func (g *Gopher) IsLookingForLove() bool {
-	return g.IsMature() && !g.IsMated
+func (gopher *Gopher) IsLookingForLove() bool {
+	return gopher.IsMature() && !gopher.IsMated
 }
 
-func (g *Gopher) IsTakingABreakFromLove() bool {
-	return g.IsMature() && g.IsMated && g.CounterTillReadyToFindLove < 100
+func (gopher *Gopher) IsTakingABreakFromLove() bool {
+	return gopher.IsMature() && gopher.IsMated && gopher.CounterTillReadyToFindLove < 100
 }
 
-func (g *Gopher) IsDecayed() bool {
-	return g.Decay >= timeToDecay
+func (gopher *Gopher) IsDecayed() bool {
+	return gopher.Decay >= timeToDecay
 }
 
-func (g *Gopher) ApplyHunger() {
-	g.Hunger -= hungerPerMoment
+func (gopher *Gopher) ApplyHunger() {
+	gopher.Hunger -= hungerPerMoment
 }
 
-func (g *Gopher) Eat() {
-	if g.HeldFood != nil {
-		g.Hunger += g.HeldFood.Energy
-		g.HeldFood = nil
+func (gopher *Gopher) Eat() {
+	if gopher.HeldFood != nil {
+		gopher.Hunger += gopher.HeldFood.Energy
+		gopher.HeldFood = nil
 	}
 }
 
@@ -139,92 +129,195 @@ func (gopher *Gopher) AdvanceLife() {
 
 }
 
-func (g *Gopher) moveTowardsFood(world *World) {
+//ClearFoodTargets Clears all food targets from the Gopher
+func (gopher *Gopher) ClearFoodTargets() {
+	gopher.FoodTargets = []calc.Coordinates{}
+}
 
-	if len(g.FoodTargets) > 0 {
+func (gopher *Gopher) ClearGopherTargets() {
+	gopher.GopherTargets = []calc.Coordinates{}
+}
 
-		target := g.FoodTargets[0]
+type GopherActor struct {
+	*Gopher
+	QueueableActions
+	Searchable
+	TileContainer
+	Insertable
+	PickableTiles
+	MoveableActors
+	ActorGeneration
+	GopherBirthRate int
+}
 
-		mapPoint, _ := world.GetMapPoint(target.GetX(), target.GetY())
+func (gopher *GopherActor) Update() {
+
+	switch {
+	case gopher.IsDead:
+		gopher.Decay++
+	case gopher.IsHungry:
+		gopher.handleHunger()
+	case !gopher.IsHungry:
+
+		switch {
+		case gopher.Gender == Male:
+			if gopher.IsLookingForLove() {
+				gopher.GopherTargets = gopher.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
+				if len(gopher.GopherTargets) <= 0 {
+					gopher.Wander()
+				} else {
+
+					target := gopher.GopherTargets[0]
+
+					if gopher.Position.IsInRange(target, 1, 1) {
+						gopher.QueueMating(target)
+						break
+					}
+					moveX, moveY := calc.FindNextStep(gopher.Position, target)
+					gopher.QueueGopherMove(moveX, moveY)
+					gopher.ClearFoodTargets()
+				}
+			} else {
+				gopher.Wander()
+			}
+
+		default:
+			gopher.Wander()
+		}
+
+	}
+
+	gopher.AdvanceLife()
+
+}
+
+func (gopher *GopherActor) handleHunger() {
+	switch {
+	case gopher.HeldFood != nil:
+		gopher.Eat()
+	default:
+		gopher.moveTowardsFood()
+	}
+}
+
+func (gopher *GopherActor) moveTowardsFood() {
+
+	if len(gopher.FoodTargets) > 0 {
+
+		target := gopher.FoodTargets[0]
+
+		mapPoint, _ := gopher.Tile(target.GetX(), target.GetY())
 
 		if mapPoint.Food == nil {
-			g.ClearFoodTargets()
+			gopher.ClearFoodTargets()
 		} else {
 
-			if g.Position.IsInRange(target, 0, 0) {
-				world.QueuePickUpFood(g)
+			if gopher.Position.IsInRange(target, 0, 0) {
+				gopher.QueuePickUpFood()
+				gopher.ClearFoodTargets()
 				return
 			}
 
-			moveX, moveY := calc.FindNextStep(g.Position, target)
-			world.QueueGopherMove(g, moveX, moveY)
+			moveX, moveY := calc.FindNextStep(gopher.Position, target)
+			gopher.QueueGopherMove(moveX, moveY)
 
 		}
 
 	} else {
-		g.LookForFood(world)
+		gopher.LookForFood()
 	}
 
 }
 
-func (g *Gopher) LookForFood(world *World) {
-	g.FoodTargets = Find(world, g.Position, 25, 1, CheckMapPointForFood)
+//Wander Randomly decides a diretion for the gopher to move in
+func (gopher *GopherActor) Wander() {
+	x, y := rand.Intn(3)-1, rand.Intn(3)-1
+	gopher.QueueGopherMove(x, y)
 }
 
-func (g *Gopher) handleHunger(world *World) {
-	switch {
-	case g.HeldFood != nil:
-		g.Eat()
-	default:
-		g.moveTowardsFood(world)
-	}
+func (gopher *GopherActor) LookForFood() {
+	gopher.FoodTargets = gopher.Search(gopher.Position, 25, 25, 1, SearchForFood)
 }
 
-func (g *Gopher) PerformMoment(world *World) {
+//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
+func (gopher *GopherActor) QueueRemoveGopher() {
 
-	switch {
-	case g.IsDead:
-		g.Decay++
-	case g.IsHungry:
-		g.handleHunger(world)
-	case !g.IsHungry:
+	gopher.Add(func() {
+		gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
+	})
+}
 
-		switch {
-		case g.Gender == Male:
+//QueueGopherMove Adds the Move Gopher Method to the Input Queue.
+func (gopher *GopherActor) QueueGopherMove(moveX int, moveY int) {
 
-			if g.IsLookingForLove() {
-				g.GopherTargets = Find(world, g.Position, 15, 1, g.CheckMapPointForPartner)
-				if len(g.GopherTargets) <= 0 {
-					g.Wander(world)
-				} else {
-					target := g.GopherTargets[0]
+	gopher.Add(func() {
+		success := gopher.MoveGopher(gopher.Gopher, moveX, moveY)
+		_ = success
+	})
 
-					if g.Position.IsInRange(target, 1, 1) {
-						world.QueueMating(g, target)
-						break
-					}
-					moveX, moveY := calc.FindNextStep(g.Position, target)
-					world.QueueGopherMove(g, moveX, moveY)
-				}
-			} else {
-				g.Wander(world)
+}
+
+//QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
+//held food variable
+func (gopher *GopherActor) QueuePickUpFood() {
+
+	gopher.Add(func() {
+		food, ok := gopher.PickUpFood(gopher.Position.GetX(), gopher.Position.GetY())
+		if ok {
+			gopher.HeldFood = food
+			gopher.ClearFoodTargets()
+		}
+	})
+}
+
+func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
+
+	gopher.Add(func() {
+
+		if mapPoint, ok := gopher.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
+
+			mate := mapPoint.Gopher
+
+			litterNumber := 0
+
+			if gopher.GopherBirthRate > 0 {
+				litterNumber = rand.Intn(gopher.GopherBirthRate)
 			}
 
-		default:
-			g.Wander(world)
+			emptySpaces := gopher.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
+
+			if mate.Gender == Female && len(emptySpaces) > 0 {
+				mate.IsMated = true
+				mate.CounterTillReadyToFindLove = 0
+
+				for i := 0; i < litterNumber; i++ {
+
+					if i < len(emptySpaces) {
+
+						pos := emptySpaces[i]
+						newborn := NewGopher(names.CuteName(), emptySpaces[i])
+
+						var gopherActor = GopherActor{
+							Gopher:           &newborn,
+							GopherBirthRate:  gopher.GopherBirthRate,
+							QueueableActions: gopher.QueueableActions,
+							Searchable:       gopher.Searchable,
+							TileContainer:    gopher.TileContainer,
+							Insertable:       gopher.Insertable,
+							PickableTiles:    gopher.PickableTiles,
+							MoveableActors:   gopher.MoveableActors,
+							ActorGeneration:  gopher.ActorGeneration,
+						}
+
+						gopher.AddNewGopher(pos.GetX(), pos.GetY(), &gopherActor)
+
+					}
+
+				}
+
+			}
+
 		}
+	})
 
-	}
-
-	g.AdvanceLife()
-}
-
-//Wander Randomly decides a
-func (gopher *Gopher) Wander(world *World) {
-	x, y := rand.Intn(3)-1, rand.Intn(3)-1
-	world.QueueGopherMove(gopher, x, y)
-}
-
-func (gopher *Gopher) ClearFoodTargets() {
-	gopher.FoodTargets = []calc.Coordinates{}
 }
