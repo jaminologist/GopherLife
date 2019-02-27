@@ -79,12 +79,15 @@ function HandleClick(event, CanvasInformation) {
     var canvas = document.querySelector('canvas')
     var rect = canvas.getBoundingClientRect();
 
+    //Convert click event x and y to canvas coordinates
     var canvasX = event.clientX - rect.left;
     var canvasY = event.clientY - rect.top;
 
+    //Convert canvas x and y to render coordinates
     var x = Math.ceil((canvasX - CanvasInformation.StartX) / CanvasInformation.TileWidth);
     var y = Math.ceil((canvasY - CanvasInformation.StartY) / CanvasInformation.TileHeight);
 
+    //Convert render x and y to world coordinates
     x = (CanvasInformation.OtherStartX + x) - 1
     y = (CanvasInformation.OtherStartY + y) - 1
 
@@ -99,10 +102,10 @@ function HandleClick(event, CanvasInformation) {
 function DrawGrid(Grid, CanvasInformation) {
 
     var canvas = document.querySelector('canvas')
-    resizeCanvasToDisplaySize(canvas)
-    var c = canvas.getContext('2d');
+    ResizeCanvasToDisplaySize(canvas)
+    var cxt = canvas.getContext('2d');
 
-    c.clearRect(0, 0, canvas.width, canvas.height);
+    cxt.clearRect(0, 0, canvas.width, canvas.height);
 
     CanvasInformation.Grid = Grid
     CanvasInformation.RenderWidth = CanvasInformation.TileWidth * Grid.length
@@ -114,26 +117,23 @@ function DrawGrid(Grid, CanvasInformation) {
     for (var i = 0; i < Grid.length; i++) {
         for (var j = 0; j < Grid[i].length; j++) {
 
-            c.fillStyle = `rgba(${Grid[i][j].R}, ${Grid[i][j].G}, ${Grid[i][j].B}, ${Grid[i][j].A})`; 
+            cxt.fillStyle = `rgba(${Grid[i][j].R}, ${Grid[i][j].G}, ${Grid[i][j].B}, ${Grid[i][j].A})`; 
 
             var x = CanvasInformation.StartX + (i * CanvasInformation.TileWidth)
             var y = CanvasInformation.StartY + (j * CanvasInformation.TileHeight)
-            c.fillRect(x, y, CanvasInformation.TileWidth, CanvasInformation.TileHeight);
+            cxt.fillRect(x, y, CanvasInformation.TileWidth, CanvasInformation.TileHeight);
         }
     }
 }
 
-function resizeCanvasToDisplaySize(canvas) {
+function ResizeCanvasToDisplaySize(canvas) {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
     if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
-        return true;
     }
-
-    return false;
 }
 
 
