@@ -39,10 +39,3 @@ func (tile *Tile) ClearGopher() {
 func (tile *Tile) ClearFood() {
 	tile.Food = nil
 }
-
-
-type interface FoodTile {
-	Clear()
-	Insert()
-	Remove()
-}
