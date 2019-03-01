@@ -11,18 +11,24 @@ const timeToDecay = 10
 
 type Gender int
 
+//Gopher The whole point of the project
 type Gopher struct {
-	Name                       string
+	Name string
+
 	Lifespan                   int
-	Gender                     Gender
 	Decay                      int
 	Hunger                     int
-	IsMated                    bool
-	IsDead                     bool
-	IsHungry                   bool
 	CounterTillReadyToFindLove int
-	Position                   calc.Coordinates
-	HeldFood                   *Food
+
+	IsMated  bool
+	IsDead   bool
+	IsHungry bool
+
+	Position calc.Coordinates
+
+	HeldFood *Food
+
+	Gender Gender
 
 	FoodTargets   []calc.Coordinates
 	GopherTargets []calc.Coordinates
