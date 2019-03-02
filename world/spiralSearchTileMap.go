@@ -11,11 +11,11 @@ type GopherMap struct {
 	Searchable
 	TileContainer
 	FoodRespawnPickup
-	GopherGeneration
+	QueueableActions
 	Insertable
 
+	GopherGeneration
 	GopherSliceAndChannel
-	QueueableActions
 
 	GopherWaitGroup *sync.WaitGroup
 	IsPaused        bool

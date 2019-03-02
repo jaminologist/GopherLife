@@ -39,11 +39,11 @@ type MapData struct {
 func SetUpPage() {
 
 	stats := world.Statistics{
-		Width:                  2000,
-		Height:                 2000,
+		Width:                  3000,
+		Height:                 3000,
 		NumberOfGophers:        5000,
 		NumberOfFood:           1000000,
-		MaximumNumberOfGophers: 100000,
+		MaximumNumberOfGophers: 1000000,
 		GopherBirthRate:        7,
 	}
 
