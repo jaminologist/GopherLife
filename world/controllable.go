@@ -51,7 +51,7 @@ type GopherMapController struct {
 
 func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 	gMap := CreateWorldCustom(stats)
-	renderer := NewRenderer(100, 100)
+	renderer := NewRenderer(45, 15)
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,
@@ -61,7 +61,7 @@ func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 
 func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController {
 	gMap := CreatePartitionTileMapCustom(stats)
-	renderer := NewRenderer(100, 100)
+	renderer := NewRenderer(45, 15)
 	return GopherMapController{
 		GopherMap: gMap,
 		Renderer:  &renderer,

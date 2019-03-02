@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+//SpiralMap spins right round
 type SpiralMap struct {
 	TileContainer
 	Insertable
