@@ -5,6 +5,23 @@ type Tile struct {
 	Food   *Food
 }
 
+type Tile2 struct {
+	GopherTile
+	FoodTile
+}
+
+type GopherTile interface {
+	Get() (*Gopher, bool)
+	Add(*Gopher) bool
+}
+type FoodTile struct {
+	Food *Food
+}
+
+type RockTile struct {
+	Food *Food
+}
+
 //NewTile Returns a new tile which hold the given gopher and food
 func NewTile(gopher *Gopher, food *Food) Tile {
 	return Tile{Gopher: gopher, Food: food}
