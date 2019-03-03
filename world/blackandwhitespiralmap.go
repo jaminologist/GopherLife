@@ -110,7 +110,7 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 	sg := SpiralGopher{
 		TileContainer:    spiralMap,
 		QueueableActions: spiralMap.QueueableActions,
-		MoveableActors:   spiralMap,
+		MoveableGophers:  spiralMap,
 		Gopher:           &gopher,
 		Statistics:       &spiralMap.Statistics,
 		Spiral:           &spiral,
@@ -133,7 +133,7 @@ func (spiralMap *SpiralMap) Diagnostics() *Diagnostics {
 type SpiralGopher struct {
 	TileContainer
 	QueueableActions
-	MoveableActors
+	MoveableGophers
 	*Statistics
 	*Gopher
 	*calc.Spiral
