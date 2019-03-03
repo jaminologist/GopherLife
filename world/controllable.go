@@ -50,6 +50,20 @@ type GopherMapController struct {
 	CreateNew func(Statistics) *GopherMap
 }
 
+var (
+	maleGopherColor         = color.RGBA{90, 218, 255, 1}
+	maleGopherSelectedColor = color.RGBA{245, 245, 245, 1}
+	youngMaleGopherColor    = color.RGBA{167, 235, 255, 1}
+
+	femaleGopherColor         = color.RGBA{255, 255, 0, 1}
+	femaleGopherSelectedColor = color.RGBA{255, 155, 154, 1}
+	youngfemaleGopherColor    = color.RGBA{255, 231, 231, 1}
+
+	foodColor          = color.RGBA{204, 112, 0, 1}
+	decayedGopherColor = color.RGBA{0, 0, 0, 1}
+	grassColor         = color.RGBA{65, 119, 15, 1}
+)
+
 func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 	gMap := CreateWorldCustom(stats)
 	renderer := NewRenderer(100, 100)
@@ -107,6 +121,44 @@ func (controller *GopherMapController) KeyPress(key Keys) {
 	}
 }
 
+func TileToColor(tile *Tile, isSelected bool) color.RGBA {
+
+	switch {
+	case tile.isEmpty():
+		return grassColor
+	case tile.Gopher != nil:
+
+		switch tile.Gopher.Gender {
+		case Male:
+			if isSelected {
+				return maleGopherSelectedColor
+			} else if !tile.Gopher.IsMature() {
+				return youngMaleGopherColor
+			} else {
+				return maleGopherColor
+			}
+		case Female:
+			if isSelected {
+				return femaleGopherSelectedColor
+			} else if !tile.Gopher.IsMature() {
+				return youngfemaleGopherColor
+			} else {
+				return femaleGopherColor
+			}
+		}
+
+		if tile.Gopher.IsDead {
+			return decayedGopherColor
+		}
+
+	case tile.Food != nil:
+		return foodColor
+	}
+
+	return color.RGBA{0, 0, 0, 0}
+
+}
+
 func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 
 	if tile, ok := controller.Tile(x, y); ok {
@@ -120,27 +172,7 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 				isSelected = controller.GopherMap.SelectedGopher.Position.GetX() == x &&
 					controller.GopherMap.SelectedGopher.Position.GetY() == y
 			}
-
-			switch tile.Gopher.Gender {
-			case Male:
-
-				if isSelected {
-					return maleGopherSelectedColor
-				} else {
-					return maleGopherColor
-				}
-			case Female:
-				if isSelected {
-					return femaleGopherSelectedColor
-				} else {
-					return femaleGopherColor
-				}
-			}
-
-			if tile.Gopher.IsDead {
-				return decayedGopherColor
-			}
-
+			return TileToColor(tile, isSelected)
 		case tile.Food != nil:
 			return foodColor
 		}
@@ -265,7 +297,16 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 	return true
 }
 
+type NoPlayerInput struct{}
+
+func (controller *NoPlayerInput) Click(x int, y int) {
+}
+
+func (controller *NoPlayerInput) KeyPress(key Keys) {
+}
+
 type SpiralMapController struct {
+	NoPlayerInput
 	*SpiralMap
 	*Renderer
 }
@@ -295,13 +336,6 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 	}
 }
 
-//Click selects the tile on the gopher map and runs the SelectEntity method
-func (controller *SpiralMapController) Click(x int, y int) {
-}
-
-func (controller *SpiralMapController) KeyPress(key Keys) {
-}
-
 func (controller *SpiralMapController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(controller.Renderer.RenderWorld(controller))
 }
@@ -325,5 +359,58 @@ func (controller *SpiralMapController) PageLayout() WorldPageData {
 func (controller *SpiralMapController) HandleForm(values url.Values) bool {
 	sm := NewSpiralMapController(Statistics{}).SpiralMap
 	controller.SpiralMap = sm
+	return false
+}
+
+type FireWorksController struct {
+	NoPlayerInput
+	*GopherMap
+	*Renderer
+}
+
+func NewFireWorksController(stats Statistics) FireWorksController {
+
+	stats = Statistics{
+		Width:                  400,
+		Height:                 200,
+		NumberOfGophers:        1000,
+		NumberOfFood:           5000,
+		MaximumNumberOfGophers: 100000,
+		GopherBirthRate:        25,
+	}
+
+	sMap := CreateWorldCustom(stats)
+	renderer := NewRenderer(400, 150)
+
+	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
+	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
+
+	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+
+	return FireWorksController{
+		GopherMap: sMap,
+		Renderer:  &renderer,
+	}
+}
+
+func (controller *FireWorksController) MarshalJSON() ([]byte, error) {
+	return json.Marshal(controller.Renderer.RenderWorld(controller))
+}
+
+func (controller *FireWorksController) RenderTile(x int, y int) color.RGBA {
+	if tile, ok := controller.Tile(x, y); ok {
+		return TileToColor(tile, false)
+	} else {
+		return color.RGBA{0, 0, 0, 1}
+	}
+}
+
+func (controller *FireWorksController) PageLayout() WorldPageData {
+	return WorldPageData{}
+}
+
+func (controller *FireWorksController) HandleForm(values url.Values) bool {
+	sm := NewFireWorksController(Statistics{}).GopherMap
+	controller.GopherMap = sm
 	return false
 }
