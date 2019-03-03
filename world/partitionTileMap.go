@@ -27,7 +27,8 @@ func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 	)
 
 	tileMap.TileContainer = &gridContainer
-	tileMap.Insertable = &gridContainer
+	tileMap.InsertableGophers = &gridContainer
+	tileMap.InsertableFood = &gridContainer
 	tileMap.Searchable = &GridTileSearch{
 		BasicGridContainer: &gridContainer,
 	}
@@ -37,14 +38,14 @@ func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
 	}
 
-	frp := FoodRespawnPickup{Insertable: tileMap.Insertable}
+	frp := FoodRespawnPickup{InsertableFood: tileMap.InsertableFood}
 	tileMap.FoodRespawnPickup = frp
 
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
 
 	ag := GopherGeneration{
-		Insertable:            tileMap.Insertable,
+		InsertableGophers:     tileMap.InsertableGophers,
 		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
 		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
 	}

@@ -156,11 +156,14 @@ func (container *BasicGridContainer) convertToGridCoordinates(x int, y int) (int
 	return gridX, gridY
 }
 
-//Insertable used to insert Food and Gophers
-type Insertable interface {
+//InsertableGophers used to insert and remove Gophers
+type InsertableGophers interface {
 	InsertGopher(x int, y int, gopher *Gopher) bool
-	InsertFood(x int, y int, food *Food) bool
 	RemoveGopher(x int, y int) bool
+}
+
+type InsertableFood interface {
+	InsertFood(x int, y int, food *Food) bool
 	RemoveFood(x int, y int) (*Food, bool)
 }
 
@@ -306,10 +309,3 @@ const (
 	SearchForFemaleGopher
 	FemaleGopher
 )
-
-//InsertableSearchableTileContainer a TileContainer that is both Searchable and Insertable
-type InsertableSearchableTileContainer interface {
-	Insertable
-	Searchable
-	TileContainer
-}
