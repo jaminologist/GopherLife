@@ -4,16 +4,6 @@ import (
 	"image/color"
 )
 
-var (
-	maleGopherColor           = color.RGBA{90, 218, 255, 1}
-	maleGopherSelectedColor   = color.RGBA{245, 245, 245, 1}
-	femaleGopherColor         = color.RGBA{255, 255, 0, 1}
-	femaleGopherSelectedColor = color.RGBA{255, 155, 154, 1}
-	foodColor                 = color.RGBA{204, 112, 0, 1}
-	decayedGopherColor        = color.RGBA{0, 0, 0, 1}
-	grassColor                = color.RGBA{65, 119, 15, 1}
-)
-
 type Renderer struct {
 	StartX int
 	StartY int

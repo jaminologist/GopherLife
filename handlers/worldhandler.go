@@ -47,7 +47,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.NewGopherMapWithSpiralSearch(stats)
+	var tileMap = world.NewFireWorksController(stats)
 
 	tileMapFunctions := make(map[string]UpdateableRender)
 	ss := world.NewGopherMapWithSpiralSearch(stats)
@@ -56,6 +56,8 @@ func SetUpPage() {
 	tileMapFunctions["GopherMap With Partition"] = &ps
 	cbws := world.NewSpiralMapController(stats)
 	tileMapFunctions["Cool Black And White Spiral"] = &cbws
+	fireworks := world.NewFireWorksController(stats)
+	tileMapFunctions["Fireworks!"] = &fireworks
 
 	data := PageData{}
 	data.WorldPageData = tileMap.PageLayout()
