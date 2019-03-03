@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+//Controllable used to define user controls for a world
 type Controllable interface {
 	Click(x int, y int)
 	KeyPress(key Keys)

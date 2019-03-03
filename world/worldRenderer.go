@@ -34,6 +34,7 @@ type RenderTile struct {
 	color.RGBA
 }
 
+//Renderable when given an x and y value a color should be returned
 type Renderable interface {
 	RenderTile(x int, y int) color.RGBA
 }

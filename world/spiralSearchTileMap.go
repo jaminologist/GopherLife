@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+//GopherMap A map for Gophers!
 type GopherMap struct {
 	Searchable
 	TileContainer

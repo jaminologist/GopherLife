@@ -4,8 +4,22 @@ import (
 	"gopherlife/calc"
 )
 
+//TileContainer contains tiles that can be accessed using an x and y value
 type TileContainer interface {
 	Tile(x int, y int) (*Tile, bool)
+}
+
+type GridContainer interface {
+	TileContainer
+	Grid(x int, y int) (TileContainer, bool)
+}
+
+type GopherFood2DContainer struct {
+	grid   [][]*GopherTile
+	x      int
+	y      int
+	width  int
+	height int
 }
 
 type Basic2DContainer struct {
@@ -30,7 +44,7 @@ func NewBasic2DContainer(x int, y int, width int, height int) Basic2DContainer {
 		container.grid[i] = make([]*Tile, height)
 
 		for j := 0; j < height; j++ {
-			tile := Tile{nil, nil}
+			tile := Tile{}
 			container.grid[i][j] = &tile
 		}
 	}
@@ -47,41 +61,23 @@ func (container *Basic2DContainer) Tile(x int, y int) (*Tile, bool) {
 }
 
 type TrackedTileContainer struct {
-	x      int
-	y      int
-	width  int
-	height int
-	TileContainer
+	b2dc                *Basic2DContainer
 	gopherTileLocations map[int]*Tile
 	foodTileLocations   map[int]*Tile
-	Insertable
 }
 
 func NewTrackedTileContainer(x int, y int, width int, height int) TrackedTileContainer {
 	b2dc := NewBasic2DContainer(x, y, width, height)
 
 	return TrackedTileContainer{
-		x:                   x,
-		y:                   y,
-		width:               width,
-		height:              height,
-		TileContainer:       &b2dc,
+		b2dc:                &b2dc,
 		gopherTileLocations: make(map[int]*Tile),
 		foodTileLocations:   make(map[int]*Tile),
 	}
 }
 
-func (container *TrackedTileContainer) Tile(x int, y int) (*Tile, bool) {
-	return container.TileContainer.Tile(x, y)
-}
-
 func (container *TrackedTileContainer) ConvertToTrackedTileCoordinates(x int, y int) (gridX int, gridY int) {
-	return (x - container.x), (y - container.y)
-}
-
-type GridContainer interface {
-	TileContainer
-	Grid(x int, y int) (TileContainer, bool)
+	return (x - container.b2dc.x), (y - container.b2dc.y)
 }
 
 type BasicGridContainer struct {
@@ -130,7 +126,7 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 func (container *BasicGridContainer) Tile(x int, y int) (*Tile, bool) {
 
 	if grid, ok := container.Grid(x, y); ok {
-		if tile, ok := grid.Tile(x, y); ok {
+		if tile, ok := grid.b2dc.Tile(x, y); ok {
 			return tile, ok
 		}
 	}
@@ -160,6 +156,7 @@ func (container *BasicGridContainer) convertToGridCoordinates(x int, y int) (int
 	return gridX, gridY
 }
 
+//Insertable used to insert Food and Gophers
 type Insertable interface {
 	InsertGopher(x int, y int, gopher *Gopher) bool
 	InsertFood(x int, y int, food *Food) bool
@@ -167,6 +164,7 @@ type Insertable interface {
 	RemoveFood(x int, y int) (*Food, bool)
 }
 
+//Positionable used for world actors that have a position
 type Positionable interface {
 	Position() (x int, y int)
 	SetPosition(x int, y int)
@@ -192,6 +190,7 @@ func (container *Basic2DContainer) InsertFood(x int, y int, food *Food) bool {
 
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasFood() {
+			food.Position.Set(x, y)
 			tile.SetFood(food)
 			return true
 		}
@@ -227,58 +226,41 @@ func (container *Basic2DContainer) RemoveFood(x int, y int) (*Food, bool) {
 }
 
 func (container *TrackedTileContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
-	if tile, ok := container.Tile(x, y); ok {
-		if !tile.HasGopher() {
-			tile.SetGopher(gopher)
-			gopher.Position.X = x
-			gopher.Position.Y = y
-			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			container.gopherTileLocations[calc.Hashcode(x, y)] = tile
-			return true
-		}
+	if tile, ok := container.b2dc.Tile(x, y); ok {
+		container.b2dc.InsertGopher(x, y, gopher)
+
+		x, y = container.ConvertToTrackedTileCoordinates(x, y)
+		container.gopherTileLocations[calc.Hashcode(x, y)] = tile
+		return true
 	}
-
 	return false
-
 }
 
 func (container *TrackedTileContainer) InsertFood(x int, y int, food *Food) bool {
-	if tile, ok := container.Tile(x, y); ok {
-		if !tile.HasFood() {
-			food.Position.X = x
-			food.Position.Y = y
-			tile.SetFood(food)
-			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			container.foodTileLocations[calc.Hashcode(x, y)] = tile
-			return true
-		}
+	if tile, ok := container.b2dc.Tile(x, y); ok {
+		container.b2dc.InsertFood(x, y, food)
+
+		x, y = container.ConvertToTrackedTileCoordinates(x, y)
+		container.foodTileLocations[calc.Hashcode(x, y)] = tile
+		return true
 	}
-
 	return false
-
 }
 
 func (container *TrackedTileContainer) RemoveGopher(x int, y int) bool {
-	if tile, ok := container.Tile(x, y); ok {
-		if tile.HasGopher() {
-			tile.ClearGopher()
-			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			delete(container.gopherTileLocations, calc.Hashcode(x, y))
-			return true
-		}
+	if ok := container.b2dc.RemoveGopher(x, y); ok {
+		x, y = container.ConvertToTrackedTileCoordinates(x, y)
+		delete(container.gopherTileLocations, calc.Hashcode(x, y))
+		return true
 	}
 	return false
 }
 
 func (container *TrackedTileContainer) RemoveFood(x int, y int) (*Food, bool) {
-	if tile, ok := container.Tile(x, y); ok {
-		if tile.HasFood() {
-			food := tile.Food
-			tile.ClearFood()
-			x, y = container.ConvertToTrackedTileCoordinates(x, y)
-			delete(container.foodTileLocations, calc.Hashcode(x, y))
-			return food, true
-		}
+	if food, ok := container.b2dc.RemoveFood(x, y); ok {
+		x, y = container.ConvertToTrackedTileCoordinates(x, y)
+		delete(container.foodTileLocations, calc.Hashcode(x, y))
+		return food, true
 	}
 	return nil, false
 }
@@ -311,6 +293,7 @@ func (container *BasicGridContainer) RemoveFood(x int, y int) (*Food, bool) {
 	return nil, false
 }
 
+//Searchable used to search for the given search type in a given area
 type Searchable interface {
 	Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates
 }
@@ -324,6 +307,7 @@ const (
 	FemaleGopher
 )
 
+//InsertableSearchableTileContainer a TileContainer that is both Searchable and Insertable
 type InsertableSearchableTileContainer interface {
 	Insertable
 	Searchable
