@@ -47,7 +47,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.NewGopherMapWithParitionGridAndSearch(stats)
+	var tileMap = world.NewGopherMapWithSpiralSearch(stats)
 
 	tileMapFunctions := make(map[string]UpdateableRender)
 	ss := world.NewGopherMapWithSpiralSearch(stats)

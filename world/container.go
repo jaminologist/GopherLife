@@ -14,12 +14,12 @@ type GridContainer interface {
 	Grid(x int, y int) (TileContainer, bool)
 }
 
-type GopherFood2DContainer struct {
-	grid   [][]*GopherTile
-	x      int
-	y      int
-	width  int
-	height int
+type GopherContainer interface {
+	HasGopher(x int, y int) (*Gopher, bool)
+}
+
+type FoodContainer interface {
+	HasFood(x int, y int) (*Food, bool)
 }
 
 type Basic2DContainer struct {
@@ -228,6 +228,26 @@ func (container *Basic2DContainer) RemoveFood(x int, y int) (*Food, bool) {
 	return nil, false
 }
 
+func (container *Basic2DContainer) HasGopher(x int, y int) (*Gopher, bool) {
+
+	if tile, ok := container.Tile(x, y); ok {
+		if tile.HasGopher() {
+			return tile.Gopher, true
+		}
+	}
+	return nil, false
+}
+
+func (container *Basic2DContainer) HasFood(x int, y int) (*Food, bool) {
+
+	if tile, ok := container.Tile(x, y); ok {
+		if tile.HasFood() {
+			return tile.Food, true
+		}
+	}
+	return nil, false
+}
+
 func (container *TrackedTileContainer) InsertGopher(x int, y int, gopher *Gopher) bool {
 	if tile, ok := container.b2dc.Tile(x, y); ok {
 		container.b2dc.InsertGopher(x, y, gopher)
@@ -292,6 +312,20 @@ func (container *BasicGridContainer) RemoveGopher(x int, y int) bool {
 func (container *BasicGridContainer) RemoveFood(x int, y int) (*Food, bool) {
 	if grid, ok := container.Grid(x, y); ok {
 		return grid.RemoveFood(x, y)
+	}
+	return nil, false
+}
+
+func (container *BasicGridContainer) HasGopher(x int, y int) (*Gopher, bool) {
+	if grid, ok := container.Grid(x, y); ok {
+		return grid.b2dc.HasGopher(x, y)
+	}
+	return nil, false
+}
+
+func (container *BasicGridContainer) HasFood(x int, y int) (*Food, bool) {
+	if grid, ok := container.Grid(x, y); ok {
+		return grid.b2dc.HasFood(x, y)
 	}
 	return nil, false
 }

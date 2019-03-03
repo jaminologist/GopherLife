@@ -2,7 +2,6 @@ package world
 
 import (
 	"gopherlife/calc"
-	"sync"
 )
 
 //PartitionTileMap is cool
@@ -14,43 +13,17 @@ const (
 
 func CreatePartitionTileMapCustom(statistics Statistics) *GopherMap {
 
-	tileMap := GopherMap{}
-	tileMap.Statistics = statistics
-
-	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
-	tileMap.QueueableActions = &qa
-
-	gridContainer := NewBasicGridContainer(statistics.Width,
+	gc := NewBasicGridContainer(statistics.Width,
 		statistics.Height,
 		gridWidth,
 		gridHeight,
 	)
 
-	tileMap.TileContainer = &gridContainer
-	tileMap.InsertableGophers = &gridContainer
-	tileMap.InsertableFood = &gridContainer
-	tileMap.Searchable = &GridTileSearch{
-		BasicGridContainer: &gridContainer,
+	search := GridTileSearch{
+		BasicGridContainer: &gc,
 	}
 
-	tileMap.GopherSliceAndChannel = GopherSliceAndChannel{
-		ActiveActors: make(chan *GopherActor, statistics.MaximumNumberOfGophers*2),
-		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
-	}
-
-	frp := FoodRespawnPickup{InsertableFood: tileMap.InsertableFood}
-	tileMap.FoodRespawnPickup = frp
-
-	var wg sync.WaitGroup
-	tileMap.GopherWaitGroup = &wg
-
-	ag := GopherGeneration{
-		InsertableGophers:     tileMap.InsertableGophers,
-		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
-		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
-	}
-
-	tileMap.GopherGeneration = ag
+	tileMap := NewGopherMap(&statistics, &search, &gc, &gc, &gc, &gc, &gc)
 
 	tileMap.setUpTiles()
 	return &tileMap
