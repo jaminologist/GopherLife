@@ -149,7 +149,6 @@ type GopherActor struct {
 	QueueableActions
 	Searchable
 	TileContainer
-	Insertable
 	PickableTiles
 	MoveableActors
 	ActorGeneration
@@ -245,14 +244,6 @@ func (gopher *GopherActor) LookForFood() {
 	gopher.FoodTargets = gopher.Search(gopher.Position, 25, 25, 1, SearchForFood)
 }
 
-//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
-func (gopher *GopherActor) QueueRemoveGopher() {
-
-	gopher.Add(func() {
-		gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
-	})
-}
-
 //QueueGopherMove Adds the Move Gopher Method to the Input Queue.
 func (gopher *GopherActor) QueueGopherMove(moveX int, moveY int) {
 
@@ -309,7 +300,6 @@ func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
 							QueueableActions: gopher.QueueableActions,
 							Searchable:       gopher.Searchable,
 							TileContainer:    gopher.TileContainer,
-							Insertable:       gopher.Insertable,
 							PickableTiles:    gopher.PickableTiles,
 							MoveableActors:   gopher.MoveableActors,
 							ActorGeneration:  gopher.ActorGeneration,

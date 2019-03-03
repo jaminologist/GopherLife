@@ -13,7 +13,8 @@ type GopherMap struct {
 	TileContainer
 	FoodRespawnPickup
 	QueueableActions
-	Insertable
+	InsertableGophers
+	InsertableFood
 
 	GopherGeneration
 	GopherSliceAndChannel
@@ -38,7 +39,8 @@ func CreateWorldCustom(statistics Statistics) *GopherMap {
 	a := NewBasic2DContainer(0, 0, statistics.Width, statistics.Height)
 
 	tileMap.TileContainer = &a
-	tileMap.Insertable = &a
+	tileMap.InsertableGophers = &a
+	tileMap.InsertableFood = &a
 
 	s := SpiralTileSearch{TileContainer: tileMap.TileContainer}
 
@@ -49,14 +51,14 @@ func CreateWorldCustom(statistics Statistics) *GopherMap {
 		ActiveArray:  make([]*GopherActor, statistics.NumberOfGophers),
 	}
 
-	frp := FoodRespawnPickup{Insertable: tileMap.Insertable}
+	frp := FoodRespawnPickup{InsertableFood: tileMap.InsertableFood}
 	tileMap.FoodRespawnPickup = frp
 
 	var wg sync.WaitGroup
 	tileMap.GopherWaitGroup = &wg
 
 	ag := GopherGeneration{
-		Insertable:            tileMap.Insertable,
+		InsertableGophers:     tileMap.InsertableGophers,
 		maxGenerations:        tileMap.Statistics.MaximumNumberOfGophers,
 		GopherSliceAndChannel: &tileMap.GopherSliceAndChannel,
 	}
@@ -92,7 +94,6 @@ func (tileMap *GopherMap) setUpTiles() {
 			QueueableActions: tileMap.QueueableActions,
 			Searchable:       tileMap.Searchable,
 			TileContainer:    tileMap.TileContainer,
-			Insertable:       tileMap.Insertable,
 			PickableTiles:    tileMap,
 			MoveableActors:   tileMap,
 			ActorGeneration:  &tileMap.GopherGeneration,
@@ -125,16 +126,6 @@ func (tileMap *GopherMap) SelectEntity(x int, y int) (*Gopher, bool) {
 		}
 	}
 
-	return nil, false
-}
-
-func (tileMap *GopherMap) SelectedTile() (*Tile, bool) {
-
-	if tileMap.SelectedGopher != nil {
-		if tile, ok := tileMap.Tile(tileMap.SelectedGopher.Position.GetX(), tileMap.SelectedGopher.Position.GetY()); ok {
-			return tile, ok
-		}
-	}
 	return nil, false
 }
 
@@ -177,7 +168,7 @@ type PickableTiles interface {
 }
 
 type FoodRespawnPickup struct {
-	Insertable
+	InsertableFood
 }
 
 func (frp *FoodRespawnPickup) PickUpFood(x int, y int) (*Food, bool) {
@@ -212,7 +203,7 @@ type ActorGeneration interface {
 }
 
 type GopherGeneration struct {
-	Insertable
+	InsertableGophers
 	maxGenerations int
 	*GopherSliceAndChannel
 }
@@ -239,7 +230,9 @@ func (tileMap *GopherMap) Act(gopher *GopherActor, channel chan *GopherActor) {
 	if !gopher.IsDecayed() {
 		channel <- gopher
 	} else {
-		gopher.QueueRemoveGopher()
+		tileMap.Add(func() {
+			tileMap.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
+		})
 	}
 	tileMap.GopherWaitGroup.Done()
 }

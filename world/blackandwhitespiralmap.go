@@ -9,7 +9,7 @@ import (
 //SpiralMap spins right round
 type SpiralMap struct {
 	TileContainer
-	Insertable
+	InsertableGophers
 	QueueableActions
 
 	ActiveActors chan *SpiralGopher
@@ -31,7 +31,7 @@ func NewSpiralMap(stats Statistics) SpiralMap {
 	spiralMap.QueueableActions = &qa
 
 	spiralMap.TileContainer = &b2d
-	spiralMap.Insertable = &b2d
+	spiralMap.InsertableGophers = &b2d
 
 	spiralMap.Statistics = stats
 
@@ -57,11 +57,11 @@ func (spiralMap *SpiralMap) Update() bool {
 
 			gopher.Update()
 
-			if !gopher.IsDecayed() {
+			if !gopher.IsDead {
 				secondChannel <- gopher
 			} else {
 				gopher.Add(func() {
-					gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
+					spiralMap.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
 				})
 			}
 
@@ -110,7 +110,6 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 	sg := SpiralGopher{
 		TileContainer:    spiralMap,
 		QueueableActions: spiralMap.QueueableActions,
-		Insertable:       spiralMap,
 		MoveableActors:   spiralMap,
 		Gopher:           &gopher,
 		Statistics:       &spiralMap.Statistics,
@@ -131,14 +130,9 @@ func (spiralMap *SpiralMap) Diagnostics() *Diagnostics {
 	return &d
 }
 
-func (spiralMap *SpiralMap) SelectedTile() (*Tile, bool) {
-	return nil, false
-}
-
 type SpiralGopher struct {
 	TileContainer
 	QueueableActions
-	Insertable
 	MoveableActors
 	*Statistics
 	*Gopher
@@ -178,9 +172,7 @@ func (gopher *SpiralGopher) Update() {
 			gopher.MoveGopher(gopher.Gopher, position.GetX(), position.GetY())
 		})
 	} else {
-		gopher.Add(func() {
-			gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
-		})
+		gopher.IsDead = true
 	}
 
 }
