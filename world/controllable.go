@@ -414,3 +414,54 @@ func (controller *FireWorksController) HandleForm(values url.Values) bool {
 	controller.GopherMap = sm
 	return false
 }
+
+type CollisionMapController struct {
+	NoPlayerInput
+	*CollisionMap
+	*Renderer
+}
+
+func NewCollisionMapController(stats Statistics) CollisionMapController {
+
+	stats = Statistics{
+		Width:                  200,
+		Height:                 200,
+		NumberOfGophers:        1000,
+		MaximumNumberOfGophers: 100000,
+	}
+
+	sMap := NewCollisionMap(stats)
+	renderer := NewRenderer(200, 200)
+
+	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
+	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
+
+	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+
+	return CollisionMapController{
+		CollisionMap: &sMap,
+		Renderer:     &renderer,
+	}
+}
+
+func (controller *CollisionMapController) MarshalJSON() ([]byte, error) {
+	return json.Marshal(controller.Renderer.RenderWorld(controller))
+}
+
+func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
+	if _, ok := controller.HasCollider(x, y); ok {
+		return color.RGBA{202, 255, 255, 1}
+	} else {
+		return color.RGBA{0, 0, 0, 1}
+	}
+}
+
+func (controller *CollisionMapController) PageLayout() WorldPageData {
+	return WorldPageData{}
+}
+
+func (controller *CollisionMapController) HandleForm(values url.Values) bool {
+	controllerMap := NewCollisionMapController(Statistics{}).CollisionMap
+	controller.CollisionMap = controllerMap
+	return false
+}

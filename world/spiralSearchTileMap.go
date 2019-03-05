@@ -132,13 +132,9 @@ func (tileMap *GopherMap) setUpTiles() {
 //If there is not a gopher at the give coordinates this function returns zero.
 func (tileMap *GopherMap) SelectEntity(x int, y int) (*Gopher, bool) {
 
-	tileMap.SelectedGopher = nil
-
-	if mapPoint, ok := tileMap.Tile(x, y); ok {
-		if mapPoint.Gopher != nil {
-			tileMap.SelectedGopher = mapPoint.Gopher
-			return mapPoint.Gopher, true
-		}
+	if gopher, ok := tileMap.HasGopher(x, y); ok {
+		tileMap.SelectedGopher = gopher
+		return gopher, true
 	}
 
 	return nil, false

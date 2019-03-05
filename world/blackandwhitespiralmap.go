@@ -103,7 +103,7 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 	gopher := NewGopher(names.CuteName(), calc.Coordinates{0, 0})
 
 	//Commented out for cool spiral effect 1
-	//spiralMap.InsertGopher(spiralMap.Width/2, spiralMap.Height/2, &gopher)
+	spiralMap.InsertGopher(spiralMap.Width/2, spiralMap.Height/2, &gopher)
 
 	spiral := calc.NewSpiral(spiralMap.Width, spiralMap.Height)
 
@@ -140,7 +140,7 @@ type SpiralGopher struct {
 }
 
 //Cool Effect 2
-/*func (gopher *SpiralGopher) Update() {
+func (gopher *SpiralGopher) Update() {
 
 	position, ok := gopher.Spiral.Next()
 	//position, ok = gopher.Spiral.Next()
@@ -152,15 +152,13 @@ type SpiralGopher struct {
 			gopher.MoveGopher(gopher.Gopher, x-gopher.Position.GetX(), y-gopher.Position.GetY())
 		})
 	} else {
-		gopher.Add(func() {
-			gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
-		})
+		gopher.IsDead = true
 	}
 
-}*/
+}
 
 //Cool Effect 1
-func (gopher *SpiralGopher) Update() {
+/*func (gopher *SpiralGopher) Update() {
 
 	position, ok := gopher.Spiral.Next()
 	//position, ok = gopher.Spiral.Next()
@@ -175,4 +173,4 @@ func (gopher *SpiralGopher) Update() {
 		gopher.IsDead = true
 	}
 
-}
+}*/
