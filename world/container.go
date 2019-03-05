@@ -22,6 +22,34 @@ type FoodContainer interface {
 	HasFood(x int, y int) (*Food, bool)
 }
 
+type Containable interface {
+	Contains(x int, y int) bool
+}
+
+type Rectangle struct {
+	x      int
+	y      int
+	width  int
+	height int
+}
+
+func NewRectangle(x int, y int, width int, height int) Rectangle {
+
+	return Rectangle{
+		x:      x,
+		y:      y,
+		width:  width,
+		height: height,
+	}
+}
+
+func (r *Rectangle) Contains(x int, y int) bool {
+	if x < r.x || x >= r.width+r.x || y < r.y || y >= r.height+r.y {
+		return false
+	}
+	return true
+}
+
 type Basic2DContainer struct {
 	grid   [][]*Tile
 	x      int
@@ -169,8 +197,26 @@ type InsertableFood interface {
 
 //Positionable used for world actors that have a position
 type Positionable interface {
-	Position() (x int, y int)
+	GetX() int
+	GetY() int
 	SetPosition(x int, y int)
+}
+
+type Position struct {
+	X int
+	Y int
+}
+
+func (p *Position) GetX() int {
+	return p.X
+}
+
+func (p *Position) GetY() int {
+	return p.Y
+}
+
+func (p *Position) SetPosition() int {
+	return p.Y
 }
 
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
