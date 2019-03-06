@@ -424,14 +424,14 @@ type CollisionMapController struct {
 func NewCollisionMapController(stats Statistics) CollisionMapController {
 
 	stats = Statistics{
-		Width:                  200,
-		Height:                 200,
-		NumberOfGophers:        1000,
+		Width:                  75,
+		Height:                 75,
+		NumberOfGophers:        500,
 		MaximumNumberOfGophers: 100000,
 	}
 
-	sMap := NewCollisionMap(stats)
-	renderer := NewRenderer(200, 200)
+	sMap := NewCollisionMap(stats, true)
+	renderer := NewRenderer(100, 100)
 
 	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
 	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
@@ -449,11 +449,16 @@ func (controller *CollisionMapController) MarshalJSON() ([]byte, error) {
 }
 
 func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
-	if _, ok := controller.HasCollider(x, y); ok {
-		return color.RGBA{202, 255, 255, 1}
-	} else {
-		return color.RGBA{0, 0, 0, 1}
+
+	if controller.Contains(x, y) {
+		if c, ok := controller.HasCollider(x, y); ok {
+			return c.Color
+		} else {
+			return color.RGBA{0, 0, 0, 1}
+		}
 	}
+
+	return color.RGBA{255, 255, 255, 1}
 }
 
 func (controller *CollisionMapController) PageLayout() WorldPageData {

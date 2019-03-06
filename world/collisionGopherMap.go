@@ -3,8 +3,11 @@ package world
 import (
 	"gopherlife/calc"
 	"image/color"
+	"math/rand"
 	"sync"
 )
+
+var collisionMapSpeed = 1
 
 type CollisionMap struct {
 	grid [][]*ColliderTile
@@ -13,6 +16,8 @@ type CollisionMap struct {
 	*sync.WaitGroup
 
 	ActiveColliders chan *Collider
+
+	IsDiagonal bool
 }
 
 type ColliderTile struct {
@@ -25,7 +30,6 @@ func (tile *ColliderTile) Insert(c *Collider) bool {
 		c.X = tile.X
 		c.Y = tile.Y
 		tile.c = c
-		//fmt.Println("Success!")
 		return true
 	}
 	return false
@@ -39,7 +43,7 @@ func (tile *ColliderTile) Clear() {
 	tile.c = nil
 }
 
-func NewCollisionMap(statistics Statistics) CollisionMap {
+func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 
 	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
 	var wg sync.WaitGroup
@@ -51,6 +55,7 @@ func NewCollisionMap(statistics Statistics) CollisionMap {
 		WaitGroup:        &wg,
 		Containable:      &rect,
 		ActiveColliders:  make(chan *Collider, statistics.MaximumNumberOfGophers*2),
+		IsDiagonal:       isDiagonal,
 	}
 
 	collsionMap.grid = make([][]*ColliderTile, statistics.Width)
@@ -76,13 +81,29 @@ func NewCollisionMap(statistics Statistics) CollisionMap {
 
 	for i := 0; i < statistics.NumberOfGophers; i++ {
 
-		pos := keys[count]
-		var c = Collider{
-			velX:                 1,
-			ColliderWorldActions: &collsionMap,
+		var velX, velY int
+
+		if collsionMap.IsDiagonal {
+			velX = getNegativeOrPositiveSpeed(collisionMapSpeed)
+			velY = getNegativeOrPositiveSpeed(collisionMapSpeed)
+		} else {
+			if rand.Intn(2) == 0 {
+				velX = getNegativeOrPositiveSpeed(collisionMapSpeed)
+			} else {
+				velY = getNegativeOrPositiveSpeed(collisionMapSpeed)
+			}
+
 		}
 
-		collsionMap.InsertCollider(pos.GetX(), pos.GetX(), &c)
+		pos := keys[count]
+		var c = Collider{
+			velX:                 velX,
+			velY:                 velY,
+			ColliderWorldActions: &collsionMap,
+			IsDiagonal:           collsionMap.IsDiagonal,
+		}
+
+		collsionMap.InsertCollider(pos.GetX(), pos.GetY(), &c)
 		collsionMap.ActiveColliders <- &c
 
 		count++
@@ -110,6 +131,14 @@ func (collisionMap *CollisionMap) Update() bool {
 
 	return true
 
+}
+
+func getNegativeOrPositiveSpeed(speed int) int {
+	if rand.Intn(2) == 0 {
+		return speed
+	} else {
+		return -speed
+	}
 }
 
 type ColliderWorldActions interface {
@@ -145,7 +174,6 @@ func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider
 	if collisionMap.Contains(newX, newY) {
 
 		oldTile := collisionMap.grid[c.X][c.Y]
-		//fmt.Println(newX, newY)
 		newTile := collisionMap.grid[newX][newY]
 
 		if !newTile.HasCollider() {
@@ -155,8 +183,8 @@ func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider
 					oldTile.Clear()
 				}
 			})
+			return true
 		}
-		return true
 	}
 
 	return false
@@ -166,20 +194,96 @@ func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider
 type Collider struct {
 	Position
 	ColliderWorldActions
-	color.RGBA
+	Color color.RGBA
 
-	velX int
-	velY int
+	IsDiagonal bool
+
+	velX           int
+	velY           int
+	colorSelection int
 }
 
 func (collider *Collider) Update() {
 
 	if !collider.MoveCollider(collider.velX, collider.velY, collider) {
-		//fmt.Println("Ow")
 		collider.ChangeDirection()
+		collider.ChangeColor()
+		collider.MoveCollider(collider.velX, collider.velY, collider)
 	}
 }
 
 func (collider *Collider) ChangeDirection() {
-	collider.velX = -1 * collider.velX
+
+	if collider.IsDiagonal {
+
+		i := rand.Intn(3)
+
+		if i == 0 || i == 2 {
+			collider.velX = -1 * collider.velX
+		}
+
+		if i == 1 || i == 2 {
+			collider.velY = -1 * collider.velY
+		}
+
+	} else {
+
+		if calc.Abs(collider.velX) > 0 {
+			i := rand.Intn(2)
+
+			if i == 0 {
+				collider.velX = -1 * collider.velX
+			} else {
+				collider.velX = 0
+				collider.velY = getNegativeOrPositiveSpeed(collisionMapSpeed)
+			}
+
+		} else {
+
+			i := rand.Intn(2)
+
+			if i == 0 {
+				collider.velY = -1 * collider.velY
+			} else {
+				collider.velY = 0
+				collider.velX = getNegativeOrPositiveSpeed(collisionMapSpeed)
+			}
+
+		}
+
+	}
+}
+
+func (collider *Collider) ChangeColor() {
+
+	switch collider.colorSelection {
+	case 0:
+		collider.Color = color.RGBA{
+			255, 0, 0, 1,
+		}
+	case 1:
+		collider.Color = color.RGBA{
+			0, 255, 0, 1,
+		}
+	case 2:
+		collider.Color = color.RGBA{
+			0, 204, 255, 1,
+		}
+	case 3:
+		collider.Color = color.RGBA{
+			255, 0, 255, 1,
+		}
+	case 4:
+		collider.Color = color.RGBA{
+			255, 255, 0, 1,
+		}
+	case 5:
+		collider.Color = color.RGBA{
+			255, 255, 255, 1,
+		}
+	default:
+		collider.colorSelection = -1
+	}
+
+	collider.colorSelection++
 }
