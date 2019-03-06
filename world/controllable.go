@@ -323,7 +323,7 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 	}
 
 	sMap := NewSpiralMap(stats)
-	renderer := NewRenderer(stats.Width*2, stats.Height*2)
+	renderer := NewRenderer(75, 75)
 
 	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
 	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
@@ -430,7 +430,7 @@ func NewCollisionMapController(stats Statistics) CollisionMapController {
 		MaximumNumberOfGophers: 100000,
 	}
 
-	sMap := NewCollisionMap(stats, true)
+	sMap := NewCollisionMap(stats, false)
 	renderer := NewRenderer(100, 100)
 
 	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
@@ -466,6 +466,62 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 }
 
 func (controller *CollisionMapController) HandleForm(values url.Values) bool {
+	controllerMap := NewCollisionMapController(Statistics{}).CollisionMap
+	controller.CollisionMap = controllerMap
+	return false
+}
+
+type DiagonalCollisionMapController struct {
+	NoPlayerInput
+	*CollisionMap
+	*Renderer
+}
+
+func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController {
+
+	stats = Statistics{
+		Width:                  75,
+		Height:                 75,
+		NumberOfGophers:        500,
+		MaximumNumberOfGophers: 100000,
+	}
+
+	sMap := NewCollisionMap(stats, true)
+	renderer := NewRenderer(100, 100)
+
+	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
+	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
+
+	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+
+	return CollisionMapController{
+		CollisionMap: &sMap,
+		Renderer:     &renderer,
+	}
+}
+
+func (controller *DiagonalCollisionMapController) MarshalJSON() ([]byte, error) {
+	return json.Marshal(controller.Renderer.RenderWorld(controller))
+}
+
+func (controller *DiagonalCollisionMapController) RenderTile(x int, y int) color.RGBA {
+
+	if controller.Contains(x, y) {
+		if c, ok := controller.HasCollider(x, y); ok {
+			return c.Color
+		} else {
+			return color.RGBA{0, 0, 0, 1}
+		}
+	}
+
+	return color.RGBA{255, 255, 255, 1}
+}
+
+func (controller *DiagonalCollisionMapController) PageLayout() WorldPageData {
+	return WorldPageData{}
+}
+
+func (controller *DiagonalCollisionMapController) HandleForm(values url.Values) bool {
 	controllerMap := NewCollisionMapController(Statistics{}).CollisionMap
 	controller.CollisionMap = controllerMap
 	return false

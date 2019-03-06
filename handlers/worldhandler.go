@@ -47,7 +47,7 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.NewCollisionMapController(stats)
+	var tileMap = world.NewDiagonalCollisionMapController(stats)
 
 	tileMapFunctions := make(map[string]UpdateableRender)
 	ss := world.NewGopherMapWithSpiralSearch(stats)
@@ -60,6 +60,8 @@ func SetUpPage() {
 	tileMapFunctions["Fireworks!"] = &fireworks
 	collision := world.NewCollisionMapController(stats)
 	tileMapFunctions["Collision Map"] = &collision
+	diagonalCollision := world.NewDiagonalCollisionMapController(stats)
+	tileMapFunctions["Diagonal Collision Map"] = &diagonalCollision
 
 	data := PageData{}
 	data.WorldPageData = tileMap.PageLayout()
