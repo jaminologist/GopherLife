@@ -34,6 +34,21 @@
           </div>
       </div>
 
+      <div class="row">
+          <div class="col">
+            <form id="switch-worlds" action="/SwitchWorld" method="post" >
+            <div class="form-group col-md-2 mx-auto text-center">
+                <label for="mapSelection">Map Selection</label>
+                <select class="form-control" name="mapSelection" onchange="this.form.submit()">
+                    {{range $index, $element := $.MapData}}
+                        <option value={{.Value}} {{if eq $element.Value $.Selected}} selected="selected" {{end}}>{{.DisplayName}}</option>
+                    {{end}}
+                </select>
+            </div>             
+            </form>
+        </div>
+      </div>
+
       {{if .IsGopherMap}}
       <div class="row">
           <div class="col-2"></div>
@@ -61,25 +76,18 @@
       </div>
       {{end}}
 
+      {{if .FormData}}
       <div class="row">
           <div class="col-2"></div>
           <div class="col">
               <form id="reset" action="/ResetWorld" method="post">
                 <div class="form-row">
                     {{range .FormData}}
-                        <div class="form-group col-md-{{.BootStrapFormWidth}}">
+                        <div class="form-group col-md-{{.BootStrapFormWidth}} mx-auto text-center">
                             <label for={{.Name}}>{{.DisplayName}}</label>
                             <input type={{.Type}} class="form-control" name={{.Name}} value={{.Value}} />
                         </div>
                     {{end}}
-                  <div class="form-group col-md-2">
-                      <label for="mapSelection">Map Selection</label>
-                      <select class="form-control" name="mapSelection">
-                        {{range $index, $element := $.MapData}}
-                            <option value={{.Value}} {{if eq $element.Value $.Selected}} selected="selected" {{end}}>{{.DisplayName}}</option>
-                        {{end}}
-                      </select>
-                  </div>
                 </div>
                 <div class="form-row">
                     <div class="col-sm-6 offset-sm-3">
@@ -90,6 +98,7 @@
           </div>
           <div class="col-2"></div>
       </div>
+      {{end}}
   </div>
 </body>
 </html>

@@ -417,18 +417,20 @@ func (controller *FireWorksController) HandleForm(values url.Values) bool {
 
 type CollisionMapController struct {
 	NoPlayerInput
+	*Statistics
 	*CollisionMap
 	*Renderer
+	CreateNew func(*Statistics, bool) CollisionMap
 }
 
 func NewCollisionMapController(stats Statistics) CollisionMapController {
 
-	stats = Statistics{
+	/*	stats = Statistics{
 		Width:                  75,
 		Height:                 75,
 		NumberOfGophers:        500,
 		MaximumNumberOfGophers: 100000,
-	}
+	} */
 
 	sMap := NewCollisionMap(stats, false)
 	renderer := NewRenderer(100, 100)
@@ -439,6 +441,7 @@ func NewCollisionMapController(stats Statistics) CollisionMapController {
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return CollisionMapController{
+		Statistics:   &stats,
 		CollisionMap: &sMap,
 		Renderer:     &renderer,
 	}
@@ -462,19 +465,59 @@ func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
 }
 
 func (controller *CollisionMapController) PageLayout() WorldPageData {
-	return WorldPageData{}
+	stats := controller.Statistics
+
+	formdataArray := []FormData{
+		FormData{
+			DisplayName:        "Width",
+			Type:               "Number",
+			Name:               "width",
+			Value:              strconv.Itoa(stats.Width),
+			BootStrapFormWidth: 1,
+		},
+		FormData{
+			DisplayName:        "Height",
+			Type:               "Number",
+			Name:               "height",
+			Value:              strconv.Itoa(stats.Height),
+			BootStrapFormWidth: 1,
+		},
+		FormData{
+			DisplayName:        "Initial Population",
+			Type:               "Number",
+			Name:               "numberOfGophers",
+			Value:              strconv.Itoa(stats.NumberOfGophers),
+			BootStrapFormWidth: 2,
+		},
+	}
+
+	return WorldPageData{
+		PageTitle:   "C O L L I D E R L I F E",
+		FormData:    formdataArray,
+		IsGopherMap: true,
+	}
 }
 
 func (controller *CollisionMapController) HandleForm(values url.Values) bool {
-	controllerMap := NewCollisionMapController(Statistics{}).CollisionMap
-	controller.CollisionMap = controllerMap
-	return false
-}
 
-type DiagonalCollisionMapController struct {
-	NoPlayerInput
-	*CollisionMap
-	*Renderer
+	if strings.Contains(values.Encode(), "numberOfGophers") {
+
+		width, _ := strconv.ParseInt(values.Get("width"), 10, 64)
+		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
+		numberOfGophers, _ := strconv.ParseInt(values.Get("numberOfGophers"), 10, 64)
+
+		stats := Statistics{
+			Width:           int(width),
+			Height:          int(height),
+			NumberOfGophers: int(numberOfGophers),
+		}
+
+		gmc := NewCollisionMap(stats, true)
+		controller.CollisionMap = &gmc
+		controller.Statistics = &stats
+
+	}
+	return true
 }
 
 func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController {
@@ -485,7 +528,6 @@ func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController 
 		NumberOfGophers:        500,
 		MaximumNumberOfGophers: 100000,
 	}
-
 	sMap := NewCollisionMap(stats, true)
 	renderer := NewRenderer(100, 100)
 
@@ -495,34 +537,8 @@ func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController 
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return CollisionMapController{
+		Statistics:   &stats,
 		CollisionMap: &sMap,
 		Renderer:     &renderer,
 	}
-}
-
-func (controller *DiagonalCollisionMapController) MarshalJSON() ([]byte, error) {
-	return json.Marshal(controller.Renderer.RenderWorld(controller))
-}
-
-func (controller *DiagonalCollisionMapController) RenderTile(x int, y int) color.RGBA {
-
-	if controller.Contains(x, y) {
-		if c, ok := controller.HasCollider(x, y); ok {
-			return c.Color
-		} else {
-			return color.RGBA{0, 0, 0, 1}
-		}
-	}
-
-	return color.RGBA{255, 255, 255, 1}
-}
-
-func (controller *DiagonalCollisionMapController) PageLayout() WorldPageData {
-	return WorldPageData{}
-}
-
-func (controller *DiagonalCollisionMapController) HandleForm(values url.Values) bool {
-	controllerMap := NewCollisionMapController(Statistics{}).CollisionMap
-	controller.CollisionMap = controllerMap
-	return false
 }
