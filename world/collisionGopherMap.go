@@ -45,23 +45,23 @@ func (tile *ColliderTile) Clear() {
 
 func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 
-	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
+	qa := NewBasicActionQueue(statistics.NumberOfGophers * 2)
 	var wg sync.WaitGroup
 
 	rect := NewRectangle(0, 0, statistics.Width, statistics.Height)
 
-	collsionMap := CollisionMap{
+	collisionMap := CollisionMap{
 		QueueableActions: &qa,
 		WaitGroup:        &wg,
 		Containable:      &rect,
-		ActiveColliders:  make(chan *Collider, statistics.MaximumNumberOfGophers*2),
+		ActiveColliders:  make(chan *Collider, statistics.NumberOfGophers*2),
 		IsDiagonal:       isDiagonal,
 	}
 
-	collsionMap.grid = make([][]*ColliderTile, statistics.Width)
+	collisionMap.grid = make([][]*ColliderTile, statistics.Width)
 
 	for i := 0; i < statistics.Width; i++ {
-		collsionMap.grid[i] = make([]*ColliderTile, statistics.Height)
+		collisionMap.grid[i] = make([]*ColliderTile, statistics.Height)
 
 		for j := 0; j < statistics.Height; j++ {
 			tile := ColliderTile{
@@ -70,7 +70,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 					Y: j,
 				},
 			}
-			collsionMap.grid[i][j] = &tile
+			collisionMap.grid[i][j] = &tile
 		}
 	}
 
@@ -83,7 +83,9 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 
 		var velX, velY int
 
-		if collsionMap.IsDiagonal {
+		//collisionMap.IsDiagonal = !collisionMap.IsDiagonal
+
+		if collisionMap.IsDiagonal {
 			velX = getNegativeOrPositiveSpeed(collisionMapSpeed)
 			velY = getNegativeOrPositiveSpeed(collisionMapSpeed)
 		} else {
@@ -99,17 +101,17 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 		var c = Collider{
 			velX:                 velX,
 			velY:                 velY,
-			ColliderWorldActions: &collsionMap,
-			IsDiagonal:           collsionMap.IsDiagonal,
+			ColliderWorldActions: &collisionMap,
+			IsDiagonal:           collisionMap.IsDiagonal,
 		}
 
-		collsionMap.InsertCollider(pos.GetX(), pos.GetY(), &c)
-		collsionMap.ActiveColliders <- &c
+		collisionMap.InsertCollider(pos.GetX(), pos.GetY(), &c)
+		collisionMap.ActiveColliders <- &c
 
 		count++
 	}
 
-	return collsionMap
+	return collisionMap
 }
 
 func (collisionMap *CollisionMap) Update() bool {

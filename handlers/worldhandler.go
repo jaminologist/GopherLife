@@ -19,6 +19,11 @@ type UpdateableRender interface {
 	world.Controllable
 }
 
+type Something struct {
+	IsActive bool
+	UpdateableRender
+}
+
 type container struct {
 	tileMap  UpdateableRender
 	tileMaps map[string]UpdateableRender
@@ -38,12 +43,21 @@ type MapData struct {
 
 func SetUpPage() {
 
-	stats := world.Statistics{
+	/*stats := world.Statistics{
 		Width:                  3000,
 		Height:                 3000,
 		NumberOfGophers:        5000,
 		NumberOfFood:           1000000,
 		MaximumNumberOfGophers: 1000000,
+		GopherBirthRate:        7,
+	}*/
+
+	stats := world.Statistics{
+		Width:                  100,
+		Height:                 100,
+		NumberOfGophers:        250,
+		NumberOfFood:           1000,
+		MaximumNumberOfGophers: 10000,
 		GopherBirthRate:        7,
 	}
 
@@ -86,6 +100,7 @@ func SetUpPage() {
 	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&container))
 	http.HandleFunc("/Click", HandleClick(&container))
 	http.HandleFunc("/ResetWorld", resetWorld(&container))
+	http.HandleFunc("/SwitchWorld", SwitchWorld(&container))
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8080", nil)
 
@@ -128,17 +143,40 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 		r.ParseForm()
 
 		var stats world.Statistics
+
+		var tileMap UpdateableRender
+
+		if tileMapFunc, ok := container.tileMaps[container.pageData.Selected]; ok {
+			tileMapFunc.HandleForm(r.Form)
+			tileMap = tileMapFunc
+		} else {
+			adr := world.NewGopherMapWithSpiralSearch(stats)
+			fmt.Println("here")
+			tileMap = &adr
+		}
+
+		container.tileMap = tileMap
+		container.pageData.WorldPageData = container.tileMap.PageLayout()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func SwitchWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		r.ParseForm()
+
+		var stats world.Statistics
 		mapSelection := r.FormValue("mapSelection")
 
 		var tileMap UpdateableRender
 
 		if tileMapFunc, ok := container.tileMaps[mapSelection]; ok {
-			tileMapFunc.HandleForm(r.Form)
 			tileMap = tileMapFunc
 			container.pageData.Selected = mapSelection
 		} else {
 			adr := world.NewGopherMapWithSpiralSearch(stats)
-			fmt.Println("here")
 			tileMap = &adr
 		}
 
