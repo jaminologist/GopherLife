@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-//Controllable used to define user controls for a world
-type Controllable interface {
+//Controller used to define user controls for a world
+type Controller interface {
 	Click(x int, y int)
 	KeyPress(key Keys)
 }
@@ -81,6 +81,12 @@ func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController
 		GopherMap: gMap,
 		Renderer:  &renderer,
 		CreateNew: CreatePartitionTileMapCustom,
+	}
+}
+
+func (controller *GopherMapController) Start() {
+	if controller.GopherMap == nil {
+		controller.GopherMap = controller.CreateNew(*controller.Statistics)
 	}
 }
 
@@ -218,13 +224,7 @@ func (controller *GopherMapController) PageLayout() WorldPageData {
 	stats := controller.Statistics
 
 	formdataArray := []FormData{
-		FormData{
-			DisplayName:        "Width",
-			Type:               "Number",
-			Name:               "width",
-			Value:              strconv.Itoa(stats.Width),
-			BootStrapFormWidth: 1,
-		},
+		FormDataWidth(stats.Width, 2),
 		FormData{
 			DisplayName:        "Height",
 			Type:               "Number",
@@ -307,6 +307,7 @@ func (controller *NoPlayerInput) KeyPress(key Keys) {
 
 type SpiralMapController struct {
 	NoPlayerInput
+	Statistics
 	*SpiralMap
 	*Renderer
 }
@@ -322,17 +323,19 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 		GopherBirthRate:        7,
 	}
 
-	sMap := NewSpiralMap(stats)
 	renderer := NewRenderer(75, 75)
-
-	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
-	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
-
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return SpiralMapController{
-		SpiralMap: &sMap,
-		Renderer:  &renderer,
+		Renderer:   &renderer,
+		Statistics: stats,
+	}
+}
+
+func (controller *SpiralMapController) Start() {
+	if controller.SpiralMap == nil {
+		sMap := NewSpiralMap(controller.Statistics)
+		controller.SpiralMap = &sMap
 	}
 }
 
@@ -364,6 +367,7 @@ func (controller *SpiralMapController) HandleForm(values url.Values) bool {
 
 type FireWorksController struct {
 	NoPlayerInput
+	Statistics
 	*GopherMap
 	*Renderer
 }
@@ -379,17 +383,18 @@ func NewFireWorksController(stats Statistics) FireWorksController {
 		GopherBirthRate:        25,
 	}
 
-	sMap := CreateWorldCustom(stats)
 	renderer := NewRenderer(400, 150)
-
-	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
-	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
-
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return FireWorksController{
-		GopherMap: sMap,
-		Renderer:  &renderer,
+		Statistics: stats,
+		Renderer:   &renderer,
+	}
+}
+
+func (controller *FireWorksController) Start() {
+	if controller.GopherMap == nil {
+		controller.GopherMap = CreateWorldCustom(controller.Statistics)
 	}
 }
 
@@ -417,33 +422,37 @@ func (controller *FireWorksController) HandleForm(values url.Values) bool {
 
 type CollisionMapController struct {
 	NoPlayerInput
-	*Statistics
+	Statistics
 	*CollisionMap
 	*Renderer
-	CreateNew func(*Statistics, bool) CollisionMap
+	CreateNew  func(Statistics, bool) CollisionMap
+	IsDiagonal bool
 }
 
 func NewCollisionMapController(stats Statistics) CollisionMapController {
 
-	/*	stats = Statistics{
+	stats = Statistics{
 		Width:                  75,
 		Height:                 75,
 		NumberOfGophers:        500,
 		MaximumNumberOfGophers: 100000,
-	} */
+	}
 
-	sMap := NewCollisionMap(stats, false)
 	renderer := NewRenderer(100, 100)
-
-	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
-	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
-
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return CollisionMapController{
-		Statistics:   &stats,
-		CollisionMap: &sMap,
-		Renderer:     &renderer,
+		Statistics: stats,
+		Renderer:   &renderer,
+		CreateNew:  NewCollisionMap,
+		IsDiagonal: false,
+	}
+}
+
+func (controller *CollisionMapController) Start() {
+	if controller.CollisionMap == nil {
+		sMap := controller.CreateNew(controller.Statistics, controller.IsDiagonal)
+		controller.CollisionMap = &sMap
 	}
 }
 
@@ -468,19 +477,13 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 	stats := controller.Statistics
 
 	formdataArray := []FormData{
-		FormData{
-			DisplayName:        "Width",
-			Type:               "Number",
-			Name:               "width",
-			Value:              strconv.Itoa(stats.Width),
-			BootStrapFormWidth: 1,
-		},
+		FormDataWidth(stats.Width, 2),
 		FormData{
 			DisplayName:        "Height",
 			Type:               "Number",
 			Name:               "height",
 			Value:              strconv.Itoa(stats.Height),
-			BootStrapFormWidth: 1,
+			BootStrapFormWidth: 2,
 		},
 		FormData{
 			DisplayName:        "Initial Population",
@@ -492,9 +495,8 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 	}
 
 	return WorldPageData{
-		PageTitle:   "C O L L I D E R L I F E",
-		FormData:    formdataArray,
-		IsGopherMap: true,
+		PageTitle: "C O L L I D E R L I F E",
+		FormData:  formdataArray,
 	}
 }
 
@@ -512,9 +514,9 @@ func (controller *CollisionMapController) HandleForm(values url.Values) bool {
 			NumberOfGophers: int(numberOfGophers),
 		}
 
-		gmc := NewCollisionMap(stats, true)
+		gmc := NewCollisionMap(stats, controller.IsDiagonal)
 		controller.CollisionMap = &gmc
-		controller.Statistics = &stats
+		controller.Statistics = stats
 
 	}
 	return true
@@ -528,17 +530,25 @@ func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController 
 		NumberOfGophers:        500,
 		MaximumNumberOfGophers: 100000,
 	}
-	sMap := NewCollisionMap(stats, true)
-	renderer := NewRenderer(100, 100)
 
-	//	selectedTile.Gopher.Position.GetX() - renderer.RenderSizeX/2
-	//	renderer.StartY = selectedTile.Gopher.Position.GetY() - renderer.RenderSizeY/2
+	renderer := NewRenderer(100, 100)
 
 	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
 
 	return CollisionMapController{
-		Statistics:   &stats,
-		CollisionMap: &sMap,
-		Renderer:     &renderer,
+		Statistics: stats,
+		Renderer:   &renderer,
+		CreateNew:  NewCollisionMap,
+		IsDiagonal: true,
+	}
+}
+
+func FormDataWidth(width int, bootstrapColumnWidth int) FormData {
+	return FormData{
+		DisplayName:        "Width",
+		Type:               "Number",
+		Name:               "width",
+		Value:              strconv.Itoa(width),
+		BootStrapFormWidth: bootstrapColumnWidth,
 	}
 }

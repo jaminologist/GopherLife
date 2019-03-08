@@ -12,7 +12,7 @@ var collisionMapSpeed = 1
 type CollisionMap struct {
 	grid [][]*ColliderTile
 	Containable
-	QueueableActions
+	ActionQueuer
 	*sync.WaitGroup
 
 	ActiveColliders chan *Collider
@@ -51,11 +51,11 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 	rect := NewRectangle(0, 0, statistics.Width, statistics.Height)
 
 	collisionMap := CollisionMap{
-		QueueableActions: &qa,
-		WaitGroup:        &wg,
-		Containable:      &rect,
-		ActiveColliders:  make(chan *Collider, statistics.NumberOfGophers*2),
-		IsDiagonal:       isDiagonal,
+		ActionQueuer:    &qa,
+		WaitGroup:       &wg,
+		Containable:     &rect,
+		ActiveColliders: make(chan *Collider, statistics.NumberOfGophers*2),
+		IsDiagonal:      isDiagonal,
 	}
 
 	collisionMap.grid = make([][]*ColliderTile, statistics.Width)
@@ -180,7 +180,7 @@ func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider
 
 		if !newTile.HasCollider() {
 
-			collisionMap.QueueableActions.Add(func() {
+			collisionMap.ActionQueuer.Add(func() {
 				if newTile.Insert(c) {
 					oldTile.Clear()
 				}
