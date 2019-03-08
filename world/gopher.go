@@ -145,7 +145,7 @@ func (gopher *Gopher) ClearGopherTargets() {
 }
 
 type GopherActor struct {
-	QueueableActions
+	ActionQueuer
 	Searchable
 	GopherContainer
 	FoodContainer

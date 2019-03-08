@@ -15,7 +15,7 @@ type GopherMap struct {
 	GopherContainer
 	FoodContainer
 
-	QueueableActions
+	ActionQueuer
 	InsertableGophers
 	InsertableFood
 
@@ -59,7 +59,7 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 		InsertableGophers: ig,
 		InsertableFood:    iff,
 
-		QueueableActions: &qa,
+		ActionQueuer: &qa,
 
 		GopherGeneration:      &gg,
 		GopherSliceAndChannel: &gsac,
@@ -107,14 +107,14 @@ func (tileMap *GopherMap) setUpTiles() {
 	}
 
 	actor := GopherActor{
-		GopherBirthRate:  tileMap.Statistics.GopherBirthRate,
-		QueueableActions: tileMap.QueueableActions,
-		Searchable:       tileMap.Searchable,
-		GopherContainer:  tileMap.GopherContainer,
-		FoodContainer:    tileMap.FoodContainer,
-		PickableTiles:    tileMap,
-		MoveableGophers:  tileMap,
-		ActorGeneration:  tileMap.GopherGeneration,
+		GopherBirthRate: tileMap.Statistics.GopherBirthRate,
+		ActionQueuer:    tileMap.ActionQueuer,
+		Searchable:      tileMap.Searchable,
+		GopherContainer: tileMap.GopherContainer,
+		FoodContainer:   tileMap.FoodContainer,
+		PickableTiles:   tileMap,
+		MoveableGophers: tileMap,
+		ActorGeneration: tileMap.GopherGeneration,
 	}
 
 	tileMap.Actor = &actor
@@ -295,7 +295,7 @@ func (tileMap *GopherMap) processGophers() {
 
 func (tileMap *GopherMap) processQueuedTasks() {
 	tileMap.diagnostics.inputStopWatch.Start()
-	tileMap.QueueableActions.Process()
+	tileMap.ActionQueuer.Process()
 	tileMap.diagnostics.inputStopWatch.Stop()
 }
 

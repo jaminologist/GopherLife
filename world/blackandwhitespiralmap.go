@@ -10,7 +10,7 @@ import (
 type SpiralMap struct {
 	TileContainer
 	InsertableGophers
-	QueueableActions
+	ActionQueuer
 
 	ActiveActors chan *SpiralGopher
 
@@ -28,7 +28,7 @@ func NewSpiralMap(stats Statistics) SpiralMap {
 	b2d := NewBasic2DContainer(0, 0, stats.Width, stats.Height)
 
 	qa := NewBasicActionQueue(stats.MaximumNumberOfGophers * 2)
-	spiralMap.QueueableActions = &qa
+	spiralMap.ActionQueuer = &qa
 
 	spiralMap.TileContainer = &b2d
 	spiralMap.InsertableGophers = &b2d
@@ -108,12 +108,12 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 	spiral := calc.NewSpiral(spiralMap.Width, spiralMap.Height)
 
 	sg := SpiralGopher{
-		TileContainer:    spiralMap,
-		QueueableActions: spiralMap.QueueableActions,
-		MoveableGophers:  spiralMap,
-		Gopher:           &gopher,
-		Statistics:       &spiralMap.Statistics,
-		Spiral:           &spiral,
+		TileContainer:   spiralMap,
+		ActionQueuer:    spiralMap.ActionQueuer,
+		MoveableGophers: spiralMap,
+		Gopher:          &gopher,
+		Statistics:      &spiralMap.Statistics,
+		Spiral:          &spiral,
 	}
 
 	spiralMap.ActiveActors <- &sg
@@ -132,7 +132,7 @@ func (spiralMap *SpiralMap) Diagnostics() *Diagnostics {
 
 type SpiralGopher struct {
 	TileContainer
-	QueueableActions
+	ActionQueuer
 	MoveableGophers
 	*Statistics
 	*Gopher

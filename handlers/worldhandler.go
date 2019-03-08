@@ -13,15 +13,11 @@ import (
 
 type UpdateableRender interface {
 	Update() bool
+	Start()
 	PageLayout() world.WorldPageData
 	HandleForm(url.Values) bool
 	json.Marshaler
-	world.Controllable
-}
-
-type Something struct {
-	IsActive bool
-	UpdateableRender
+	world.Controller
 }
 
 type container struct {
@@ -61,8 +57,6 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	var tileMap = world.NewDiagonalCollisionMapController(stats)
-
 	tileMapFunctions := make(map[string]UpdateableRender)
 	ss := world.NewGopherMapWithSpiralSearch(stats)
 	tileMapFunctions["GopherMap With Spiral Search"] = &ss
@@ -77,8 +71,13 @@ func SetUpPage() {
 	diagonalCollision := world.NewDiagonalCollisionMapController(stats)
 	tileMapFunctions["Diagonal Collision Map"] = &diagonalCollision
 
+	var selected = "GopherMap With Spiral Search"
+	var tileMap = tileMapFunctions[selected]
+
+	tileMap.Start()
 	data := PageData{}
 	data.WorldPageData = tileMap.PageLayout()
+	data.Selected = selected
 
 	for k := range tileMapFunctions {
 		data.MapData = append(data.MapData, MapData{
@@ -88,7 +87,7 @@ func SetUpPage() {
 	}
 
 	container := container{
-		tileMap:  &tileMap,
+		tileMap:  tileMap,
 		tileMaps: tileMapFunctions,
 		pageData: data,
 	}
@@ -180,6 +179,7 @@ func SwitchWorld(container *container) func(w http.ResponseWriter, r *http.Reque
 			tileMap = &adr
 		}
 
+		tileMap.Start()
 		container.tileMap = tileMap
 		container.pageData.WorldPageData = container.tileMap.PageLayout()
 		http.Redirect(w, r, "/", http.StatusSeeOther)

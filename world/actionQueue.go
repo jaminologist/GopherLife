@@ -1,6 +1,6 @@
 package world
 
-type QueueableActions interface {
+type ActionQueuer interface {
 	Add(action func())
 	Process()
 }
@@ -28,8 +28,4 @@ func (basicActionQueue *BasicActionQueue) Process() {
 	for action := range actionChannel {
 		action()
 	}
-}
-
-type GopherActions struct {
-	QueueableActions
 }
