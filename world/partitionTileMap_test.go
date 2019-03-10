@@ -28,7 +28,7 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 	gopher := NewGopher("a", calc.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	tileMap.QueueableActions.Add(func() {
+	tileMap.ActionQueuer.Add(func() {
 		tileMap.MoveGopher(&gopher, 0, 1)
 	})
 	tileMap.Update()

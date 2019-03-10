@@ -1,5 +1,7 @@
 package world
 
+import "fmt"
+
 type ActionQueuer interface {
 	Add(action func())
 	Process()
@@ -18,7 +20,11 @@ func NewBasicActionQueue(maxActions int) BasicActionQueue {
 }
 
 func (basicActionQueue *BasicActionQueue) Add(action func()) {
-	basicActionQueue.actionQueue <- action
+	select {
+	case basicActionQueue.actionQueue <- action: // Put 2 in the channel unless it is full
+	default:
+		fmt.Println("Channel full. Discarding value")
+	}
 }
 
 func (basicActionQueue *BasicActionQueue) Process() {
