@@ -3,6 +3,7 @@ package world
 import (
 	"encoding/json"
 	"fmt"
+	"gopherlife/colors"
 	"image/color"
 	"net/url"
 	"strconv"
@@ -551,4 +552,113 @@ func FormDataWidth(width int, bootstrapColumnWidth int) FormData {
 		Value:              strconv.Itoa(width),
 		BootStrapFormWidth: bootstrapColumnWidth,
 	}
+}
+
+func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
+	return FormData{
+		DisplayName:        "Snake SlowDown",
+		Type:               "Number",
+		Name:               "SnakeSlowDown",
+		Value:              strconv.Itoa(slowdown),
+		BootStrapFormWidth: bootstrapColumnWidth,
+	}
+}
+
+type SnakeMapController struct {
+	Dimensions
+	FrameSpeed int
+	*SnakeMap
+	*Renderer
+}
+
+func NewSnakeMapController(stats Statistics) SnakeMapController {
+
+	d := Dimensions{
+		Width:  50,
+		Height: 50,
+	}
+
+	renderer := NewRenderer(50, 50)
+	renderer.ShiftRenderer(d.Width/2-renderer.RenderSizeX/2, d.Height/2-renderer.RenderSizeY/2)
+
+	return SnakeMapController{
+		Dimensions: d,
+		Renderer:   &renderer,
+	}
+}
+
+func (controller *SnakeMapController) Start() {
+	if controller.SnakeMap == nil {
+		sMap := NewSnakeMap(controller.Dimensions, controller.FrameSpeed)
+		controller.SnakeMap = &sMap
+	}
+}
+
+func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
+
+	render := controller.Renderer.RenderWorld(controller)
+
+	render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
+
+	if controller.SnakeMap.IsGameOver {
+		render.WorldRender += fmt.Sprintf("<span>Game Over!</span><br />")
+	}
+
+	return json.Marshal(render)
+}
+
+func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
+
+	if sp, ok := controller.Tile(x, y); ok {
+		switch {
+		case sp.SnakePart != nil:
+			return colors.NokiaBorder
+		case sp.SnakeFood != nil:
+			return colors.NokiaBorder
+		case sp.Wall != nil:
+			return colors.NokiaBorder
+		default:
+			return colors.NokiaGreen
+		}
+	}
+	return colors.White
+}
+
+func (controller *SnakeMapController) PageLayout() WorldPageData {
+	return WorldPageData{
+		PageTitle: "S N A K E L I F E",
+		FormData: []FormData{
+			FormDataSnakeSlowDown(1, 3),
+		},
+	}
+}
+
+func (controller *SnakeMapController) HandleForm(values url.Values) bool {
+
+	fd := FormDataSnakeSlowDown(0, 0)
+	if strings.Contains(values.Encode(), fd.Name) {
+		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
+		sm := NewSnakeMap(controller.Dimensions, int(speed))
+		controller.SnakeMap = &sm
+
+	}
+
+	return true
+}
+
+func (controller *SnakeMapController) KeyPress(key Keys) {
+	switch key {
+	case LeftArrow:
+		controller.SnakeMap.ChangeDirection(Left)
+	case RightArrow:
+		controller.SnakeMap.ChangeDirection(Right)
+	case UpArrow:
+		controller.SnakeMap.ChangeDirection(Up)
+	case DownArrow:
+		controller.SnakeMap.ChangeDirection(Down)
+	}
+}
+
+//Click selects the tile on the gopher map and runs the SelectEntity method
+func (controller *SnakeMapController) Click(x int, y int) {
 }

@@ -196,7 +196,7 @@ type InsertableFood interface {
 }
 
 //Positionable used for world actors that have a position
-type Positionable interface {
+type Positioner interface {
 	GetX() int
 	GetY() int
 	SetPosition(x int, y int)
@@ -215,8 +215,9 @@ func (p *Position) GetY() int {
 	return p.Y
 }
 
-func (p *Position) SetPosition() int {
-	return p.Y
+func (p *Position) SetPosition(x int, y int) {
+	p.X = x
+	p.Y = y
 }
 
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate

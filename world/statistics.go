@@ -2,6 +2,11 @@ package world
 
 import "gopherlife/calc"
 
+type Dimensions struct {
+	Width  int
+	Height int
+}
+
 //Statistics is used primarily by the 'GopherMap' struct and details
 //all editable variables of the map
 type Statistics struct {

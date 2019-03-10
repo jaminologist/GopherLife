@@ -70,8 +70,10 @@ func SetUpPage() {
 	tileMapFunctions["Collision Map"] = &collision
 	diagonalCollision := world.NewDiagonalCollisionMapController(stats)
 	tileMapFunctions["Diagonal Collision Map"] = &diagonalCollision
+	snakeMap := world.NewSnakeMapController(stats)
+	tileMapFunctions["Snake!!!!"] = &snakeMap
 
-	var selected = "GopherMap With Spiral Search"
+	var selected = "Snake!!!!"
 	var tileMap = tileMapFunctions[selected]
 
 	tileMap.Start()
@@ -96,9 +98,9 @@ func SetUpPage() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/", worldToHTML(&container))
 	http.HandleFunc("/ProcessWorld", ajaxProcessWorld(&container))
-	http.HandleFunc("/ShiftWorldView", ajaxHandleWorldInput(&container))
+	http.HandleFunc("/ShiftWorldView", HandleKeyPress(&container))
 	http.HandleFunc("/Click", HandleClick(&container))
-	http.HandleFunc("/ResetWorld", resetWorld(&container))
+	http.HandleFunc("/ResetWorld", ResetWorld(&container))
 	http.HandleFunc("/SwitchWorld", SwitchWorld(&container))
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8080", nil)
@@ -135,13 +137,11 @@ func ajaxProcessWorld(container *container) func(w http.ResponseWriter, r *http.
 	}
 }
 
-func resetWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
+func ResetWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		r.ParseForm()
-
-		var stats world.Statistics
 
 		var tileMap UpdateableRender
 
@@ -149,8 +149,7 @@ func resetWorld(container *container) func(w http.ResponseWriter, r *http.Reques
 			tileMapFunc.HandleForm(r.Form)
 			tileMap = tileMapFunc
 		} else {
-			adr := world.NewGopherMapWithSpiralSearch(stats)
-			fmt.Println("here")
+			adr := world.NewGopherMapWithSpiralSearch(world.Statistics{})
 			tileMap = &adr
 		}
 
@@ -201,7 +200,7 @@ func HandleClick(container *container) func(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func ajaxHandleWorldInput(container *container) func(w http.ResponseWriter, r *http.Request) {
+func HandleKeyPress(container *container) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
