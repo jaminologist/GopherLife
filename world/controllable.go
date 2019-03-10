@@ -566,7 +566,8 @@ func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
 
 type SnakeMapController struct {
 	Dimensions
-	FrameSpeed int
+	FrameSpeed   int
+	ClickToBegin bool
 	*SnakeMap
 	*Renderer
 }
@@ -574,8 +575,8 @@ type SnakeMapController struct {
 func NewSnakeMapController(stats Statistics) SnakeMapController {
 
 	d := Dimensions{
-		Width:  50,
-		Height: 50,
+		Width:  35,
+		Height: 35,
 	}
 
 	renderer := NewRenderer(50, 50)
@@ -584,6 +585,7 @@ func NewSnakeMapController(stats Statistics) SnakeMapController {
 	return SnakeMapController{
 		Dimensions: d,
 		Renderer:   &renderer,
+		FrameSpeed: 10,
 	}
 }
 
@@ -597,11 +599,12 @@ func (controller *SnakeMapController) Start() {
 func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
 
 	render := controller.Renderer.RenderWorld(controller)
-
 	render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
 
 	if controller.SnakeMap.IsGameOver {
 		render.WorldRender += fmt.Sprintf("<span>Game Over!</span><br />")
+	} else if !controller.ClickToBegin {
+		render.WorldRender += fmt.Sprintf("<span>Click to Begin")
 	}
 
 	return json.Marshal(render)
@@ -612,7 +615,11 @@ func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
 	if sp, ok := controller.Tile(x, y); ok {
 		switch {
 		case sp.SnakePart != nil:
-			return colors.NokiaBorder
+			if sp.SnakePart.snakePartInStomach != nil {
+				return colors.NokiaFoodGreen
+			} else {
+				return colors.NokiaBorder
+			}
 		case sp.SnakeFood != nil:
 			return colors.NokiaBorder
 		case sp.Wall != nil:
@@ -628,7 +635,7 @@ func (controller *SnakeMapController) PageLayout() WorldPageData {
 	return WorldPageData{
 		PageTitle: "S N A K E L I F E",
 		FormData: []FormData{
-			FormDataSnakeSlowDown(1, 3),
+			FormDataSnakeSlowDown(controller.FrameSpeed, 3),
 		},
 	}
 }
@@ -639,6 +646,7 @@ func (controller *SnakeMapController) HandleForm(values url.Values) bool {
 	if strings.Contains(values.Encode(), fd.Name) {
 		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
 		sm := NewSnakeMap(controller.Dimensions, int(speed))
+		controller.FrameSpeed = int(speed)
 		controller.SnakeMap = &sm
 
 	}
@@ -659,6 +667,18 @@ func (controller *SnakeMapController) KeyPress(key Keys) {
 	}
 }
 
+func (controller *SnakeMapController) Update() bool {
+	if controller.ClickToBegin {
+		if controller.IsGameOver {
+			controller.ClickToBegin = false
+		}
+		return controller.SnakeMap.Update()
+	}
+
+	return true
+}
+
 //Click selects the tile on the gopher map and runs the SelectEntity method
 func (controller *SnakeMapController) Click(x int, y int) {
+	controller.ClickToBegin = true
 }
