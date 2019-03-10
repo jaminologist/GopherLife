@@ -167,6 +167,8 @@ func (sm *SnakeMap) MoveSnake() bool {
 			}
 		}
 
+		//Fun litte bug, due to the boolean if two things are swallowed at the same time on one will stay still on the screen.
+		//You can decide whether to fix this or not
 		if currentSnakePart.snakePartInStomach != nil && currentSnakePart.snakePartBehind != nil && !newPartPassedDownThisFrame {
 			currentSnakePart.snakePartBehind.snakePartInStomach = currentSnakePart.snakePartInStomach
 			currentSnakePart.snakePartInStomach = nil
