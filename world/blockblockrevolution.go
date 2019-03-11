@@ -284,13 +284,8 @@ func (bbrt *BlockBlockRevolutionTile) ContainsBlock() bool {
 }
 
 type Tetromino interface {
-	Shift(d Direction)
 	Rotate()
 	Blocks() []*Block
-}
-
-type BlockRotator interface {
-	Rotate()
 }
 
 type Block struct {
@@ -347,10 +342,6 @@ func (s *SquareTetrominoes) Rotate() {
 
 }
 
-func (s *SquareTetrominoes) Shift(d Direction) {
-
-}
-
 func (s *SquareTetrominoes) Blocks() []*Block {
 	return s.blocks
 }
@@ -359,7 +350,7 @@ type LTetrominoes struct {
 	BlockInserterAndRemover
 
 	middleBlock        *Block
-	leftMiddleBlock    *Block
+	centerLeftBlock    *Block
 	rightMiddleBlock   *Block
 	rightMiddleUpBlock *Block
 
@@ -373,18 +364,18 @@ type LTetrominoes struct {
 func NewLTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
 
 	middleBlock := &Block{}
-	leftMiddleBlock := &Block{}
+	centerLeftBlock := &Block{}
 	rightMiddleBlock := &Block{}
 	rightMiddleUpBlock := &Block{}
 
-	blocks := []*Block{middleBlock, leftMiddleBlock, rightMiddleBlock, rightMiddleUpBlock}
+	blocks := []*Block{middleBlock, centerLeftBlock, rightMiddleBlock, rightMiddleUpBlock}
 	SetColorOfBlocks(blocks, colors.Orange)
 
 	if !bir.InsertBlock(x, y, middleBlock) {
 		return nil, false
 	}
 
-	if !bir.InsertBlock(x-1, y, leftMiddleBlock) {
+	if !bir.InsertBlock(x-1, y, centerLeftBlock) {
 		return nil, false
 	}
 
@@ -399,7 +390,7 @@ func NewLTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 	lt := LTetrominoes{
 		blocks:                  blocks,
 		middleBlock:             middleBlock,
-		leftMiddleBlock:         leftMiddleBlock,
+		centerLeftBlock:         centerLeftBlock,
 		rightMiddleBlock:        rightMiddleBlock,
 		rightMiddleUpBlock:      rightMiddleUpBlock,
 		BlockInserterAndRemover: bir,
@@ -445,16 +436,12 @@ func (l *LTetrominoes) Rotate() {
 
 	if canRotate {
 		l.InsertBlock(newMPos.GetX(), newMPos.GetY(), l.middleBlock)
-		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.leftMiddleBlock)
+		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.centerLeftBlock)
 		l.InsertBlock(newRMpos.GetX(), newRMpos.GetY(), l.rightMiddleBlock)
 		l.InsertBlock(newRMUpos.GetX(), newRMUpos.GetY(), l.rightMiddleUpBlock)
 	} else {
 		l.rotateDirection = l.rotateDirection.TurnAntiClockWise90()
 	}
-
-}
-
-func (l *LTetrominoes) Shift(d Direction) {
 
 }
 
@@ -466,9 +453,9 @@ type JTetrominoes struct {
 	BlockInserterAndRemover
 
 	middleBlock       *Block
-	leftMiddleBlock   *Block
+	centerLeftBlock   *Block
 	rightMiddleBlock  *Block
-	leftMiddleUpBlock *Block
+	centerLeftUpBlock *Block
 
 	rotateDirection Direction
 
@@ -480,18 +467,18 @@ type JTetrominoes struct {
 func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
 
 	middleBlock := &Block{}
-	leftMiddleBlock := &Block{}
+	centerLeftBlock := &Block{}
 	rightMiddleBlock := &Block{}
-	leftMiddleUpBlock := &Block{}
+	centerLeftUpBlock := &Block{}
 
-	blocks := []*Block{middleBlock, leftMiddleBlock, rightMiddleBlock, leftMiddleUpBlock}
+	blocks := []*Block{middleBlock, centerLeftBlock, rightMiddleBlock, centerLeftUpBlock}
 	SetColorOfBlocks(blocks, colors.MingBlue)
 
 	if !bir.InsertBlock(x, y, middleBlock) {
 		return nil, false
 	}
 
-	if !bir.InsertBlock(x-1, y, leftMiddleBlock) {
+	if !bir.InsertBlock(x-1, y, centerLeftBlock) {
 		return nil, false
 	}
 
@@ -499,16 +486,16 @@ func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		return nil, false
 	}
 
-	if !bir.InsertBlock(x-1, y+1, leftMiddleUpBlock) {
+	if !bir.InsertBlock(x-1, y+1, centerLeftUpBlock) {
 		return nil, false
 	}
 
 	jt := JTetrominoes{
 		blocks:                  blocks,
 		middleBlock:             middleBlock,
-		leftMiddleBlock:         leftMiddleBlock,
+		centerLeftBlock:         centerLeftBlock,
 		rightMiddleBlock:        rightMiddleBlock,
-		leftMiddleUpBlock:       leftMiddleUpBlock,
+		centerLeftUpBlock:       centerLeftUpBlock,
 		BlockInserterAndRemover: bir,
 		rotateDirection:         Up,
 	}
@@ -519,7 +506,7 @@ func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 func (l *JTetrominoes) Rotate() {
 
 	x, y := l.middleBlock.GetX(), l.middleBlock.GetY()
-	var newMPos, newLMPos, newRMpos, newLeftMiddleUpPos calc.Coordinates
+	var newMPos, newLMPos, newRMpos, newcenterLeftUpPos calc.Coordinates
 
 	newMPos = calc.NewCoordinate(x, y)
 
@@ -527,16 +514,16 @@ func (l *JTetrominoes) Rotate() {
 
 	switch l.rotateDirection {
 	case Up:
-		newLMPos, newRMpos, newLeftMiddleUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x-1, y+1)
+		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x-1, y+1)
 	case Left:
-		newLMPos, newRMpos, newLeftMiddleUpPos = calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y-1), calc.NewCoordinate(x+1, y+1)
+		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y-1), calc.NewCoordinate(x+1, y+1)
 	case Down:
-		newLMPos, newRMpos, newLeftMiddleUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x+1, y-1)
+		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x+1, y-1)
 	case Right:
-		newLMPos, newRMpos, newLeftMiddleUpPos = calc.NewCoordinate(x, y-1), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x-1, y+1)
+		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x, y-1), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x-1, y+1)
 	}
 
-	newCoordinateSlice := []calc.Coordinates{newMPos, newLMPos, newRMpos, newLeftMiddleUpPos}
+	newCoordinateSlice := []calc.Coordinates{newMPos, newLMPos, newRMpos, newcenterLeftUpPos}
 
 	for _, block := range l.blocks {
 		l.RemoveBlock(block.GetX(), block.GetY())
@@ -552,16 +539,12 @@ func (l *JTetrominoes) Rotate() {
 
 	if canRotate {
 		l.InsertBlock(newMPos.GetX(), newMPos.GetY(), l.middleBlock)
-		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.leftMiddleBlock)
+		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.centerLeftBlock)
 		l.InsertBlock(newRMpos.GetX(), newRMpos.GetY(), l.rightMiddleBlock)
-		l.InsertBlock(newLeftMiddleUpPos.GetX(), newLeftMiddleUpPos.GetY(), l.leftMiddleUpBlock)
+		l.InsertBlock(newcenterLeftUpPos.GetX(), newcenterLeftUpPos.GetY(), l.centerLeftUpBlock)
 	} else {
 		l.rotateDirection = l.rotateDirection.TurnAntiClockWise90()
 	}
-
-}
-
-func (l *JTetrominoes) Shift(d Direction) {
 
 }
 
@@ -685,10 +668,6 @@ func (st *STetrominoes) Rotate() {
 
 }
 
-func (st *STetrominoes) Shift(d Direction) {
-
-}
-
 func (st *STetrominoes) Blocks() []*Block {
 	return st.blocks
 }
@@ -758,10 +737,6 @@ func (zt *ZTetrominoes) Rotate() {
 	} else {
 		zt.rotateDirection = zt.rotateDirection.TurnAntiClockWise90()
 	}
-
-}
-
-func (zt *ZTetrominoes) Shift(d Direction) {
 
 }
 
