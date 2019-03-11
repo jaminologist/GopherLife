@@ -72,8 +72,10 @@ func SetUpPage() {
 	tileMapFunctions["Diagonal Collision Map"] = &diagonalCollision
 	snakeMap := world.NewSnakeMapController(stats)
 	tileMapFunctions["Snake!!!!"] = &snakeMap
+	blockblockRevolution := world.NewBlockBlockRevolutionController()
+	tileMapFunctions["blockblockRevolution"] = &blockblockRevolution
 
-	var selected = "Snake!!!!"
+	var selected = "blockblockRevolution"
 	var tileMap = tileMapFunctions[selected]
 
 	tileMap.Start()
