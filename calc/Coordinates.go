@@ -47,6 +47,10 @@ func (c *Coordinates) Add(X int, Y int) {
 	c.Y += Y
 }
 
+func Add(c Coordinates, c2 Coordinates) Coordinates {
+	return Coordinates{c.X + c2.X, c.Y + c2.Y}
+}
+
 func (c *Coordinates) Set(X int, Y int) {
 	c.X = X
 	c.Y = Y
