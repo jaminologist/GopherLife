@@ -18,6 +18,8 @@ type BlockBlockRevolutionMap struct {
 
 	newBlockFunctions []func(int, int, BlockInserterAndRemover) (Tetromino, bool)
 
+	nextNewBlockFunctions []func(int, int, BlockInserterAndRemover) (Tetromino, bool)
+
 	ActionQueuer
 
 	FrameTimer calc.StopWatch
@@ -57,12 +59,12 @@ func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap
 		grid:         grid,
 		FrameSpeed:   5,
 		newBlockFunctions: []func(int, int, BlockInserterAndRemover) (Tetromino, bool){
-			//NewSquareTetrominoes,
-			//NewLTetrominoes,
-			//NewJTetrominoes,
-			//NewSTetrominoes,
-			//NewZTetrominoes,
-			//NewTTetrominoes,
+			NewSquareTetrominoes,
+			NewLTetrominoes,
+			NewJTetrominoes,
+			NewSTetrominoes,
+			NewZTetrominoes,
+			NewTTetrominoes,
 			NewITetrominoes,
 		},
 	}
@@ -229,7 +231,18 @@ func (bbrm *BlockBlockRevolutionMap) RemoveBlock(x int, y int) {
 
 func (bbrm *BlockBlockRevolutionMap) AddNewBlock() bool {
 
-	block, ok := bbrm.newBlockFunctions[rand.Intn(len(bbrm.newBlockFunctions))](bbrm.Width/2, bbrm.Height-2, bbrm)
+	if len(bbrm.nextNewBlockFunctions) == 0 {
+		for i := 0; i < 3; i++ {
+			for _, newblockfunc := range rand.Perm(len(bbrm.newBlockFunctions)) {
+				bbrm.nextNewBlockFunctions = append(bbrm.nextNewBlockFunctions, bbrm.newBlockFunctions[newblockfunc])
+			}
+		}
+	}
+
+	x, y := bbrm.nextNewBlockFunctions[0], bbrm.nextNewBlockFunctions[1:]
+	bbrm.nextNewBlockFunctions = y
+
+	block, ok := x(bbrm.Width/2, bbrm.Height-2, bbrm)
 
 	if ok {
 		bbrm.CurrentTetromino = block
@@ -472,7 +485,7 @@ func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 	leftMiddleUpBlock := &Block{}
 
 	blocks := []*Block{middleBlock, leftMiddleBlock, rightMiddleBlock, leftMiddleUpBlock}
-	SetColorOfBlocks(blocks, colors.Blue)
+	SetColorOfBlocks(blocks, colors.MingBlue)
 
 	if !bir.InsertBlock(x, y, middleBlock) {
 		return nil, false
@@ -891,7 +904,7 @@ func (it *ITetrominoes) Rotate() {
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = calc.NewCoordinate(x, y+2), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y), calc.NewCoordinate(x, y-1)
 	case Down:
 		x, y = it.centerRight.GetX(), it.centerRight.GetY()
-		centerLeftLeft, centerLeft, centerRight, centerRightRight = calc.NewCoordinate(x+2, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x, y), calc.NewCoordinate(x-1, y)
+		centerLeftLeft, centerLeft, centerRight, centerRightRight = calc.NewCoordinate(x+2, y-1), calc.NewCoordinate(x+1, y-1), calc.NewCoordinate(x, y-1), calc.NewCoordinate(x-1, y-1)
 	case Right:
 		x, y = it.centerRight.GetX(), it.centerRight.GetY()
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = calc.NewCoordinate(x, y-1), calc.NewCoordinate(x, y), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y+2)
