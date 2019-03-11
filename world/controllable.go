@@ -735,9 +735,9 @@ func (controller *BlockBlockRevolutionController) RenderTile(x int, y int) color
 	if tile, ok := controller.Tile(x, y); ok {
 		switch {
 		case tile.Block != nil:
-			return colors.NokiaBorder
+			return tile.Block.Color
 		default:
-			return colors.NokiaGreen
+			return colors.Black
 		}
 	}
 	return colors.White

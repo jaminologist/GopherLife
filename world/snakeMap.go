@@ -32,11 +32,41 @@ type SnakeMapTile struct {
 type Direction int
 
 const (
-	Left  Direction = 1
-	Right Direction = 2
-	Up    Direction = 3
-	Down  Direction = 4
+	Up    Direction = 1
+	Left  Direction = 2
+	Down  Direction = 3
+	Right Direction = 4
 )
+
+func (d Direction) TurnClockWise90() Direction {
+
+	switch d {
+	case Up:
+		return Right
+	case Right:
+		return Down
+	case Down:
+		return Left
+	case Left:
+		return Up
+	}
+	panic("Direction not covered")
+}
+
+func (d Direction) TurnAntiClockWise90() Direction {
+
+	switch d {
+	case Up:
+		return Left
+	case Right:
+		return Up
+	case Down:
+		return Right
+	case Left:
+		return Down
+	}
+	panic("Direction not covered")
+}
 
 func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
