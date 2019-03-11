@@ -38,8 +38,6 @@ const (
 	Down  Direction = 4
 )
 
-const FrameSpeedMultiplier = time.Duration(7)
-
 func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
 	r := NewRectangle(0, 0, d.Width, d.Height)

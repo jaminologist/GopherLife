@@ -48,8 +48,10 @@ function UpdateWorldDisplay(data, CanvasInformation) {
 
 
 function CanvasInformation(){
-    this.TileWidth = 5;
-    this.TileHeight = 5;
+   // this.TileWidth = 5;
+   // this.TileHeight = 5;
+    this.TileWidth = 15;
+    this.TileHeight = 15;
     this.StartX = 0;
     this.StartY = 0;
     this.RenderWidth = 0;
