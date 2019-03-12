@@ -35,7 +35,7 @@ func NewSpiral(width int, height int) Spiral {
 		dx:     0,
 		dy:     -1,
 		i:      0,
-		maxI:   int(math.Pow(float64(Max(width, height)), 2)),
+		maxI:   int(math.Pow(math.Max(float64(width), float64(height)), 2)),
 	}
 
 }

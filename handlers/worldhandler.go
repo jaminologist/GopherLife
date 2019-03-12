@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-type UpdateableRender interface {
+type RenderController interface {
 	Update() bool
 	Start()
 	PageLayout() world.WorldPageData
@@ -20,10 +20,47 @@ type UpdateableRender interface {
 	world.Controller
 }
 
-type container struct {
-	tileMap  UpdateableRender
-	tileMaps map[string]UpdateableRender
-	pageData PageData
+type ControllerContainer struct {
+	SelectedKey string
+
+	RenderControllers map[string]RenderController
+	pageData          PageData
+}
+
+func NewControllerContainer() ControllerContainer {
+
+	return ControllerContainer{
+		RenderControllers: make(map[string]RenderController),
+	}
+}
+
+func (c *ControllerContainer) Add(rc RenderController, key string, selected bool) {
+	c.RenderControllers[key] = rc
+
+	if selected {
+		c.SelectedKey = key
+	}
+}
+
+func (c *ControllerContainer) Selected() RenderController {
+	return c.RenderControllers[c.SelectedKey]
+}
+
+func (c *ControllerContainer) PopulatePageData() {
+
+	data := PageData{}
+	data.WorldPageData = c.Selected().PageLayout()
+	data.Selected = c.SelectedKey
+
+	for k := range c.RenderControllers {
+		data.MapData = append(data.MapData, MapData{
+			DisplayName: k,
+			Value:       k,
+		})
+	}
+
+	c.pageData = data
+
 }
 
 type PageData struct {
@@ -57,64 +94,53 @@ func SetUpPage() {
 		GopherBirthRate:        7,
 	}
 
-	tileMapFunctions := make(map[string]UpdateableRender)
+	ControllerContainer := NewControllerContainer()
+
 	ss := world.NewGopherMapWithSpiralSearch(stats)
-	tileMapFunctions["GopherMap With Spiral Search"] = &ss
+	ControllerContainer.Add(&ss, "GopherMap With Spiral Search", false)
+
 	ps := world.NewGopherMapWithParitionGridAndSearch(stats)
-	tileMapFunctions["GopherMap With Partition"] = &ps
+	ControllerContainer.Add(&ps, "GopherMap With Partition", false)
+
 	cbws := world.NewSpiralMapController(stats)
-	tileMapFunctions["Cool Black And White Spiral"] = &cbws
+	ControllerContainer.Add(&cbws, "Cool Black And White Spiral", false)
+
 	fireworks := world.NewFireWorksController(stats)
-	tileMapFunctions["Fireworks!"] = &fireworks
+	ControllerContainer.Add(&fireworks, "Fireworks!", false)
+
 	collision := world.NewCollisionMapController(stats)
-	tileMapFunctions["Collision Map"] = &collision
+	ControllerContainer.Add(&collision, "Collision Map", false)
+
 	diagonalCollision := world.NewDiagonalCollisionMapController(stats)
-	tileMapFunctions["Diagonal Collision Map"] = &diagonalCollision
+	ControllerContainer.Add(&diagonalCollision, "Diagonal Collision Map", false)
+
 	snakeMap := world.NewSnakeMapController(stats)
-	tileMapFunctions["Snake!!!!"] = &snakeMap
+	ControllerContainer.Add(&snakeMap, "Elongateing Gopher", false)
+
 	blockblockRevolution := world.NewBlockBlockRevolutionController()
-	tileMapFunctions["blockblockRevolution"] = &blockblockRevolution
+	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", true)
 
-	var selected = "blockblockRevolution"
-	var tileMap = tileMapFunctions[selected]
+	ControllerContainer.Selected().Start()
+	ControllerContainer.PopulatePageData()
 
-	tileMap.Start()
-	data := PageData{}
-	data.WorldPageData = tileMap.PageLayout()
-	data.Selected = selected
-
-	for k := range tileMapFunctions {
-		data.MapData = append(data.MapData, MapData{
-			DisplayName: k,
-			Value:       k,
-		})
-	}
-
-	container := container{
-		tileMap:  tileMap,
-		tileMaps: tileMapFunctions,
-		pageData: data,
-	}
-
-	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.HandleFunc("/", worldToHTML(&container))
-	http.HandleFunc("/ProcessWorld", ajaxProcessWorld(&container))
-	http.HandleFunc("/ShiftWorldView", HandleKeyPress(&container))
-	http.HandleFunc("/Click", HandleClick(&container))
-	http.HandleFunc("/ResetWorld", ResetWorld(&container))
-	http.HandleFunc("/SwitchWorld", SwitchWorld(&container))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/", worldToHTML(&ControllerContainer))
+	http.HandleFunc("/ProcessWorld", Update(&ControllerContainer))
+	http.HandleFunc("/ShiftWorldView", HandleKeyPress(&ControllerContainer))
+	http.HandleFunc("/Click", HandleClick(&ControllerContainer))
+	http.HandleFunc("/ResetWorld", ResetWorld(&ControllerContainer))
+	http.HandleFunc("/SwitchWorld", SwitchWorld(&ControllerContainer))
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8080", nil)
 
 }
 
-func worldToHTML(container *container) func(w http.ResponseWriter, r *http.Request) {
+func worldToHTML(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		tmpl := template.Must(template.ParseFiles("static/index.html"))
-		err := tmpl.Execute(w, container.pageData)
+		err := tmpl.Execute(w, ControllerContainer.pageData)
 
 		if err != nil {
 			log.Printf("Template executing error: ", err)
@@ -124,70 +150,51 @@ func worldToHTML(container *container) func(w http.ResponseWriter, r *http.Reque
 
 }
 
-func ajaxProcessWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
+//Update Runs the Update function of the selected RenderController. Returns JSON
+func Update(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		container.tileMap.Update()
-		if true {
-			jsonData, _ := container.tileMap.MarshalJSON()
+		ControllerContainer.Selected().Update()
+		jsonData, err := ControllerContainer.Selected().MarshalJSON()
+
+		if err == nil {
 			w.Write(jsonData)
 		} else {
-			w.WriteHeader(404)
+			//w.Write(err.Error())
+			w.WriteHeader(500)
 		}
 
 	}
 }
 
-func ResetWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
+func ResetWorld(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		r.ParseForm()
-
-		var tileMap UpdateableRender
-
-		if tileMapFunc, ok := container.tileMaps[container.pageData.Selected]; ok {
-			tileMapFunc.HandleForm(r.Form)
-			tileMap = tileMapFunc
-		} else {
-			adr := world.NewGopherMapWithSpiralSearch(world.Statistics{})
-			tileMap = &adr
-		}
-
-		container.tileMap = tileMap
-		container.pageData.WorldPageData = container.tileMap.PageLayout()
+		ControllerContainer.Selected().HandleForm(r.Form)
+		ControllerContainer.pageData.WorldPageData = ControllerContainer.Selected().PageLayout()
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
-func SwitchWorld(container *container) func(w http.ResponseWriter, r *http.Request) {
+func SwitchWorld(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		r.ParseForm()
 
-		var stats world.Statistics
 		mapSelection := r.FormValue("mapSelection")
+		ControllerContainer.SelectedKey = mapSelection
+		ControllerContainer.Selected().Start()
 
-		var tileMap UpdateableRender
-
-		if tileMapFunc, ok := container.tileMaps[mapSelection]; ok {
-			tileMap = tileMapFunc
-			container.pageData.Selected = mapSelection
-		} else {
-			adr := world.NewGopherMapWithSpiralSearch(stats)
-			tileMap = &adr
-		}
-
-		tileMap.Start()
-		container.tileMap = tileMap
-		container.pageData.WorldPageData = container.tileMap.PageLayout()
+		ControllerContainer.pageData.WorldPageData = ControllerContainer.Selected().PageLayout()
+		ControllerContainer.pageData.Selected = ControllerContainer.SelectedKey
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
-func HandleClick(container *container) func(w http.ResponseWriter, r *http.Request) {
+func HandleClick(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -197,12 +204,12 @@ func HandleClick(container *container) func(w http.ResponseWriter, r *http.Reque
 		xNum, _ := strconv.Atoi(x)
 		yNum, _ := strconv.Atoi(y)
 
-		container.tileMap.Click(xNum, yNum)
+		ControllerContainer.Selected().Click(xNum, yNum)
 		w.WriteHeader(200)
 	}
 }
 
-func HandleKeyPress(container *container) func(w http.ResponseWriter, r *http.Request) {
+func HandleKeyPress(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -210,7 +217,7 @@ func HandleKeyPress(container *container) func(w http.ResponseWriter, r *http.Re
 		key, err := strconv.ParseInt(keydown, 10, 64)
 
 		if err == nil {
-			container.tileMap.KeyPress(world.Keys(key))
+			ControllerContainer.Selected().KeyPress(world.Keys(key))
 		}
 		w.WriteHeader(200)
 	}
