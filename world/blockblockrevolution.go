@@ -288,6 +288,14 @@ type Tetromino interface {
 	Blocks() []*Block
 }
 
+type BlockHolder struct {
+	blocks []*Block
+}
+
+func (b *BlockHolder) Blocks() []*Block {
+	return b.blocks
+}
+
 type Block struct {
 	Position
 	Color color.RGBA
@@ -299,10 +307,70 @@ type SquareTetrominoes struct {
 	Position
 }
 
+func InsertAllBlocks(blocks []*Block, bir BlockInserterAndRemover) {
+	for _, block := range blocks {
+		bir.InsertBlock(block.GetX(), block.GetY(), block)
+	}
+}
+
+func RemoveAllBlocks(blocks []*Block, bir BlockInserterAndRemover) {
+	for _, block := range blocks {
+		bir.RemoveBlock(block.GetX(), block.GetY())
+	}
+}
+
 func SetColorOfBlocks(blocks []*Block, c color.RGBA) {
 	for _, block := range blocks {
 		block.Color = c
 	}
+}
+
+func NewCenterLeftBlockPositionUsingDirection(d Direction) calc.Coordinates {
+
+	switch d {
+	case Up:
+		return calc.NewCoordinate(1, 0)
+	case Left:
+		return calc.NewCoordinate(0, 1)
+	case Down:
+		return calc.NewCoordinate(-1, 0)
+	case Right:
+		return calc.NewCoordinate(0, -1)
+	default:
+		panic("Invalid Direction Used")
+	}
+
+}
+
+func NewCenterRightBlockPositionUsingDirection(d Direction) calc.Coordinates {
+	d = d.TurnClockWise90().TurnClockWise90()
+	return NewCenterLeftBlockPositionUsingDirection(d)
+}
+
+func NewCenterUpBlockPositionUsingDirection(d Direction) calc.Coordinates {
+	d = d.TurnClockWise90()
+	return NewCenterLeftBlockPositionUsingDirection(d)
+}
+
+func NewCenterDownBlockPositionUsingDirection(d Direction) calc.Coordinates {
+	d = d.TurnAntiClockWise90()
+	return NewCenterLeftBlockPositionUsingDirection(d)
+}
+
+func NewBlock(x int, y int) *Block {
+	b := Block{
+		Position: Position{x, y},
+	}
+	return &b
+}
+
+func CanTetrominoFit(cs []calc.Coordinates, bir BlockInserterAndRemover) bool {
+	for _, coords := range cs {
+		if _, ok := bir.ContainsBlock(coords.GetX(), coords.GetY()); ok || !bir.Contains(coords.GetX(), coords.GetY()) {
+			return false
+		}
+	}
+	return true
 }
 
 func NewSquareTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
@@ -348,276 +416,161 @@ func (s *SquareTetrominoes) Blocks() []*Block {
 
 type LTetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
-	middleBlock        *Block
-	centerLeftBlock    *Block
-	rightMiddleBlock   *Block
-	rightMiddleUpBlock *Block
+	centerBlock   *Block
+	centerLeft    *Block
+	centerRight   *Block
+	centerRightUp *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewLTetrominoes Creates a new L-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
 func NewLTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
 
-	middleBlock := &Block{}
-	centerLeftBlock := &Block{}
-	rightMiddleBlock := &Block{}
-	rightMiddleUpBlock := &Block{}
-
-	blocks := []*Block{middleBlock, centerLeftBlock, rightMiddleBlock, rightMiddleUpBlock}
-	SetColorOfBlocks(blocks, colors.Orange)
-
-	if !bir.InsertBlock(x, y, middleBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x-1, y, centerLeftBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x+1, y, rightMiddleBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x+1, y+1, rightMiddleUpBlock) {
-		return nil, false
-	}
-
 	lt := LTetrominoes{
-		blocks:                  blocks,
-		middleBlock:             middleBlock,
-		centerLeftBlock:         centerLeftBlock,
-		rightMiddleBlock:        rightMiddleBlock,
-		rightMiddleUpBlock:      rightMiddleUpBlock,
-		BlockInserterAndRemover: bir,
+		centerBlock:             NewBlock(x, y),
+		centerLeft:              NewBlock(x-1, y),
+		centerRight:             NewBlock(x+1, y),
+		centerRightUp:           NewBlock(x+1, y+1),
 		rotateDirection:         Up,
+		BlockInserterAndRemover: bir,
+	}
+
+	lt.blocks = []*Block{lt.centerBlock, lt.centerLeft, lt.centerRight, lt.centerRightUp}
+	SetColorOfBlocks(lt.Blocks(), colors.Orange)
+
+	for _, block := range lt.blocks {
+		if !bir.InsertBlock(block.GetX(), block.GetY(), block) {
+			return nil, false
+		}
 	}
 
 	return &lt, true
+
 }
 
 func (l *LTetrominoes) Rotate() {
 
-	x, y := l.middleBlock.GetX(), l.middleBlock.GetY()
-	var newMPos, newLMPos, newRMpos, newRMUpos calc.Coordinates
+	x, y := l.centerBlock.GetX(), l.centerBlock.GetY()
 
-	newMPos = calc.NewCoordinate(x, y)
+	l.rotateDirection = l.rotateDirection.TurnAntiClockWise90()
 
-	l.rotateDirection = l.rotateDirection.TurnClockWise90()
+	newCenter := calc.NewCoordinate(x, y)
+	newCenterLeft := calc.Add(newCenter, NewCenterLeftBlockPositionUsingDirection(l.rotateDirection))
+	newCenterRight := calc.Add(newCenter, NewCenterRightBlockPositionUsingDirection(l.rotateDirection))
+	newCenterRightUp := calc.Add(newCenter, calc.Add(NewCenterRightBlockPositionUsingDirection(l.rotateDirection), NewCenterUpBlockPositionUsingDirection(l.rotateDirection)))
 
-	switch l.rotateDirection {
-	case Up:
-		newLMPos, newRMpos, newRMUpos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x+1, y+1)
-	case Left:
-		newLMPos, newRMpos, newRMUpos = calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y-1), calc.NewCoordinate(x+1, y-1)
-	case Down:
-		newLMPos, newRMpos, newRMUpos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x-1, y-1)
-	case Right:
-		newLMPos, newRMpos, newRMUpos = calc.NewCoordinate(x, y-1), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x-1, y+1)
-	}
-
-	newCoordinateSlice := []calc.Coordinates{newMPos, newLMPos, newRMpos, newRMUpos}
+	newCoordinateSlice := []calc.Coordinates{newCenter, newCenterLeft, newCenterRight, newCenterRightUp}
 
 	for _, block := range l.blocks {
 		l.RemoveBlock(block.GetX(), block.GetY())
 	}
 
-	canRotate := true
-
-	for _, coords := range newCoordinateSlice {
-		if _, ok := l.ContainsBlock(coords.GetX(), coords.GetY()); ok {
-			canRotate = false
-		}
-	}
+	canRotate := CanTetrominoFit(newCoordinateSlice, l.BlockInserterAndRemover)
 
 	if canRotate {
-		l.InsertBlock(newMPos.GetX(), newMPos.GetY(), l.middleBlock)
-		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.centerLeftBlock)
-		l.InsertBlock(newRMpos.GetX(), newRMpos.GetY(), l.rightMiddleBlock)
-		l.InsertBlock(newRMUpos.GetX(), newRMUpos.GetY(), l.rightMiddleUpBlock)
+		l.InsertBlock(newCenter.GetX(), newCenter.GetY(), l.centerBlock)
+		l.InsertBlock(newCenterLeft.GetX(), newCenterLeft.GetY(), l.centerLeft)
+		l.InsertBlock(newCenterRight.GetX(), newCenterRight.GetY(), l.centerRight)
+		l.InsertBlock(newCenterRightUp.GetX(), newCenterRightUp.GetY(), l.centerRightUp)
 	} else {
-		l.rotateDirection = l.rotateDirection.TurnAntiClockWise90()
+		l.rotateDirection = l.rotateDirection.TurnClockWise90()
 	}
 
-}
-
-func (l *LTetrominoes) Blocks() []*Block {
-	return l.blocks
 }
 
 type JTetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
-	middleBlock       *Block
+	centerBlock       *Block
 	centerLeftBlock   *Block
-	rightMiddleBlock  *Block
+	centerRightBlock  *Block
 	centerLeftUpBlock *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
 func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
 
-	middleBlock := &Block{}
-	centerLeftBlock := &Block{}
-	rightMiddleBlock := &Block{}
-	centerLeftUpBlock := &Block{}
-
-	blocks := []*Block{middleBlock, centerLeftBlock, rightMiddleBlock, centerLeftUpBlock}
-	SetColorOfBlocks(blocks, colors.MingBlue)
-
-	if !bir.InsertBlock(x, y, middleBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x-1, y, centerLeftBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x+1, y, rightMiddleBlock) {
-		return nil, false
-	}
-
-	if !bir.InsertBlock(x-1, y+1, centerLeftUpBlock) {
-		return nil, false
-	}
-
 	jt := JTetrominoes{
-		blocks:                  blocks,
-		middleBlock:             middleBlock,
-		centerLeftBlock:         centerLeftBlock,
-		rightMiddleBlock:        rightMiddleBlock,
-		centerLeftUpBlock:       centerLeftUpBlock,
-		BlockInserterAndRemover: bir,
+		centerBlock:             NewBlock(x, y),
+		centerLeftBlock:         NewBlock(x-1, y),
+		centerRightBlock:        NewBlock(x+1, y),
+		centerLeftUpBlock:       NewBlock(x-1, y+1),
 		rotateDirection:         Up,
+		BlockInserterAndRemover: bir,
+	}
+
+	jt.blocks = []*Block{jt.centerBlock, jt.centerLeftBlock, jt.centerRightBlock, jt.centerLeftUpBlock}
+	SetColorOfBlocks(jt.Blocks(), colors.MingBlue)
+
+	for _, block := range jt.blocks {
+		if !bir.InsertBlock(block.GetX(), block.GetY(), block) {
+			return nil, false
+		}
 	}
 
 	return &jt, true
 }
 
-func (l *JTetrominoes) Rotate() {
+func (jt *JTetrominoes) Rotate() {
 
-	x, y := l.middleBlock.GetX(), l.middleBlock.GetY()
-	var newMPos, newLMPos, newRMpos, newcenterLeftUpPos calc.Coordinates
+	x, y := jt.centerBlock.GetX(), jt.centerBlock.GetY()
 
-	newMPos = calc.NewCoordinate(x, y)
+	jt.rotateDirection = jt.rotateDirection.TurnAntiClockWise90()
+	newCenter := calc.NewCoordinate(x, y)
+	newCenterLeft := calc.Add(newCenter, NewCenterLeftBlockPositionUsingDirection(jt.rotateDirection))
+	newCenterRight := calc.Add(newCenter, NewCenterRightBlockPositionUsingDirection(jt.rotateDirection))
+	newCenterLeftUp := calc.Add(newCenter, calc.Add(NewCenterLeftBlockPositionUsingDirection(jt.rotateDirection), NewCenterUpBlockPositionUsingDirection(jt.rotateDirection)))
 
-	l.rotateDirection = l.rotateDirection.TurnClockWise90()
+	newCoordinateSlice := []calc.Coordinates{newCenter, newCenterLeft, newCenterRight, newCenterLeftUp}
 
-	switch l.rotateDirection {
-	case Up:
-		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x-1, y+1)
-	case Left:
-		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x, y+1), calc.NewCoordinate(x, y-1), calc.NewCoordinate(x+1, y+1)
-	case Down:
-		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x-1, y), calc.NewCoordinate(x+1, y), calc.NewCoordinate(x+1, y-1)
-	case Right:
-		newLMPos, newRMpos, newcenterLeftUpPos = calc.NewCoordinate(x, y-1), calc.NewCoordinate(x, y+1), calc.NewCoordinate(x-1, y+1)
-	}
+	RemoveAllBlocks(jt.blocks, jt)
 
-	newCoordinateSlice := []calc.Coordinates{newMPos, newLMPos, newRMpos, newcenterLeftUpPos}
-
-	for _, block := range l.blocks {
-		l.RemoveBlock(block.GetX(), block.GetY())
-	}
-
-	canRotate := true
-
-	for _, coords := range newCoordinateSlice {
-		if _, ok := l.ContainsBlock(coords.GetX(), coords.GetY()); ok {
-			canRotate = false
-		}
-	}
-
-	if canRotate {
-		l.InsertBlock(newMPos.GetX(), newMPos.GetY(), l.middleBlock)
-		l.InsertBlock(newLMPos.GetX(), newLMPos.GetY(), l.centerLeftBlock)
-		l.InsertBlock(newRMpos.GetX(), newRMpos.GetY(), l.rightMiddleBlock)
-		l.InsertBlock(newcenterLeftUpPos.GetX(), newcenterLeftUpPos.GetY(), l.centerLeftUpBlock)
+	if CanTetrominoFit(newCoordinateSlice, jt) {
+		jt.InsertBlock(newCenter.GetX(), newCenter.GetY(), jt.centerBlock)
+		jt.InsertBlock(newCenterLeft.GetX(), newCenterLeft.GetY(), jt.centerLeftBlock)
+		jt.InsertBlock(newCenterRight.GetX(), newCenterRight.GetY(), jt.centerRightBlock)
+		jt.InsertBlock(newCenterLeftUp.GetX(), newCenterLeftUp.GetY(), jt.centerLeftUpBlock)
 	} else {
-		l.rotateDirection = l.rotateDirection.TurnAntiClockWise90()
+		InsertAllBlocks(jt.blocks, jt)
+		jt.rotateDirection = jt.rotateDirection.TurnClockWise90()
 	}
 
-}
-
-func (l *JTetrominoes) Blocks() []*Block {
-	return l.blocks
-}
-
-func NewMiddleLeftBlockPositionUsingDirection(d Direction) calc.Coordinates {
-
-	switch d {
-	case Up:
-		return calc.NewCoordinate(1, 0)
-	case Left:
-		return calc.NewCoordinate(0, 1)
-	case Down:
-		return calc.NewCoordinate(-1, 0)
-	case Right:
-		return calc.NewCoordinate(0, -1)
-	default:
-		panic("Invalid Direction Used")
-	}
-
-}
-
-func NewMiddleRightBlockPositionUsingDirection(d Direction) calc.Coordinates {
-	d = d.TurnClockWise90().TurnClockWise90()
-	return NewMiddleLeftBlockPositionUsingDirection(d)
-}
-
-func NewMiddleUpBlockPositionUsingDirection(d Direction) calc.Coordinates {
-	d = d.TurnClockWise90()
-	return NewMiddleLeftBlockPositionUsingDirection(d)
-}
-
-func NewMiddleDownBlockPositionUsingDirection(d Direction) calc.Coordinates {
-	d = d.TurnAntiClockWise90()
-	return NewMiddleLeftBlockPositionUsingDirection(d)
-}
-
-func NewBlock(x int, y int) *Block {
-	b := Block{
-		Position: Position{x, y},
-	}
-	return &b
 }
 
 type STetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
-	middleBlock   *Block
-	middleLeft    *Block
-	middleUp      *Block
-	middleUpRight *Block
+	centerBlock   *Block
+	centerLeft    *Block
+	centerUp      *Block
+	centerUpRight *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
 func NewSTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool) {
 
 	st := STetrominoes{
-		middleBlock:             NewBlock(x, y),
-		middleLeft:              NewBlock(x-1, y),
-		middleUp:                NewBlock(x, y+1),
-		middleUpRight:           NewBlock(x+1, y+1),
+		centerBlock:             NewBlock(x, y),
+		centerLeft:              NewBlock(x-1, y),
+		centerUp:                NewBlock(x, y+1),
+		centerUpRight:           NewBlock(x+1, y+1),
 		rotateDirection:         Up,
 		BlockInserterAndRemover: bir,
 	}
 
-	st.blocks = []*Block{st.middleBlock, st.middleLeft, st.middleUp, st.middleUpRight}
+	st.blocks = []*Block{st.centerBlock, st.centerLeft, st.centerUp, st.centerUpRight}
 	SetColorOfBlocks(st.blocks, colors.Green)
 
 	for _, block := range st.blocks {
@@ -629,51 +582,39 @@ func NewSTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 	return &st, true
 }
 
-func CanTetrominoFit(cs []calc.Coordinates, bir BlockInserterAndRemover) bool {
-	for _, coords := range cs {
-		if _, ok := bir.ContainsBlock(coords.GetX(), coords.GetY()); ok || !bir.Contains(coords.GetX(), coords.GetY()) {
-			return false
-		}
-	}
-	return true
-}
-
 func (st *STetrominoes) Rotate() {
 
-	x, y := st.middleBlock.GetX(), st.middleBlock.GetY()
+	x, y := st.centerBlock.GetX(), st.centerBlock.GetY()
 
 	st.rotateDirection = st.rotateDirection.TurnClockWise90()
 
-	newMPos := calc.NewCoordinate(x, y)
-	newMiddleLeft := calc.Add(newMPos, NewMiddleLeftBlockPositionUsingDirection(st.rotateDirection))
-	newMiddleUp := calc.Add(newMPos, NewMiddleUpBlockPositionUsingDirection(st.rotateDirection))
-	newMiddleUpRight := calc.Add(newMPos, calc.Add(NewMiddleUpBlockPositionUsingDirection(st.rotateDirection), NewMiddleRightBlockPositionUsingDirection(st.rotateDirection)))
+	newCenterBlock := calc.NewCoordinate(x, y)
+	newCenterLeft := calc.Add(newCenterBlock, NewCenterLeftBlockPositionUsingDirection(st.rotateDirection))
+	newCenterUp := calc.Add(newCenterBlock, NewCenterUpBlockPositionUsingDirection(st.rotateDirection))
+	newCenterUpRight := calc.Add(newCenterBlock, calc.Add(NewCenterUpBlockPositionUsingDirection(st.rotateDirection), NewCenterRightBlockPositionUsingDirection(st.rotateDirection)))
 
-	newCoordinateSlice := []calc.Coordinates{newMPos, newMiddleLeft, newMiddleUp, newMiddleUpRight}
+	newCoordinateSlice := []calc.Coordinates{newCenterBlock, newCenterLeft, newCenterUp, newCenterUpRight}
 
-	for _, block := range st.blocks {
-		st.RemoveBlock(block.GetX(), block.GetY())
-	}
+	RemoveAllBlocks(st.blocks, st)
 
 	canRotate := CanTetrominoFit(newCoordinateSlice, st.BlockInserterAndRemover)
 
 	if canRotate {
-		st.InsertBlock(newMPos.GetX(), newMPos.GetY(), st.middleBlock)
-		st.InsertBlock(newMiddleLeft.GetX(), newMiddleLeft.GetY(), st.middleLeft)
-		st.InsertBlock(newMiddleUp.GetX(), newMiddleUp.GetY(), st.middleUp)
-		st.InsertBlock(newMiddleUpRight.GetX(), newMiddleUpRight.GetY(), st.middleUpRight)
+		st.InsertBlock(newCenterBlock.GetX(), newCenterBlock.GetY(), st.centerBlock)
+		st.InsertBlock(newCenterLeft.GetX(), newCenterLeft.GetY(), st.centerLeft)
+		st.InsertBlock(newCenterUp.GetX(), newCenterUp.GetY(), st.centerUp)
+		st.InsertBlock(newCenterUpRight.GetX(), newCenterUpRight.GetY(), st.centerUpRight)
 	} else {
+		InsertAllBlocks(st.blocks, st)
 		st.rotateDirection = st.rotateDirection.TurnAntiClockWise90()
 	}
 
 }
 
-func (st *STetrominoes) Blocks() []*Block {
-	return st.blocks
-}
-
 type ZTetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
 	centerBlock  *Block
 	centerRight  *Block
@@ -681,9 +622,6 @@ type ZTetrominoes struct {
 	centerUpLeft *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -717,9 +655,9 @@ func (zt *ZTetrominoes) Rotate() {
 	zt.rotateDirection = zt.rotateDirection.TurnClockWise90()
 
 	newCenter := calc.NewCoordinate(x, y)
-	newCenterRight := calc.Add(newCenter, NewMiddleRightBlockPositionUsingDirection(zt.rotateDirection))
-	newCenterUp := calc.Add(newCenter, NewMiddleUpBlockPositionUsingDirection(zt.rotateDirection))
-	newCenterUpLeft := calc.Add(newCenter, calc.Add(NewMiddleUpBlockPositionUsingDirection(zt.rotateDirection), NewMiddleLeftBlockPositionUsingDirection(zt.rotateDirection)))
+	newCenterRight := calc.Add(newCenter, NewCenterRightBlockPositionUsingDirection(zt.rotateDirection))
+	newCenterUp := calc.Add(newCenter, NewCenterUpBlockPositionUsingDirection(zt.rotateDirection))
+	newCenterUpLeft := calc.Add(newCenter, calc.Add(NewCenterUpBlockPositionUsingDirection(zt.rotateDirection), NewCenterLeftBlockPositionUsingDirection(zt.rotateDirection)))
 
 	newCoordinateSlice := []calc.Coordinates{newCenter, newCenterRight, newCenterUp, newCenterUpLeft}
 
@@ -740,12 +678,10 @@ func (zt *ZTetrominoes) Rotate() {
 
 }
 
-func (zt *ZTetrominoes) Blocks() []*Block {
-	return zt.blocks
-}
-
 type TTetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
 	centerBlock *Block
 	centerRight *Block
@@ -753,9 +689,6 @@ type TTetrominoes struct {
 	centerLeft  *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -789,15 +722,13 @@ func (tt *TTetrominoes) Rotate() {
 	tt.rotateDirection = tt.rotateDirection.TurnClockWise90()
 
 	newCenter := calc.NewCoordinate(x, y)
-	newCenterRight := calc.Add(newCenter, NewMiddleRightBlockPositionUsingDirection(tt.rotateDirection))
-	newCenterUp := calc.Add(newCenter, NewMiddleUpBlockPositionUsingDirection(tt.rotateDirection))
-	newCenterLeft := calc.Add(newCenter, NewMiddleLeftBlockPositionUsingDirection(tt.rotateDirection))
+	newCenterRight := calc.Add(newCenter, NewCenterRightBlockPositionUsingDirection(tt.rotateDirection))
+	newCenterUp := calc.Add(newCenter, NewCenterUpBlockPositionUsingDirection(tt.rotateDirection))
+	newCenterLeft := calc.Add(newCenter, NewCenterLeftBlockPositionUsingDirection(tt.rotateDirection))
 
 	newCoordinateSlice := []calc.Coordinates{newCenter, newCenterRight, newCenterUp, newCenterLeft}
 
-	for _, block := range tt.blocks {
-		tt.RemoveBlock(block.GetX(), block.GetY())
-	}
+	RemoveAllBlocks(tt.blocks, tt.BlockInserterAndRemover)
 
 	canRotate := CanTetrominoFit(newCoordinateSlice, tt.BlockInserterAndRemover)
 
@@ -817,16 +748,10 @@ func (tt *TTetrominoes) Rotate() {
 
 }
 
-func (tt *TTetrominoes) Shift(d Direction) {
-
-}
-
-func (tt *TTetrominoes) Blocks() []*Block {
-	return tt.blocks
-}
-
 type ITetrominoes struct {
 	BlockInserterAndRemover
+	BlockHolder
+	Position
 
 	centerLeftLeft   *Block
 	centerLeft       *Block
@@ -834,9 +759,6 @@ type ITetrominoes struct {
 	centerRightRight *Block
 
 	rotateDirection Direction
-
-	blocks []*Block
-	Position
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -907,12 +829,4 @@ func (it *ITetrominoes) Rotate() {
 		it.rotateDirection = it.rotateDirection.TurnAntiClockWise90()
 	}
 
-}
-
-func (it *ITetrominoes) Shift(d Direction) {
-
-}
-
-func (it *ITetrominoes) Blocks() []*Block {
-	return it.blocks
 }
