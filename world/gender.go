@@ -10,19 +10,6 @@ const (
 
 var genders = [2]Gender{Male, Female}
 
-func (gender Gender) String() string {
-
-	names := [...]string{
-		"Male",
-		"Female"}
-
-	if gender < Male || gender > Female {
-		return "Unknown"
-	}
-
-	return names[gender]
-}
-
 //Opposite Returns the opposite gender
 func (gender Gender) Opposite() Gender {
 
