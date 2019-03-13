@@ -1,6 +1,6 @@
 package world
 
-import "gopherlife/calc"
+import "gopherlife/timer"
 
 type Dimensions struct {
 	Width  int
@@ -21,8 +21,8 @@ type Statistics struct {
 //Diagnostics is used primarily by the 'GopherMap' struct and is used to track
 //how long different parts of the 'Update' method take
 type Diagnostics struct {
-	globalStopWatch  calc.StopWatch
-	inputStopWatch   calc.StopWatch
-	gopherStopWatch  calc.StopWatch
-	processStopWatch calc.StopWatch
+	globalStopWatch  timer.StopWatch
+	inputStopWatch   timer.StopWatch
+	gopherStopWatch  timer.StopWatch
+	processStopWatch timer.StopWatch
 }

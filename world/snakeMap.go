@@ -1,7 +1,8 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
+	"gopherlife/timer"
 	"math/rand"
 	"time"
 )
@@ -18,12 +19,12 @@ type SnakeMap struct {
 	IsGameOver bool
 	Score      int
 
-	FrameTimer calc.StopWatch
+	FrameTimer timer.StopWatch
 	FrameSpeed time.Duration
 }
 
 type SnakeMapTile struct {
-	Position
+	geometry.Coordinates
 	SnakePart *SnakePart
 	Wall      *Wall
 	SnakeFood *SnakeFood
@@ -78,10 +79,7 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
 		for j := 0; j < d.Height; j++ {
 			tile := SnakeMapTile{
-				Position: Position{
-					X: i,
-					Y: j,
-				},
+				Coordinates: geometry.NewCoordinate(i, j),
 			}
 			grid[i][j] = &tile
 		}
@@ -91,7 +89,7 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
 	snakeMap := SnakeMap{
 		grid:         grid,
-		Container:  &r,
+		Container:    &r,
 		ActionQueuer: &baq,
 		Dimensions:   d,
 		IsGameOver:   false,
@@ -351,7 +349,7 @@ func (smt *SnakeMapTile) RemoveSnakeFood() {
 }
 
 type SnakePart struct {
-	Position
+	geometry.Coordinates
 	snakePartInFront   *SnakePart
 	snakePartBehind    *SnakePart
 	snakePartInStomach *SnakePart
@@ -363,9 +361,9 @@ func (sp *SnakePart) Attach(partToAttach *SnakePart) {
 }
 
 type Wall struct {
-	Position
+	geometry.Coordinates
 }
 
 type SnakeFood struct {
-	Position
+	geometry.Coordinates
 }

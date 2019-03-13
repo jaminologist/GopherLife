@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 )
 
 //PartitionTileMap is cool
@@ -33,11 +33,11 @@ type GridTileSearch struct {
 	*BasicGridContainer
 }
 
-func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, height int, maximumFind int, searchType SearchType) []calc.Coordinates {
+func (searcher *GridTileSearch) Search(position geometry.Coordinates, width int, height int, maximumFind int, searchType SearchType) []geometry.Coordinates {
 
 	x, y := position.GetX(), position.GetY()
 
-	var locations []calc.Coordinates
+	var locations []geometry.Coordinates
 
 	switch searchType {
 	case SearchForFood:
@@ -49,7 +49,7 @@ func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, hei
 		return sts.Search(position, width, height, maximumFind, searchType)
 	}
 
-	calc.SortByNearestFromCoordinate(position, locations)
+	geometry.SortByNearestFromCoordinate(position, locations)
 
 	if len(locations) >= maximumFind {
 		return locations[:maximumFind]
@@ -57,7 +57,7 @@ func (searcher *GridTileSearch) Search(position calc.Coordinates, width int, hei
 	return locations[:len(locations)]
 }
 
-func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) []calc.Coordinates {
+func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) []geometry.Coordinates {
 	return gridQuery(tileMap, width, height, x, y,
 
 		func(container *TrackedTileContainer) map[int]*Tile {
@@ -74,7 +74,7 @@ func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) 
 	)
 }
 
-func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int, y int) []calc.Coordinates {
+func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int, y int) []geometry.Coordinates {
 
 	return gridQuery(tileMap, width, height, x, y,
 
@@ -95,14 +95,14 @@ func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int
 func gridQuery(tileMap *GridTileSearch, width int, height int, x int, y int,
 	gridSearchFunc func(*TrackedTileContainer) map[int]*Tile,
 	coordsFromTile func(*Tile) (int, int),
-	tileCheck func(*Tile) bool) []calc.Coordinates {
+	tileCheck func(*Tile) bool) []geometry.Coordinates {
 
 	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
 
 	startX, startY := tileMap.convertToGridCoordinates(x-width, y-height)
 	endX, endY := tileMap.convertToGridCoordinates(x+width, y+height)
 
-	locations := make([]calc.Coordinates, 0)
+	locations := make([]geometry.Coordinates, 0)
 
 	for x := startX; x <= endX; x++ {
 		for y := startY; y <= endY; y++ {
@@ -120,7 +120,7 @@ func gridQuery(tileMap *GridTileSearch, width int, height int, x int, y int,
 						i < worldEndX &&
 						j >= worldStartY &&
 						j < worldEndY && tileCheck(tile) {
-						locations = append(locations, calc.Coordinates{i, j})
+						locations = append(locations, geometry.Coordinates{i, j})
 					}
 
 				}

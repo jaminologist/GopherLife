@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"gopherlife/names"
 	"math/rand"
 	"sync"
@@ -16,8 +16,8 @@ type GopherMap struct {
 	FoodContainer
 
 	ActionQueuer
-	InsertableGophers
-	InsertableFood
+	GopherInserter
+	FoodInserter
 
 	*GopherGeneration
 	*GopherSliceAndChannel
@@ -34,7 +34,7 @@ type GopherMap struct {
 }
 
 //NewGopherMap Creates a new GopherMap a GopherMap contains food and gophers and can use different actors to update the state of the map
-func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g GopherContainer, f FoodContainer, ig InsertableGophers, iff InsertableFood) GopherMap {
+func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserter, iff FoodInserter) GopherMap {
 
 	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
 
@@ -44,7 +44,7 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 	}
 
 	gg := GopherGeneration{
-		InsertableGophers:     ig,
+		GopherInserter:     ig,
 		maxGenerations:        statistics.MaximumNumberOfGophers,
 		GopherSliceAndChannel: &gsac,
 	}
@@ -56,8 +56,8 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 		TileContainer:     t,
 		GopherContainer:   g,
 		FoodContainer:     f,
-		InsertableGophers: ig,
-		InsertableFood:    iff,
+		GopherInserter: ig,
+		FoodInserter:    iff,
 
 		ActionQueuer: &qa,
 
@@ -85,7 +85,7 @@ func CreateWorldCustom(statistics Statistics) *GopherMap {
 
 func (tileMap *GopherMap) setUpTiles() {
 
-	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
+	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
 		tileMap.Statistics.Width, tileMap.Statistics.Height)
 
 	count := 0
@@ -147,7 +147,7 @@ type MoveableGophers interface {
 //MoveGopher Handles the movement of a give gopher, Attempts to move a gopher by moveX and moveY.
 func (tileMap *GopherMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
-	currentPosition := calc.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
+	currentPosition := geometry.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
 	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
 
 	if tileMap.InsertGopher(targetPosition.GetX(), targetPosition.GetY(), gopher) {
@@ -210,7 +210,7 @@ type ActorGeneration interface {
 }
 
 type GopherGeneration struct {
-	InsertableGophers
+	GopherInserter
 	maxGenerations int
 	*GopherSliceAndChannel
 }
@@ -308,11 +308,11 @@ type SpiralTileSearch struct {
 	TileContainer
 }
 
-func (spiralTileSearch *SpiralTileSearch) Search(position calc.Coordinates, width int, height int, max int, searchType SearchType) []calc.Coordinates {
+func (spiralTileSearch *SpiralTileSearch) Search(position geometry.Coordinates, width int, height int, max int, searchType SearchType) []geometry.Coordinates {
 
-	var coordsArray = []calc.Coordinates{}
+	var coordsArray = []geometry.Coordinates{}
 
-	spiral := calc.NewSpiral(width, height)
+	spiral := geometry.NewSpiral(width, height)
 
 	var query TileQuery
 
@@ -342,7 +342,7 @@ func (spiralTileSearch *SpiralTileSearch) Search(position calc.Coordinates, widt
 		}
 	}
 
-	calc.SortByNearestFromCoordinate(position, coordsArray)
+	geometry.SortByNearestFromCoordinate(position, coordsArray)
 
 	return coordsArray
 }

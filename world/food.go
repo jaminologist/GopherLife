@@ -1,11 +1,11 @@
 package world
 
-import "gopherlife/calc"
+import "gopherlife/geometry"
 
 type Food struct {
 	Name     string
 	Energy   int
-	Position calc.Coordinates
+	Position geometry.Coordinates
 }
 
 func NewCarrot() Food {

@@ -1,15 +1,13 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"gopherlife/names"
 	"math/rand"
 )
 
 const hungerPerMoment = 1
 const timeToDecay = 10
-
-type Gender int
 
 //Gopher The whole point of the project
 type Gopher struct {
@@ -24,19 +22,19 @@ type Gopher struct {
 	IsDead   bool
 	IsHungry bool
 
-	Position calc.Coordinates
+	Position geometry.Coordinates
 
 	HeldFood *Food
 
 	Gender Gender
 
-	FoodTargets   []calc.Coordinates
-	GopherTargets []calc.Coordinates
-	MovementPath  []calc.Coordinates
+	FoodTargets   []geometry.Coordinates
+	GopherTargets []geometry.Coordinates
+	MovementPath  []geometry.Coordinates
 }
 
 //NewGopher Creates a new Gopher and the given co-ordinate
-func NewGopher(Name string, coord calc.Coordinates) Gopher {
+func NewGopher(Name string, coord geometry.Coordinates) Gopher {
 
 	return Gopher{
 		Name:     Name,
@@ -137,11 +135,11 @@ func (gopher *Gopher) AdvanceLife() {
 
 //ClearFoodTargets Clears all food targets from the Gopher
 func (gopher *Gopher) ClearFoodTargets() {
-	gopher.FoodTargets = []calc.Coordinates{}
+	gopher.FoodTargets = []geometry.Coordinates{}
 }
 
 func (gopher *Gopher) ClearGopherTargets() {
-	gopher.GopherTargets = []calc.Coordinates{}
+	gopher.GopherTargets = []geometry.Coordinates{}
 }
 
 type GopherActor struct {
@@ -177,7 +175,7 @@ func (actor *GopherActor) Update(gopher *Gopher) {
 						actor.QueueMating(gopher, target)
 						break
 					}
-					moveX, moveY := calc.FindNextStep(gopher.Position, target)
+					moveX, moveY := geometry.FindNextStep(gopher.Position, target)
 					actor.QueueGopherMove(moveX, moveY, gopher)
 					gopher.ClearFoodTargets()
 				}
@@ -218,7 +216,7 @@ func (actor *GopherActor) moveTowardsFood(gopher *Gopher) {
 				return
 			}
 
-			moveX, moveY := calc.FindNextStep(gopher.Position, target)
+			moveX, moveY := geometry.FindNextStep(gopher.Position, target)
 			actor.QueueGopherMove(moveX, moveY, gopher)
 		} else {
 			gopher.ClearFoodTargets()
@@ -263,7 +261,7 @@ func (actor *GopherActor) QueuePickUpFood(gopher *Gopher) {
 	})
 }
 
-func (actor *GopherActor) QueueMating(gopher *Gopher, matePosition calc.Coordinates) {
+func (actor *GopherActor) QueueMating(gopher *Gopher, matePosition geometry.Coordinates) {
 
 	actor.Add(func() {
 
