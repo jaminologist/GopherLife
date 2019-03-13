@@ -33,7 +33,7 @@ const FrameSpeedMultiplier = time.Duration(7)
 
 func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap {
 
-	r := NewRectangle(0, 0, d.Width, d.Height)
+	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
 
 	grid := make([][]*BlockBlockRevolutionTile, d.Width)
 
@@ -326,34 +326,34 @@ func SetColorOfBlocks(blocks []*Block, c color.RGBA) {
 	}
 }
 
-func NewCenterLeftBlockPositionUsingDirection(d Direction) geometry.Coordinates {
+func NewCenterLeftBlockPositionUsingDirection(d geometry.Direction) geometry.Coordinates {
 
 	switch d {
-	case Up:
+	case geometry.Up:
 		return geometry.NewCoordinate(1, 0)
-	case Left:
+	case geometry.Left:
 		return geometry.NewCoordinate(0, 1)
-	case Down:
+	case geometry.Down:
 		return geometry.NewCoordinate(-1, 0)
-	case Right:
+	case geometry.Right:
 		return geometry.NewCoordinate(0, -1)
 	default:
-		panic("Invalid Direction Used")
+		panic("Invalid geometry.Direction Used")
 	}
 
 }
 
-func NewCenterRightBlockPositionUsingDirection(d Direction) geometry.Coordinates {
+func NewCenterRightBlockPositionUsingDirection(d geometry.Direction) geometry.Coordinates {
 	d = d.TurnClockWise90().TurnClockWise90()
 	return NewCenterLeftBlockPositionUsingDirection(d)
 }
 
-func NewCenterUpBlockPositionUsingDirection(d Direction) geometry.Coordinates {
+func NewCenterUpBlockPositionUsingDirection(d geometry.Direction) geometry.Coordinates {
 	d = d.TurnClockWise90()
 	return NewCenterLeftBlockPositionUsingDirection(d)
 }
 
-func NewCenterDownBlockPositionUsingDirection(d Direction) geometry.Coordinates {
+func NewCenterDownBlockPositionUsingDirection(d geometry.Direction) geometry.Coordinates {
 	d = d.TurnAntiClockWise90()
 	return NewCenterLeftBlockPositionUsingDirection(d)
 }
@@ -425,7 +425,7 @@ type LTetrominoes struct {
 	centerRight   *Block
 	centerRightUp *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewLTetrominoes Creates a new L-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -436,7 +436,7 @@ func NewLTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerLeft:              NewBlock(x-1, y),
 		centerRight:             NewBlock(x+1, y),
 		centerRightUp:           NewBlock(x+1, y+1),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -493,7 +493,7 @@ type JTetrominoes struct {
 	centerRightBlock  *Block
 	centerLeftUpBlock *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -504,7 +504,7 @@ func NewJTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerLeftBlock:         NewBlock(x-1, y),
 		centerRightBlock:        NewBlock(x+1, y),
 		centerLeftUpBlock:       NewBlock(x-1, y+1),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -556,7 +556,7 @@ type STetrominoes struct {
 	centerUp      *Block
 	centerUpRight *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -567,7 +567,7 @@ func NewSTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerLeft:              NewBlock(x-1, y),
 		centerUp:                NewBlock(x, y+1),
 		centerUpRight:           NewBlock(x+1, y+1),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -622,7 +622,7 @@ type ZTetrominoes struct {
 	centerUp     *Block
 	centerUpLeft *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -633,7 +633,7 @@ func NewZTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerRight:             NewBlock(x+1, y),
 		centerUp:                NewBlock(x, y+1),
 		centerUpLeft:            NewBlock(x-1, y+1),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -689,7 +689,7 @@ type TTetrominoes struct {
 	centerUp    *Block
 	centerLeft  *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -700,7 +700,7 @@ func NewTTetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerRight:             NewBlock(x+1, y),
 		centerUp:                NewBlock(x, y+1),
 		centerLeft:              NewBlock(x-1, y),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -759,7 +759,7 @@ type ITetrominoes struct {
 	centerRight      *Block
 	centerRightRight *Block
 
-	rotateDirection Direction
+	rotateDirection geometry.Direction
 }
 
 //NewJTetrominoes Creates a new J-Tetromino. Assume the starting position is an 3 blocks in a straight line and then one at the end
@@ -770,7 +770,7 @@ func NewITetrominoes(x int, y int, bir BlockInserterAndRemover) (Tetromino, bool
 		centerLeft:              NewBlock(x, y),
 		centerRight:             NewBlock(x+1, y),
 		centerRightRight:        NewBlock(x+2, y),
-		rotateDirection:         Up,
+		rotateDirection:         geometry.Up,
 		BlockInserterAndRemover: bir,
 	}
 
@@ -795,15 +795,15 @@ func (it *ITetrominoes) Rotate() {
 	var centerLeftLeft, centerLeft, centerRight, centerRightRight geometry.Coordinates
 
 	switch it.rotateDirection {
-	case Up:
+	case geometry.Up:
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = geometry.NewCoordinate(x-1, y), geometry.NewCoordinate(x, y), geometry.NewCoordinate(x+1, y), geometry.NewCoordinate(x+2, y)
-	case Left:
+	case geometry.Left:
 		x, y = it.centerRight.GetX(), it.centerRight.GetY()
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = geometry.NewCoordinate(x, y+2), geometry.NewCoordinate(x, y+1), geometry.NewCoordinate(x, y), geometry.NewCoordinate(x, y-1)
-	case Down:
+	case geometry.Down:
 		x, y = it.centerRight.GetX(), it.centerRight.GetY()
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = geometry.NewCoordinate(x+2, y-1), geometry.NewCoordinate(x+1, y-1), geometry.NewCoordinate(x, y-1), geometry.NewCoordinate(x-1, y-1)
-	case Right:
+	case geometry.Right:
 		x, y = it.centerRight.GetX(), it.centerRight.GetY()
 		centerLeftLeft, centerLeft, centerRight, centerRightRight = geometry.NewCoordinate(x, y-1), geometry.NewCoordinate(x, y), geometry.NewCoordinate(x, y+1), geometry.NewCoordinate(x, y+2)
 	}

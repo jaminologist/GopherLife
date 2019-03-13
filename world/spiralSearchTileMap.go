@@ -44,7 +44,7 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 	}
 
 	gg := GopherGeneration{
-		GopherInserter:     ig,
+		GopherInserter:        ig,
 		maxGenerations:        statistics.MaximumNumberOfGophers,
 		GopherSliceAndChannel: &gsac,
 	}
@@ -52,11 +52,11 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 	var wg sync.WaitGroup
 
 	return GopherMap{
-		Searchable:        s,
-		TileContainer:     t,
-		GopherContainer:   g,
-		FoodContainer:     f,
-		GopherInserter: ig,
+		Searchable:      s,
+		TileContainer:   t,
+		GopherContainer: g,
+		FoodContainer:   f,
+		GopherInserter:  ig,
 		FoodInserter:    iff,
 
 		ActionQueuer: &qa,
@@ -254,11 +254,11 @@ func (tileMap *GopherMap) Update() bool {
 		tileMap.SelectRandomGopher()
 	}
 
-	if !tileMap.diagnostics.globalStopWatch.IsStarted() {
-		tileMap.diagnostics.globalStopWatch.Start()
+	if !tileMap.diagnostics.GlobalStopWatch.IsStarted() {
+		tileMap.diagnostics.GlobalStopWatch.Start()
 	}
 
-	tileMap.diagnostics.processStopWatch.Start()
+	tileMap.diagnostics.ProcessStopWatch.Start()
 	tileMap.processGophers()
 	tileMap.processQueuedTasks()
 	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveActors)
@@ -266,7 +266,7 @@ func (tileMap *GopherMap) Update() bool {
 		tileMap.Moments++
 	}
 
-	tileMap.diagnostics.processStopWatch.Stop()
+	tileMap.diagnostics.ProcessStopWatch.Stop()
 
 	return true
 
@@ -274,7 +274,7 @@ func (tileMap *GopherMap) Update() bool {
 
 func (tileMap *GopherMap) processGophers() {
 
-	tileMap.diagnostics.gopherStopWatch.Start()
+	tileMap.diagnostics.GopherStopWatch.Start()
 
 	numGophers := len(tileMap.ActiveActors)
 	tileMap.GopherSliceAndChannel.ActiveArray = make([]*Gopher, numGophers)
@@ -290,13 +290,13 @@ func (tileMap *GopherMap) processGophers() {
 	tileMap.ActiveActors = secondChannel
 	tileMap.GopherWaitGroup.Wait()
 
-	tileMap.diagnostics.gopherStopWatch.Stop()
+	tileMap.diagnostics.GopherStopWatch.Stop()
 }
 
 func (tileMap *GopherMap) processQueuedTasks() {
-	tileMap.diagnostics.inputStopWatch.Start()
+	tileMap.diagnostics.InputStopWatch.Start()
 	tileMap.ActionQueuer.Process()
-	tileMap.diagnostics.inputStopWatch.Stop()
+	tileMap.diagnostics.InputStopWatch.Stop()
 }
 
 //TogglePause Toggles the pause

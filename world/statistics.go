@@ -21,8 +21,8 @@ type Statistics struct {
 //Diagnostics is used primarily by the 'GopherMap' struct and is used to track
 //how long different parts of the 'Update' method take
 type Diagnostics struct {
-	globalStopWatch  timer.StopWatch
-	inputStopWatch   timer.StopWatch
-	gopherStopWatch  timer.StopWatch
-	processStopWatch timer.StopWatch
+	GlobalStopWatch  timer.StopWatch
+	InputStopWatch   timer.StopWatch
+	GopherStopWatch  timer.StopWatch
+	ProcessStopWatch timer.StopWatch
 }

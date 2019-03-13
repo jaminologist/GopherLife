@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"gopherlife/controllers"
 	"gopherlife/world"
 	"html/template"
 	"log"
@@ -14,10 +15,10 @@ import (
 type RenderController interface {
 	Update() bool
 	Start()
-	PageLayout() world.WorldPageData
+	PageLayout() controllers.WorldPageData
 	HandleForm(url.Values) bool
 	json.Marshaler
-	world.Controller
+	controllers.UserInputHandler
 }
 
 type ControllerContainer struct {
@@ -64,7 +65,7 @@ func (c *ControllerContainer) PopulatePageData() {
 }
 
 type PageData struct {
-	world.WorldPageData
+	controllers.WorldPageData
 	MapData  []MapData
 	Selected string
 }
@@ -96,28 +97,28 @@ func SetUpPage() {
 
 	ControllerContainer := NewControllerContainer()
 
-	ss := world.NewGopherMapWithSpiralSearch(stats)
+	ss := controllers.NewGopherMapWithSpiralSearch(stats)
 	ControllerContainer.Add(&ss, "GopherMap With Spiral Search", false)
 
-	ps := world.NewGopherMapWithParitionGridAndSearch(stats)
+	ps := controllers.NewGopherMapWithParitionGridAndSearch(stats)
 	ControllerContainer.Add(&ps, "GopherMap With Partition", false)
 
-	cbws := world.NewSpiralMapController(stats)
+	cbws := controllers.NewSpiralMapController(stats)
 	ControllerContainer.Add(&cbws, "Cool Black And White Spiral", false)
 
-	fireworks := world.NewFireWorksController(stats)
+	fireworks := controllers.NewFireWorksController(stats)
 	ControllerContainer.Add(&fireworks, "Fireworks!", false)
 
-	collision := world.NewCollisionMapController(stats)
+	collision := controllers.NewCollisionMapController(stats)
 	ControllerContainer.Add(&collision, "Collision Map", false)
 
-	diagonalCollision := world.NewDiagonalCollisionMapController(stats)
+	diagonalCollision := controllers.NewDiagonalCollisionMapController(stats)
 	ControllerContainer.Add(&diagonalCollision, "Diagonal Collision Map", false)
 
-	snakeMap := world.NewSnakeMapController(stats)
+	snakeMap := controllers.NewSnakeMapController(stats)
 	ControllerContainer.Add(&snakeMap, "Elongateing Gopher", false)
 
-	blockblockRevolution := world.NewBlockBlockRevolutionController()
+	blockblockRevolution := controllers.NewBlockBlockRevolutionController()
 	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", true)
 
 	ControllerContainer.Selected().Start()
@@ -125,7 +126,7 @@ func SetUpPage() {
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", worldToHTML(&ControllerContainer))
-	http.HandleFunc("/ProcessWorld", Update(&ControllerContainer))
+	http.HandleFunc("/Update", Update(&ControllerContainer))
 	http.HandleFunc("/ShiftWorldView", HandleKeyPress(&ControllerContainer))
 	http.HandleFunc("/Click", HandleClick(&ControllerContainer))
 	http.HandleFunc("/ResetWorld", ResetWorld(&ControllerContainer))
@@ -217,7 +218,7 @@ func HandleKeyPress(ControllerContainer *ControllerContainer) func(w http.Respon
 		key, err := strconv.ParseInt(keydown, 10, 64)
 
 		if err == nil {
-			ControllerContainer.Selected().KeyPress(world.Keys(key))
+			ControllerContainer.Selected().KeyPress(controllers.Keys(key))
 		}
 		w.WriteHeader(200)
 	}
