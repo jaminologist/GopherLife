@@ -22,7 +22,7 @@ type FoodContainer interface {
 	HasFood(x int, y int) (*Food, bool)
 }
 
-type Containable interface {
+type Container interface {
 	Contains(x int, y int) bool
 }
 

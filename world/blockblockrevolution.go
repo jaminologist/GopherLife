@@ -13,7 +13,7 @@ import (
 type BlockBlockRevolutionMap struct {
 	grid [][]*BlockBlockRevolutionTile
 	Dimensions
-	Containable
+	Container
 	CurrentTetromino Tetromino
 
 	newBlockFunctions []func(int, int, BlockInserterAndRemover) (Tetromino, bool)
@@ -53,7 +53,7 @@ func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap
 	qa := NewBasicActionQueue(1)
 
 	bbrm := BlockBlockRevolutionMap{
-		Containable:  &r,
+		Container:    &r,
 		Dimensions:   d,
 		ActionQueuer: &qa,
 		grid:         grid,
@@ -254,7 +254,7 @@ func (bbrm *BlockBlockRevolutionMap) AddNewBlock() bool {
 }
 
 type BlockInserterAndRemover interface {
-	Containable
+	Container
 	InsertBlock(x int, y int, b *Block) bool
 	ContainsBlock(x int, y int) (*Block, bool)
 	RemoveBlock(x int, y int)

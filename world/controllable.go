@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopherlife/colors"
+	"gopherlife/renderers"
 	"image/color"
 	"net/url"
 	"strconv"
@@ -47,7 +48,7 @@ const (
 
 type GopherMapController struct {
 	*GopherMap
-	*Renderer
+	*renderers.GridRenderer
 	CreateNew func(Statistics) *GopherMap
 }
 
@@ -67,21 +68,21 @@ var (
 
 func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
 	gMap := CreateWorldCustom(stats)
-	renderer := NewRenderer(100, 100)
+	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
-		GopherMap: gMap,
-		Renderer:  &renderer,
-		CreateNew: CreateWorldCustom,
+		GopherMap:    gMap,
+		GridRenderer: &renderer,
+		CreateNew:    CreateWorldCustom,
 	}
 }
 
 func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController {
 	gMap := CreatePartitionTileMapCustom(stats)
-	renderer := NewRenderer(100, 100)
+	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
-		GopherMap: gMap,
-		Renderer:  &renderer,
-		CreateNew: CreatePartitionTileMapCustom,
+		GopherMap:    gMap,
+		GridRenderer: &renderer,
+		CreateNew:    CreatePartitionTileMapCustom,
 	}
 }
 
@@ -98,8 +99,8 @@ func (controller *GopherMapController) Click(x int, y int) {
 		_, ok := controller.SelectEntity(x, y)
 
 		if !ok {
-			controller.Renderer.StartX = x - controller.Renderer.RenderSizeX/2
-			controller.Renderer.StartY = y - controller.Renderer.RenderSizeY/2
+			controller.GridRenderer.StartX = x - controller.GridRenderer.Width/2
+			controller.GridRenderer.StartY = y - controller.GridRenderer.Height/2
 		}
 	}
 
@@ -118,13 +119,13 @@ func (controller *GopherMapController) KeyPress(key Keys) {
 	case PKey:
 		controller.TogglePause()
 	case LeftArrow:
-		controller.ShiftRenderer(-1, 0)
+		controller.Shift(-1, 0)
 	case RightArrow:
-		controller.ShiftRenderer(1, 0)
+		controller.Shift(1, 0)
 	case UpArrow:
-		controller.ShiftRenderer(0, -1)
+		controller.Shift(0, -1)
 	case DownArrow:
-		controller.ShiftRenderer(0, 1)
+		controller.Shift(0, 1)
 	}
 }
 
@@ -191,18 +192,19 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 
 }
 
+type GopherMapRender struct {
+	SelectedGopher *Gopher
+	renderers.Render
+}
+
 func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 
 	if controller.SelectedGopher != nil {
-		controller.Renderer.StartX = controller.SelectedGopher.Position.GetX() - controller.Renderer.RenderSizeX/2
-		controller.Renderer.StartY = controller.SelectedGopher.Position.GetY() - controller.Renderer.RenderSizeY/2
+		controller.GridRenderer.StartX = controller.SelectedGopher.Position.GetX() - controller.GridRenderer.Width/2
+		controller.GridRenderer.StartY = controller.SelectedGopher.Position.GetY() - controller.GridRenderer.Height/2
 	}
 
-	render := controller.Renderer.RenderWorld(controller)
-
-	if controller.SelectedGopher != nil {
-		render.SelectedGopher = controller.SelectedGopher
-	}
+	render := controller.GridRenderer.Draw(controller)
 
 	stats := controller.Stats()
 	diagnostics := controller.Diagnostics()
@@ -217,7 +219,14 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 
 	render.WorldRender = renderString
 
-	return json.Marshal(render)
+	gmr := GopherMapRender{
+		Render: render,
+	}
+	if controller.SelectedGopher != nil {
+		gmr.SelectedGopher = controller.SelectedGopher
+	}
+
+	return json.Marshal(gmr)
 }
 
 func (controller *GopherMapController) PageLayout() WorldPageData {
@@ -310,7 +319,7 @@ type SpiralMapController struct {
 	NoPlayerInput
 	Statistics
 	*SpiralMap
-	*Renderer
+	*renderers.GridRenderer
 }
 
 func NewSpiralMapController(stats Statistics) SpiralMapController {
@@ -324,12 +333,12 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 		GopherBirthRate:        7,
 	}
 
-	renderer := NewRenderer(75, 75)
-	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+	renderer := renderers.NewRenderer(75, 75)
+	renderer.Shift(stats.Width/2-renderer.Width/2, stats.Height/2-renderer.Height/2)
 
 	return SpiralMapController{
-		Renderer:   &renderer,
-		Statistics: stats,
+		GridRenderer: &renderer,
+		Statistics:   stats,
 	}
 }
 
@@ -341,7 +350,7 @@ func (controller *SpiralMapController) Start() {
 }
 
 func (controller *SpiralMapController) MarshalJSON() ([]byte, error) {
-	return json.Marshal(controller.Renderer.RenderWorld(controller))
+	return json.Marshal(controller.GridRenderer.Draw(controller))
 }
 
 func (controller *SpiralMapController) RenderTile(x int, y int) color.RGBA {
@@ -370,7 +379,7 @@ type FireWorksController struct {
 	NoPlayerInput
 	Statistics
 	*GopherMap
-	*Renderer
+	*renderers.GridRenderer
 }
 
 func NewFireWorksController(stats Statistics) FireWorksController {
@@ -384,12 +393,12 @@ func NewFireWorksController(stats Statistics) FireWorksController {
 		GopherBirthRate:        25,
 	}
 
-	renderer := NewRenderer(400, 150)
-	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+	renderer := renderers.NewRenderer(400, 150)
+	renderer.Shift(stats.Width/2-renderer.Width/2, stats.Height/2-renderer.Height/2)
 
 	return FireWorksController{
-		Statistics: stats,
-		Renderer:   &renderer,
+		Statistics:   stats,
+		GridRenderer: &renderer,
 	}
 }
 
@@ -400,7 +409,7 @@ func (controller *FireWorksController) Start() {
 }
 
 func (controller *FireWorksController) MarshalJSON() ([]byte, error) {
-	return json.Marshal(controller.Renderer.RenderWorld(controller))
+	return json.Marshal(controller.GridRenderer.Draw(controller))
 }
 
 func (controller *FireWorksController) RenderTile(x int, y int) color.RGBA {
@@ -425,7 +434,7 @@ type CollisionMapController struct {
 	NoPlayerInput
 	Statistics
 	*CollisionMap
-	*Renderer
+	*renderers.GridRenderer
 	CreateNew  func(Statistics, bool) CollisionMap
 	IsDiagonal bool
 }
@@ -439,14 +448,14 @@ func NewCollisionMapController(stats Statistics) CollisionMapController {
 		MaximumNumberOfGophers: 100000,
 	}
 
-	renderer := NewRenderer(100, 100)
-	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+	renderer := renderers.NewRenderer(100, 100)
+	renderer.Shift(stats.Width/2-renderer.Width/2, stats.Height/2-renderer.Height/2)
 
 	return CollisionMapController{
-		Statistics: stats,
-		Renderer:   &renderer,
-		CreateNew:  NewCollisionMap,
-		IsDiagonal: false,
+		Statistics:   stats,
+		GridRenderer: &renderer,
+		CreateNew:    NewCollisionMap,
+		IsDiagonal:   false,
 	}
 }
 
@@ -458,7 +467,7 @@ func (controller *CollisionMapController) Start() {
 }
 
 func (controller *CollisionMapController) MarshalJSON() ([]byte, error) {
-	return json.Marshal(controller.Renderer.RenderWorld(controller))
+	return json.Marshal(controller.GridRenderer.Draw(controller))
 }
 
 func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
@@ -532,15 +541,15 @@ func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController 
 		MaximumNumberOfGophers: 100000,
 	}
 
-	renderer := NewRenderer(100, 100)
+	renderer := renderers.NewRenderer(100, 100)
 
-	renderer.ShiftRenderer(stats.Width/2-renderer.RenderSizeX/2, stats.Height/2-renderer.RenderSizeY/2)
+	renderer.Shift(stats.Width/2-renderer.Width/2, stats.Height/2-renderer.Height/2)
 
 	return CollisionMapController{
-		Statistics: stats,
-		Renderer:   &renderer,
-		CreateNew:  NewCollisionMap,
-		IsDiagonal: true,
+		Statistics:   stats,
+		GridRenderer: &renderer,
+		CreateNew:    NewCollisionMap,
+		IsDiagonal:   true,
 	}
 }
 
@@ -569,7 +578,7 @@ type SnakeMapController struct {
 	FrameSpeed   int
 	ClickToBegin bool
 	*SnakeMap
-	*Renderer
+	*renderers.GridRenderer
 }
 
 func NewSnakeMapController(stats Statistics) SnakeMapController {
@@ -579,13 +588,13 @@ func NewSnakeMapController(stats Statistics) SnakeMapController {
 		Height: 35,
 	}
 
-	renderer := NewRenderer(50, 50)
-	renderer.ShiftRenderer(d.Width/2-renderer.RenderSizeX/2, d.Height/2-renderer.RenderSizeY/2)
+	renderer := renderers.NewRenderer(50, 50)
+	renderer.Shift(d.Width/2-renderer.Width/2, d.Height/2-renderer.Height/2)
 
 	return SnakeMapController{
-		Dimensions: d,
-		Renderer:   &renderer,
-		FrameSpeed: 10,
+		Dimensions:   d,
+		GridRenderer: &renderer,
+		FrameSpeed:   10,
 	}
 }
 
@@ -598,7 +607,7 @@ func (controller *SnakeMapController) Start() {
 
 func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
 
-	render := controller.Renderer.RenderWorld(controller)
+	render := controller.GridRenderer.Draw(controller)
 	render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
 
 	if controller.SnakeMap.IsGameOver {
@@ -688,7 +697,7 @@ type BlockBlockRevolutionController struct {
 	FrameSpeed   int
 	ClickToBegin bool
 	*BlockBlockRevolutionMap
-	*Renderer
+	*renderers.GridRenderer
 }
 
 func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
@@ -698,13 +707,13 @@ func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
 		Height: 20,
 	}
 
-	renderer := NewRenderer(50, 50)
-	renderer.ShiftRenderer(d.Width/2-renderer.RenderSizeX/2, d.Height/2-renderer.RenderSizeY/2)
+	renderer := renderers.NewRenderer(50, 50)
+	renderer.Shift(d.Width/2-renderer.Width/2, d.Height/2-renderer.Height/2)
 
 	return BlockBlockRevolutionController{
-		Dimensions: d,
-		Renderer:   &renderer,
-		FrameSpeed: 10,
+		Dimensions:   d,
+		GridRenderer: &renderer,
+		FrameSpeed:   10,
 	}
 
 }
@@ -718,7 +727,7 @@ func (controller *BlockBlockRevolutionController) Start() {
 
 func (controller *BlockBlockRevolutionController) MarshalJSON() ([]byte, error) {
 
-	render := controller.Renderer.RenderWorld(controller)
+	render := controller.GridRenderer.Draw(controller)
 	//render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
 
 	/*if controller.SnakeMap.IsGameOver {

@@ -43,7 +43,10 @@ function ScrollCanvas(event, CanvasInformation){
 function UpdateWorldDisplay(data, CanvasInformation) {
     $("#worldDiv").html(data.WorldRender)
     DrawGrid(data.Grid, CanvasInformation)
-    DisplaySelectedGopher(data.SelectedGopher)
+
+    if (typeof(data.SelectedGopher) !== "undefined"){
+        DisplaySelectedGopher(data.SelectedGopher)
+    }
 }
 
 
