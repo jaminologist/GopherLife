@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"testing"
 )
 
@@ -25,7 +25,7 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
 	var tileMap = CreatePartitionTileMapCustom(stats)
 
-	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	gopher := NewGopher("a", geometry.NewCoordinate(1, 2))
 	tileMap.InsertGopher(1, 2, &gopher)
 
 	tileMap.ActionQueuer.Add(func() {
@@ -60,7 +60,7 @@ func TestPartitionTileMap_RemoveGopher(t *testing.T) {
 
 	var tileMap = CreatePartitionTileMapCustom(stats)
 
-	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	gopher := NewGopher("a", geometry.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
 	bool := tileMap.RemoveGopher(1, 2)

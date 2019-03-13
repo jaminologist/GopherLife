@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"image/color"
 	"math/rand"
 	"sync"
@@ -21,7 +21,7 @@ type CollisionMap struct {
 }
 
 type ColliderTile struct {
-	Position
+	geometry.Coordinates
 	c *Collider
 }
 
@@ -53,7 +53,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 	collisionMap := CollisionMap{
 		ActionQueuer:    &qa,
 		WaitGroup:       &wg,
-		Container:     &rect,
+		Container:       &rect,
 		ActiveColliders: make(chan *Collider, statistics.NumberOfGophers*2),
 		IsDiagonal:      isDiagonal,
 	}
@@ -65,7 +65,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 
 		for j := 0; j < statistics.Height; j++ {
 			tile := ColliderTile{
-				Position: Position{
+				Coordinates: geometry.Coordinates{
 					X: i,
 					Y: j,
 				},
@@ -74,7 +74,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 		}
 	}
 
-	keys := calc.GenerateRandomizedCoordinateArray(0, 0,
+	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
 		statistics.Width, statistics.Height)
 
 	count := 0
@@ -194,7 +194,7 @@ func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider
 }
 
 type Collider struct {
-	Position
+	geometry.Coordinates
 	ColliderWorldActions
 	Color color.RGBA
 
@@ -230,7 +230,7 @@ func (collider *Collider) ChangeDirection() {
 
 	} else {
 
-		if calc.Abs(collider.velX) > 0 {
+		if geometry.Abs(collider.velX) > 0 {
 			i := rand.Intn(2)
 
 			if i == 0 {

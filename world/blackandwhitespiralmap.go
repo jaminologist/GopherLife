@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"gopherlife/names"
 	"sync"
 )
@@ -9,7 +9,7 @@ import (
 //SpiralMap spins right round
 type SpiralMap struct {
 	TileContainer
-	InsertableGophers
+	GopherInserter
 	ActionQueuer
 
 	ActiveActors chan *SpiralGopher
@@ -31,7 +31,7 @@ func NewSpiralMap(stats Statistics) SpiralMap {
 	spiralMap.ActionQueuer = &qa
 
 	spiralMap.TileContainer = &b2d
-	spiralMap.InsertableGophers = &b2d
+	spiralMap.GopherInserter = &b2d
 
 	spiralMap.Statistics = stats
 
@@ -87,7 +87,7 @@ func (spiralMap *SpiralMap) Update() bool {
 
 func (spiralMap *SpiralMap) MoveGopher(gopher *Gopher, moveX int, moveY int) bool {
 
-	currentPosition := calc.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
+	currentPosition := geometry.Coordinates{X: gopher.Position.X, Y: gopher.Position.Y}
 	targetPosition := gopher.Position.RelativeCoordinate(moveX, moveY)
 
 	if spiralMap.InsertGopher(targetPosition.GetX(), targetPosition.GetY(), gopher) {
@@ -100,12 +100,12 @@ func (spiralMap *SpiralMap) MoveGopher(gopher *Gopher, moveX int, moveY int) boo
 
 func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 
-	gopher := NewGopher(names.CuteName(), calc.Coordinates{0, 0})
+	gopher := NewGopher(names.CuteName(), geometry.Coordinates{0, 0})
 
 	//Commented out for cool spiral effect 1
 	spiralMap.InsertGopher(spiralMap.Width/2, spiralMap.Height/2, &gopher)
 
-	spiral := calc.NewSpiral(spiralMap.Width, spiralMap.Height)
+	spiral := geometry.NewSpiral(spiralMap.Width, spiralMap.Height)
 
 	sg := SpiralGopher{
 		TileContainer:   spiralMap,
@@ -136,7 +136,7 @@ type SpiralGopher struct {
 	MoveableGophers
 	*Statistics
 	*Gopher
-	*calc.Spiral
+	*geometry.Spiral
 }
 
 //Cool Effect 2

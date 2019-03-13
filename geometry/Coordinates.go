@@ -1,4 +1,4 @@
-package calc
+package geometry
 
 import (
 	"fmt"
@@ -52,6 +52,11 @@ func Add(c Coordinates, c2 Coordinates) Coordinates {
 }
 
 func (c *Coordinates) Set(X int, Y int) {
+	c.X = X
+	c.Y = Y
+}
+
+func (c *Coordinates) SetPosition(X int, Y int) {
 	c.X = X
 	c.Y = Y
 }
@@ -128,7 +133,7 @@ func GenerateCoordinateArray(startX int, startY int, endX int, endY int) []Coord
 
 func GenerateRandomizedCoordinateArray(startX int, startY int, endX int, endY int) []Coordinates {
 
-	slice := GenerateCoordinateArray(0, 0, endX, endY)
+	slice := GenerateCoordinateArray(startX, startY, endX, endY)
 
 	rand.Shuffle(len(slice), func(i, j int) {
 		slice[i], slice[j] = slice[j], slice[i]
