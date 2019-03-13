@@ -11,7 +11,7 @@ var collisionMapSpeed = 1
 
 type CollisionMap struct {
 	grid [][]*ColliderTile
-	Containable
+	Container
 	ActionQueuer
 	*sync.WaitGroup
 
@@ -53,7 +53,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 	collisionMap := CollisionMap{
 		ActionQueuer:    &qa,
 		WaitGroup:       &wg,
-		Containable:     &rect,
+		Container:     &rect,
 		ActiveColliders: make(chan *Collider, statistics.NumberOfGophers*2),
 		IsDiagonal:      isDiagonal,
 	}

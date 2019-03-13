@@ -8,7 +8,7 @@ import (
 
 type SnakeMap struct {
 	ActionQueuer
-	Containable
+	Container
 	Dimensions
 
 	grid [][]*SnakeMapTile
@@ -91,7 +91,7 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
 	snakeMap := SnakeMap{
 		grid:         grid,
-		Containable:  &r,
+		Container:  &r,
 		ActionQueuer: &baq,
 		Dimensions:   d,
 		IsGameOver:   false,
