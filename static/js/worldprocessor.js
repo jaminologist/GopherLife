@@ -68,7 +68,7 @@ function CanvasInformation(){
 
 function OpenWorld(CanvasInformation) {
     $.ajax({
-        url: '/ProcessWorld',
+        url: '/Update',
         dataType: 'json',
         type: 'GET',
         success: function (data) {

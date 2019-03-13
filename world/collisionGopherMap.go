@@ -48,7 +48,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 	qa := NewBasicActionQueue(statistics.NumberOfGophers * 2)
 	var wg sync.WaitGroup
 
-	rect := NewRectangle(0, 0, statistics.Width, statistics.Height)
+	rect := geometry.NewRectangle(0, 0, statistics.Width, statistics.Height)
 
 	collisionMap := CollisionMap{
 		ActionQueuer:    &qa,

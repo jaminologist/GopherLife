@@ -21,8 +21,7 @@ type Spiral struct {
 	maxI int
 }
 
-//NewSpiral Creates a new spiral that can be used to step through coordinates of the
-//the given width and height
+//NewSpiral Creates a new spiral that can be used to step through coordinates of the given width and height. Coordinates always start from (0,0)
 func NewSpiral(width int, height int) Spiral {
 
 	return Spiral{
@@ -43,34 +42,34 @@ func NewSpiral(width int, height int) Spiral {
 //Next Gets the next step in the spiral path. If there is no next step, returns false
 func (s *Spiral) Next() (Coordinates, bool) {
 
-	var coords = Coordinates{}
-	var foundCoords = false
+	var c = Coordinates{}
+	var nextPositionFound = false
 
 	for s.i < s.maxI {
 
 		if ((-s.bigX < s.x) && (s.x <= s.bigX)) &&
 			((-s.bigY < s.y) && (s.y <= s.bigY)) {
-			coords.X, coords.Y = int(s.x), int(s.y)
-			foundCoords = true
+			c.X, c.Y = int(s.x), int(s.y)
+			nextPositionFound = true
 		}
 
 		if (s.x == s.y) || (s.x < 0 && s.x == -s.y) || (s.x > 0 && s.x == 1-s.y) {
-			s.dx, s.dy = -s.dy, s.dx
+			s.dx, s.dy = -s.dy, s.dx //Change direction of the spiral
 		}
 
 		s.x, s.y = s.x+s.dx, s.y+s.dy
 
 		s.i = s.i + 1
 
-		if foundCoords {
+		if nextPositionFound {
 			break
 		}
 
 	}
 
-	if !foundCoords {
-		return coords, false
+	if !nextPositionFound {
+		return c, false
 	}
 
-	return coords, true
+	return c, true
 }

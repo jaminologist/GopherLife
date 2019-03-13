@@ -15,7 +15,7 @@ type SnakeMap struct {
 	grid [][]*SnakeMapTile
 
 	SnakeHead  *SnakePart
-	Direction  Direction
+	Direction  geometry.Direction
 	IsGameOver bool
 	Score      int
 
@@ -30,48 +30,9 @@ type SnakeMapTile struct {
 	SnakeFood *SnakeFood
 }
 
-type Direction int
-
-const (
-	Up    Direction = 1
-	Left  Direction = 2
-	Down  Direction = 3
-	Right Direction = 4
-)
-
-func (d Direction) TurnClockWise90() Direction {
-
-	switch d {
-	case Up:
-		return Right
-	case Right:
-		return Down
-	case Down:
-		return Left
-	case Left:
-		return Up
-	}
-	panic("Direction not covered")
-}
-
-func (d Direction) TurnAntiClockWise90() Direction {
-
-	switch d {
-	case Up:
-		return Left
-	case Right:
-		return Up
-	case Down:
-		return Right
-	case Left:
-		return Down
-	}
-	panic("Direction not covered")
-}
-
 func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 
-	r := NewRectangle(0, 0, d.Width, d.Height)
+	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
 	grid := make([][]*SnakeMapTile, d.Width)
 
 	for i := 0; i < d.Width; i++ {
@@ -124,7 +85,7 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 	snakeMap.AddNewSnakeFoodToMap(0, 0)
 
 	snakeMap.SnakeHead = &snakeHead
-	snakeMap.Direction = Up
+	snakeMap.Direction = geometry.Up
 
 	return snakeMap
 }
@@ -154,13 +115,13 @@ func (sm *SnakeMap) MoveSnake() bool {
 	x, y := 0, 0
 
 	switch sm.Direction {
-	case Left:
+	case geometry.Left:
 		x = -1
-	case Right:
+	case geometry.Right:
 		x = 1
-	case Up:
+	case geometry.Up:
 		y = 1
-	case Down:
+	case geometry.Down:
 		y = -1
 	}
 
@@ -220,25 +181,25 @@ func (sm *SnakeMap) MoveSnake() bool {
 
 }
 
-func (smt *SnakeMap) ChangeDirection(d Direction) {
+func (smt *SnakeMap) ChangeDirection(d geometry.Direction) {
 
-	setDirection := func(d Direction) {
+	setDirection := func(d geometry.Direction) {
 		smt.Add(func() {
 			smt.Direction = d
 		})
 	}
 
 	switch d {
-	case Left:
+	case geometry.Left:
 		fallthrough
-	case Right:
-		if smt.Direction == Up || smt.Direction == Down {
+	case geometry.Right:
+		if smt.Direction == geometry.Up || smt.Direction == geometry.Down {
 			setDirection(d)
 		}
-	case Up:
+	case geometry.Up:
 		fallthrough
-	case Down:
-		if smt.Direction == Left || smt.Direction == Right {
+	case geometry.Down:
+		if smt.Direction == geometry.Left || smt.Direction == geometry.Right {
 			setDirection(d)
 		}
 	}
@@ -358,6 +319,10 @@ type SnakePart struct {
 func (sp *SnakePart) Attach(partToAttach *SnakePart) {
 	sp.snakePartBehind = partToAttach
 	partToAttach.snakePartInFront = sp
+}
+
+func (sp *SnakePart) HasPartInStomach() bool {
+	return sp.snakePartInStomach != nil
 }
 
 type Wall struct {

@@ -26,30 +26,6 @@ type Container interface {
 	Contains(x int, y int) bool
 }
 
-type Rectangle struct {
-	x      int
-	y      int
-	width  int
-	height int
-}
-
-func NewRectangle(x int, y int, width int, height int) Rectangle {
-
-	return Rectangle{
-		x:      x,
-		y:      y,
-		width:  width,
-		height: height,
-	}
-}
-
-func (r *Rectangle) Contains(x int, y int) bool {
-	if x < r.x || x >= r.width+r.x || y < r.y || y >= r.height+r.y {
-		return false
-	}
-	return true
-}
-
 type Basic2DContainer struct {
 	grid   [][]*Tile
 	x      int

@@ -38,11 +38,18 @@ func TestGenerateCoordinateArray(t *testing.T) {
 		want []Coordinates
 	}{
 		{
-			name: "Test",
+			name: "Origin Start",
 			args: args{
 				0, 0, 2, 2,
 			},
 			want: []Coordinates{NewCoordinate(0, 0), NewCoordinate(0, 1), NewCoordinate(1, 0), NewCoordinate(1, 1)},
+		},
+		{
+			name: "Negative Start",
+			args: args{
+				-1, -1, 1, 1,
+			},
+			want: []Coordinates{NewCoordinate(-1, -1), NewCoordinate(-1, 0), NewCoordinate(0, -1), NewCoordinate(0, 0)},
 		},
 	}
 	for _, tt := range tests {

@@ -1,18 +1,20 @@
-package world
+package controllers
 
 import (
 	"encoding/json"
 	"fmt"
 	"gopherlife/colors"
+	"gopherlife/geometry"
 	"gopherlife/renderers"
+	"gopherlife/world"
 	"image/color"
 	"net/url"
 	"strconv"
 	"strings"
 )
 
-//Controller used to define user controls for a world
-type Controller interface {
+//UserInputHandler used to handle user inputs for a world
+type UserInputHandler interface {
 	Click(x int, y int)
 	KeyPress(key Keys)
 }
@@ -47,9 +49,9 @@ const (
 )
 
 type GopherMapController struct {
-	*GopherMap
+	*world.GopherMap
 	*renderers.GridRenderer
-	CreateNew func(Statistics) *GopherMap
+	CreateNew func(world.Statistics) *world.GopherMap
 }
 
 var (
@@ -66,23 +68,23 @@ var (
 	grassColor         = color.RGBA{65, 119, 15, 1}
 )
 
-func NewGopherMapWithSpiralSearch(stats Statistics) GopherMapController {
-	gMap := CreateWorldCustom(stats)
+func NewGopherMapWithSpiralSearch(stats world.Statistics) GopherMapController {
+	gMap := world.CreateWorldCustom(stats)
 	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap:    gMap,
 		GridRenderer: &renderer,
-		CreateNew:    CreateWorldCustom,
+		CreateNew:    world.CreateWorldCustom,
 	}
 }
 
-func NewGopherMapWithParitionGridAndSearch(stats Statistics) GopherMapController {
-	gMap := CreatePartitionTileMapCustom(stats)
+func NewGopherMapWithParitionGridAndSearch(stats world.Statistics) GopherMapController {
+	gMap := world.CreatePartitionTileMapCustom(stats)
 	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap:    gMap,
 		GridRenderer: &renderer,
-		CreateNew:    CreatePartitionTileMapCustom,
+		CreateNew:    world.CreatePartitionTileMapCustom,
 	}
 }
 
@@ -129,15 +131,15 @@ func (controller *GopherMapController) KeyPress(key Keys) {
 	}
 }
 
-func TileToColor(tile *Tile, isSelected bool) color.RGBA {
+func TileToColor(tile *world.Tile, isSelected bool) color.RGBA {
 
 	switch {
-	case tile.isEmpty():
+	case tile.IsEmpty():
 		return grassColor
 	case tile.Gopher != nil:
 
 		switch tile.Gopher.Gender {
-		case Male:
+		case world.Male:
 			if isSelected {
 				return maleGopherSelectedColor
 			} else if !tile.Gopher.IsMature() {
@@ -145,7 +147,7 @@ func TileToColor(tile *Tile, isSelected bool) color.RGBA {
 			} else {
 				return maleGopherColor
 			}
-		case Female:
+		case world.Female:
 			if isSelected {
 				return femaleGopherSelectedColor
 			} else if !tile.Gopher.IsMature() {
@@ -172,7 +174,7 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 	if tile, ok := controller.Tile(x, y); ok {
 
 		switch {
-		case tile.isEmpty():
+		case tile.IsEmpty():
 			return grassColor
 		case tile.Gopher != nil:
 			isSelected := false
@@ -193,7 +195,7 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 }
 
 type GopherMapRender struct {
-	SelectedGopher *Gopher
+	SelectedGopher *world.Gopher
 	renderers.Render
 }
 
@@ -212,10 +214,10 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	renderString := ""
 	renderString += "<br />"
 	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", stats.NumberOfGophers)
-	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", diagnostics.processStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", diagnostics.gopherStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.inputStopWatch.GetAverage().String())
-	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", diagnostics.globalStopWatch.GetCurrentElaspedTime().String())
+	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", diagnostics.ProcessStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", diagnostics.GopherStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.InputStopWatch.GetAverage().String())
+	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", diagnostics.GlobalStopWatch.GetCurrentElaspedTime().String())
 
 	render.WorldRender = renderString
 
@@ -290,7 +292,7 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 		birthRate, _ := strconv.ParseInt(values.Get("birthRate"), 10, 64)
 		maxPopulation, _ := strconv.ParseInt(values.Get("maxPopulation"), 10, 64)
 
-		stats := Statistics{
+		stats := world.Statistics{
 			Width:                  int(width),
 			Height:                 int(height),
 			NumberOfGophers:        int(numberOfGophers),
@@ -317,14 +319,14 @@ func (controller *NoPlayerInput) KeyPress(key Keys) {
 
 type SpiralMapController struct {
 	NoPlayerInput
-	Statistics
-	*SpiralMap
+	world.Statistics
+	*world.SpiralMap
 	*renderers.GridRenderer
 }
 
-func NewSpiralMapController(stats Statistics) SpiralMapController {
+func NewSpiralMapController(stats world.Statistics) SpiralMapController {
 
-	stats = Statistics{
+	stats = world.Statistics{
 		Width:                  50,
 		Height:                 50,
 		NumberOfGophers:        5,
@@ -344,7 +346,7 @@ func NewSpiralMapController(stats Statistics) SpiralMapController {
 
 func (controller *SpiralMapController) Start() {
 	if controller.SpiralMap == nil {
-		sMap := NewSpiralMap(controller.Statistics)
+		sMap := world.NewSpiralMap(controller.Statistics)
 		controller.SpiralMap = &sMap
 	}
 }
@@ -370,27 +372,27 @@ func (controller *SpiralMapController) PageLayout() WorldPageData {
 }
 
 func (controller *SpiralMapController) HandleForm(values url.Values) bool {
-	sm := NewSpiralMapController(Statistics{}).SpiralMap
+	sm := NewSpiralMapController(world.Statistics{}).SpiralMap
 	controller.SpiralMap = sm
 	return false
 }
 
 type FireWorksController struct {
 	NoPlayerInput
-	Statistics
-	*GopherMap
+	world.Statistics
+	*world.GopherMap
 	*renderers.GridRenderer
 }
 
-func NewFireWorksController(stats Statistics) FireWorksController {
+func NewFireWorksController(stats world.Statistics) FireWorksController {
 
-	stats = Statistics{
+	stats = world.Statistics{
 		Width:                  400,
 		Height:                 200,
-		NumberOfGophers:        1000,
-		NumberOfFood:           5000,
+		NumberOfGophers:        2000,
+		NumberOfFood:           1000,
 		MaximumNumberOfGophers: 100000,
-		GopherBirthRate:        25,
+		GopherBirthRate:        35,
 	}
 
 	renderer := renderers.NewRenderer(400, 150)
@@ -404,7 +406,7 @@ func NewFireWorksController(stats Statistics) FireWorksController {
 
 func (controller *FireWorksController) Start() {
 	if controller.GopherMap == nil {
-		controller.GopherMap = CreateWorldCustom(controller.Statistics)
+		controller.GopherMap = world.CreateWorldCustom(controller.Statistics)
 	}
 }
 
@@ -414,7 +416,24 @@ func (controller *FireWorksController) MarshalJSON() ([]byte, error) {
 
 func (controller *FireWorksController) RenderTile(x int, y int) color.RGBA {
 	if tile, ok := controller.Tile(x, y); ok {
-		return TileToColor(tile, false)
+
+		if tile.HasGopher() {
+
+			if !tile.Gopher.IsMature() {
+				if tile.Gopher.Gender == world.Male {
+					return colors.Cyan
+				} else {
+					return colors.Orange
+				}
+			}
+
+			return colors.Black
+
+		} else if tile.HasFood() {
+			return colors.White
+		}
+
+		return color.RGBA{0, 0, 0, 1}
 	} else {
 		return color.RGBA{0, 0, 0, 1}
 	}
@@ -425,23 +444,23 @@ func (controller *FireWorksController) PageLayout() WorldPageData {
 }
 
 func (controller *FireWorksController) HandleForm(values url.Values) bool {
-	sm := NewFireWorksController(Statistics{}).GopherMap
+	sm := NewFireWorksController(world.Statistics{}).GopherMap
 	controller.GopherMap = sm
 	return false
 }
 
 type CollisionMapController struct {
 	NoPlayerInput
-	Statistics
-	*CollisionMap
+	world.Statistics
+	*world.CollisionMap
 	*renderers.GridRenderer
-	CreateNew  func(Statistics, bool) CollisionMap
+	CreateNew  func(world.Statistics, bool) world.CollisionMap
 	IsDiagonal bool
 }
 
-func NewCollisionMapController(stats Statistics) CollisionMapController {
+func NewCollisionMapController(stats world.Statistics) CollisionMapController {
 
-	stats = Statistics{
+	stats = world.Statistics{
 		Width:                  75,
 		Height:                 75,
 		NumberOfGophers:        500,
@@ -454,7 +473,7 @@ func NewCollisionMapController(stats Statistics) CollisionMapController {
 	return CollisionMapController{
 		Statistics:   stats,
 		GridRenderer: &renderer,
-		CreateNew:    NewCollisionMap,
+		CreateNew:    world.NewCollisionMap,
 		IsDiagonal:   false,
 	}
 }
@@ -518,13 +537,13 @@ func (controller *CollisionMapController) HandleForm(values url.Values) bool {
 		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
 		numberOfGophers, _ := strconv.ParseInt(values.Get("numberOfGophers"), 10, 64)
 
-		stats := Statistics{
+		stats := world.Statistics{
 			Width:           int(width),
 			Height:          int(height),
 			NumberOfGophers: int(numberOfGophers),
 		}
 
-		gmc := NewCollisionMap(stats, controller.IsDiagonal)
+		gmc := world.NewCollisionMap(stats, controller.IsDiagonal)
 		controller.CollisionMap = &gmc
 		controller.Statistics = stats
 
@@ -532,9 +551,9 @@ func (controller *CollisionMapController) HandleForm(values url.Values) bool {
 	return true
 }
 
-func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController {
+func NewDiagonalCollisionMapController(stats world.Statistics) CollisionMapController {
 
-	stats = Statistics{
+	stats = world.Statistics{
 		Width:                  75,
 		Height:                 75,
 		NumberOfGophers:        500,
@@ -548,7 +567,7 @@ func NewDiagonalCollisionMapController(stats Statistics) CollisionMapController 
 	return CollisionMapController{
 		Statistics:   stats,
 		GridRenderer: &renderer,
-		CreateNew:    NewCollisionMap,
+		CreateNew:    world.NewCollisionMap,
 		IsDiagonal:   true,
 	}
 }
@@ -574,16 +593,16 @@ func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
 }
 
 type SnakeMapController struct {
-	Dimensions
+	world.Dimensions
 	FrameSpeed   int
 	ClickToBegin bool
-	*SnakeMap
+	*world.SnakeMap
 	*renderers.GridRenderer
 }
 
-func NewSnakeMapController(stats Statistics) SnakeMapController {
+func NewSnakeMapController(stats world.Statistics) SnakeMapController {
 
-	d := Dimensions{
+	d := world.Dimensions{
 		Width:  35,
 		Height: 35,
 	}
@@ -600,7 +619,7 @@ func NewSnakeMapController(stats Statistics) SnakeMapController {
 
 func (controller *SnakeMapController) Start() {
 	if controller.SnakeMap == nil {
-		sMap := NewSnakeMap(controller.Dimensions, controller.FrameSpeed)
+		sMap := world.NewSnakeMap(controller.Dimensions, controller.FrameSpeed)
 		controller.SnakeMap = &sMap
 	}
 }
@@ -624,7 +643,7 @@ func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
 	if sp, ok := controller.Tile(x, y); ok {
 		switch {
 		case sp.SnakePart != nil:
-			if sp.SnakePart.snakePartInStomach != nil {
+			if sp.SnakePart.HasPartInStomach() {
 				return colors.NokiaFoodGreen
 			} else {
 				return colors.NokiaBorder
@@ -654,7 +673,7 @@ func (controller *SnakeMapController) HandleForm(values url.Values) bool {
 	fd := FormDataSnakeSlowDown(0, 0)
 	if strings.Contains(values.Encode(), fd.Name) {
 		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		sm := NewSnakeMap(controller.Dimensions, int(speed))
+		sm := world.NewSnakeMap(controller.Dimensions, int(speed))
 		controller.FrameSpeed = int(speed)
 		controller.SnakeMap = &sm
 
@@ -666,13 +685,13 @@ func (controller *SnakeMapController) HandleForm(values url.Values) bool {
 func (controller *SnakeMapController) KeyPress(key Keys) {
 	switch key {
 	case LeftArrow:
-		controller.SnakeMap.ChangeDirection(Left)
+		controller.SnakeMap.ChangeDirection(geometry.Left)
 	case RightArrow:
-		controller.SnakeMap.ChangeDirection(Right)
+		controller.SnakeMap.ChangeDirection(geometry.Right)
 	case UpArrow:
-		controller.SnakeMap.ChangeDirection(Up)
+		controller.SnakeMap.ChangeDirection(geometry.Up)
 	case DownArrow:
-		controller.SnakeMap.ChangeDirection(Down)
+		controller.SnakeMap.ChangeDirection(geometry.Down)
 	}
 }
 
@@ -693,16 +712,16 @@ func (controller *SnakeMapController) Click(x int, y int) {
 }
 
 type BlockBlockRevolutionController struct {
-	Dimensions
+	world.Dimensions
 	FrameSpeed   int
 	ClickToBegin bool
-	*BlockBlockRevolutionMap
+	*world.BlockBlockRevolutionMap
 	*renderers.GridRenderer
 }
 
 func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
 
-	d := Dimensions{
+	d := world.Dimensions{
 		Width:  10,
 		Height: 20,
 	}
@@ -720,7 +739,7 @@ func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
 
 func (controller *BlockBlockRevolutionController) Start() {
 	if controller.BlockBlockRevolutionMap == nil {
-		sMap := NewBlockBlockRevolutionMap(controller.Dimensions, controller.FrameSpeed)
+		sMap := world.NewBlockBlockRevolutionMap(controller.Dimensions, controller.FrameSpeed)
 		controller.BlockBlockRevolutionMap = &sMap
 	}
 }
@@ -766,7 +785,7 @@ func (controller *BlockBlockRevolutionController) HandleForm(values url.Values) 
 	fd := FormDataSnakeSlowDown(0, 0)
 	if strings.Contains(values.Encode(), fd.Name) {
 		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		bbrm := NewBlockBlockRevolutionMap(controller.Dimensions, int(speed))
+		bbrm := world.NewBlockBlockRevolutionMap(controller.Dimensions, int(speed))
 		controller.FrameSpeed = int(speed)
 		controller.BlockBlockRevolutionMap = &bbrm
 
