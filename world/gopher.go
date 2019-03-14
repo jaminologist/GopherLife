@@ -147,7 +147,7 @@ type GopherActor struct {
 	Searchable
 	GopherContainer
 	FoodContainer
-	PickableTiles
+	FoodPicker
 	MoveableGophers
 	ActorGeneration
 	GopherBirthRate int

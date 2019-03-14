@@ -112,7 +112,7 @@ func (tileMap *GopherMap) setUpTiles() {
 		Searchable:      tileMap.Searchable,
 		GopherContainer: tileMap.GopherContainer,
 		FoodContainer:   tileMap.FoodContainer,
-		PickableTiles:   tileMap,
+		FoodPicker:      tileMap,
 		MoveableGophers: tileMap,
 		ActorGeneration: tileMap.GopherGeneration,
 	}
@@ -174,7 +174,7 @@ func (tileMap *GopherMap) Diagnostics() *Diagnostics {
 	return &tileMap.diagnostics
 }
 
-type PickableTiles interface {
+type FoodPicker interface {
 	PickUpFood(x int, y int) (*Food, bool)
 }
 

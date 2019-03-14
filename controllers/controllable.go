@@ -650,7 +650,7 @@ func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
 			}
 		case sp.SnakeFood != nil:
 			return colors.NokiaBorder
-		case sp.Wall != nil:
+		case sp.SnakeWall != nil:
 			return colors.NokiaBorder
 		default:
 			return colors.NokiaGreen
@@ -661,7 +661,7 @@ func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
 
 func (controller *SnakeMapController) PageLayout() WorldPageData {
 	return WorldPageData{
-		PageTitle: "S N A K E L I F E",
+		PageTitle: "E L O N G A T I N G G O P H E R L I F E",
 		FormData: []FormData{
 			FormDataSnakeSlowDown(controller.FrameSpeed, 3),
 		},
