@@ -42,3 +42,19 @@ func (d Direction) TurnAntiClockWise90() Direction {
 	}
 	panic("Direction not covered")
 }
+
+//AddToPoint Adds the Direction to the X and Y value. The amount added is of distance 1
+func (d Direction) AddToPoint(x int, y int) (int, int) {
+
+	switch d {
+	case Up:
+		return x, y + 1
+	case Right:
+		return x + 1, y
+	case Down:
+		return x, y - 1
+	case Left:
+		return x - 1, y
+	}
+	panic("Direction not covered")
+}

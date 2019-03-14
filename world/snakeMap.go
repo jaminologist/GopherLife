@@ -26,19 +26,17 @@ type SnakeMap struct {
 type SnakeMapTile struct {
 	geometry.Coordinates
 	SnakePart *SnakePart
-	Wall      *Wall
+	SnakeWall *SnakeWall
 	SnakeFood *SnakeFood
 }
 
-func NewSnakeMap(d Dimensions, speed int) SnakeMap {
+func NewSnakeTileGrid(x int, y int, width int, height int) [][]*SnakeMapTile {
+	grid := make([][]*SnakeMapTile, width)
 
-	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
-	grid := make([][]*SnakeMapTile, d.Width)
+	for i := 0; i < width; i++ {
+		grid[i] = make([]*SnakeMapTile, height)
 
-	for i := 0; i < d.Width; i++ {
-		grid[i] = make([]*SnakeMapTile, d.Height)
-
-		for j := 0; j < d.Height; j++ {
+		for j := 0; j < height; j++ {
 			tile := SnakeMapTile{
 				Coordinates: geometry.NewCoordinate(i, j),
 			}
@@ -46,16 +44,30 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 		}
 	}
 
+	return grid
+}
+
+//NewEmptySnakeMap Creates an Empty Snake Map (No Snake, No Wall)
+func NewEmptySnakeMap(d Dimensions, speed int) SnakeMap {
+	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
 	baq := NewBasicActionQueue(1)
 
 	snakeMap := SnakeMap{
-		grid:         grid,
+		grid:         NewSnakeTileGrid(0, 0, d.Width, d.Height),
 		Container:    &r,
 		ActionQueuer: &baq,
 		Dimensions:   d,
 		IsGameOver:   false,
 		FrameSpeed:   time.Duration(speed),
 	}
+
+	return snakeMap
+}
+
+//NewSnakeMap Creates a SnakeMap with a Snake and Walls surrounding the edges
+func NewSnakeMap(d Dimensions, speed int) SnakeMap {
+
+	snakeMap := NewEmptySnakeMap(d, speed)
 
 	snakeHead := SnakePart{}
 	startX, startY := d.Width/2, d.Height/2-5
@@ -67,19 +79,19 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 		snakePartInStomach := SnakePart{}
 		x, y := snakePartToAttachTo.GetX(), snakePartToAttachTo.GetY()-1
 		snakeMap.InsertSnakePart(x, y, &snakePartInStomach)
-		snakePartToAttachTo.Attach(&snakePartInStomach)
+		snakePartToAttachTo.AttachToBack(&snakePartInStomach)
 
 		snakePartToAttachTo = &snakePartInStomach
 	}
 
 	for i := 0; i < d.Width; i++ {
-		snakeMap.InsertSnakeWall(i, 0, &Wall{})
-		snakeMap.InsertSnakeWall(i, d.Height-1, &Wall{})
+		snakeMap.InsertSnakeWall(i, 0, &SnakeWall{})
+		snakeMap.InsertSnakeWall(i, d.Height-1, &SnakeWall{})
 	}
 
 	for i := 0; i < d.Height; i++ {
-		snakeMap.InsertSnakeWall(0, i, &Wall{})
-		snakeMap.InsertSnakeWall(d.Width-1, i, &Wall{})
+		snakeMap.InsertSnakeWall(0, i, &SnakeWall{})
+		snakeMap.InsertSnakeWall(d.Width-1, i, &SnakeWall{})
 	}
 
 	snakeMap.AddNewSnakeFoodToMap(0, 0)
@@ -112,22 +124,9 @@ func (sm *SnakeMap) Update() bool {
 
 func (sm *SnakeMap) MoveSnake() bool {
 
-	x, y := 0, 0
-
-	switch sm.Direction {
-	case geometry.Left:
-		x = -1
-	case geometry.Right:
-		x = 1
-	case geometry.Up:
-		y = 1
-	case geometry.Down:
-		y = -1
-	}
-
 	currentSnakePart := sm.SnakeHead
 
-	nextX, nextY := currentSnakePart.GetX()+x, currentSnakePart.GetY()+y
+	nextX, nextY := sm.Direction.AddToPoint(currentSnakePart.GetX(), currentSnakePart.GetY())
 
 	hasFood := sm.HasSnakeFood(nextX, nextY)
 
@@ -167,7 +166,7 @@ func (sm *SnakeMap) MoveSnake() bool {
 		if currentSnakePart.snakePartBehind == nil {
 
 			if currentSnakePart.snakePartInStomach != nil {
-				currentSnakePart.Attach(currentSnakePart.snakePartInStomach)
+				currentSnakePart.AttachToBack(currentSnakePart.snakePartInStomach)
 				currentSnakePart.snakePartInStomach = nil
 			}
 
@@ -243,7 +242,7 @@ func (smt *SnakeMap) InsertSnakeFood(x int, y int, sf *SnakeFood) bool {
 	return false
 }
 
-func (smt *SnakeMap) InsertSnakeWall(x int, y int, w *Wall) bool {
+func (smt *SnakeMap) InsertSnakeWall(x int, y int, w *SnakeWall) bool {
 	if smt.Contains(x, y) {
 		return smt.grid[x][y].InsertWall(w)
 	}
@@ -273,17 +272,17 @@ func (smt *SnakeMap) HasSnakeFood(x int, y int) bool {
 	return false
 }
 
-func (smt *SnakeMapTile) InsertWall(w *Wall) bool {
-	if smt.Wall == nil && smt.SnakeFood == nil && smt.SnakePart == nil {
+func (smt *SnakeMapTile) InsertWall(w *SnakeWall) bool {
+	if smt.SnakeWall == nil && smt.SnakeFood == nil && smt.SnakePart == nil {
 		w.SetPosition(smt.GetX(), smt.GetY())
-		smt.Wall = w
+		smt.SnakeWall = w
 		return true
 	}
 	return false
 }
 
 func (smt *SnakeMapTile) InsertSnakeFood(sf *SnakeFood) bool {
-	if smt.SnakeFood == nil && smt.Wall == nil && smt.SnakePart == nil {
+	if smt.SnakeFood == nil && smt.SnakeWall == nil && smt.SnakePart == nil {
 		sf.SetPosition(smt.GetX(), smt.GetY())
 		smt.SnakeFood = sf
 		return true
@@ -292,7 +291,7 @@ func (smt *SnakeMapTile) InsertSnakeFood(sf *SnakeFood) bool {
 }
 
 func (smt *SnakeMapTile) InsertSnakePart(sp *SnakePart) bool {
-	if smt.SnakePart == nil && smt.Wall == nil {
+	if smt.SnakePart == nil && smt.SnakeWall == nil {
 		sp.SetPosition(smt.GetX(), smt.GetY())
 		smt.SnakePart = sp
 		return true
@@ -316,19 +315,23 @@ type SnakePart struct {
 	snakePartInStomach *SnakePart
 }
 
-func (sp *SnakePart) Attach(partToAttach *SnakePart) {
+//AttachToBack Adds a SnakePart to the back of another SnakePart.
+func (sp *SnakePart) AttachToBack(partToAttach *SnakePart) {
 	sp.snakePartBehind = partToAttach
 	partToAttach.snakePartInFront = sp
 }
 
+//HasPartInStomach Return true is there is a SnakePart inside the Stomach
 func (sp *SnakePart) HasPartInStomach() bool {
 	return sp.snakePartInStomach != nil
 }
 
-type Wall struct {
+//SnakeWall Used in the Snake Game has an X and Y Coordinate
+type SnakeWall struct {
 	geometry.Coordinates
 }
 
+//SnakeFood Used in the Snake Game has an X and Y Coordinate
 type SnakeFood struct {
 	geometry.Coordinates
 }
