@@ -1,6 +1,7 @@
 package world
 
 import (
+	"gopherlife/colors"
 	"gopherlife/geometry"
 	"image/color"
 	"math/rand"
@@ -8,6 +9,8 @@ import (
 )
 
 var collisionMapSpeed = 1
+
+var colliderColors = []color.RGBA{colors.Red, colors.Blue, colors.Cyan, colors.Pink, colors.Yellow, colors.White}
 
 type CollisionMap struct {
 	grid [][]*ColliderTile
@@ -43,7 +46,8 @@ func (tile *ColliderTile) Clear() {
 	tile.c = nil
 }
 
-func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
+//NewEmptyCollisionMap Creates an Empty Collision Map
+func NewEmptyCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 
 	qa := NewBasicActionQueue(statistics.NumberOfGophers * 2)
 	var wg sync.WaitGroup
@@ -73,6 +77,14 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 			collisionMap.grid[i][j] = &tile
 		}
 	}
+
+	return collisionMap
+}
+
+//NewCollisionMap Creates a Populated Collision Map
+func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
+
+	collisionMap := NewEmptyCollisionMap(statistics, isDiagonal)
 
 	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
 		statistics.Width, statistics.Height)
@@ -114,6 +126,7 @@ func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 	return collisionMap
 }
 
+//Update all Active Colliders inside the Map
 func (collisionMap *CollisionMap) Update() bool {
 
 	numColliders := len(collisionMap.ActiveColliders)
@@ -147,6 +160,7 @@ type ColliderWorldActions interface {
 	MoveCollider(moveX int, moveY int, c *Collider) bool
 }
 
+//InsertCollider Sets x and y of Collider and places it into map
 func (collisionMap *CollisionMap) InsertCollider(x int, y int, c *Collider) bool {
 
 	if collisionMap.Contains(x, y) {
@@ -156,6 +170,7 @@ func (collisionMap *CollisionMap) InsertCollider(x int, y int, c *Collider) bool
 	return false
 }
 
+//HasCollider Checks if a colliders exists at X and Y and returns the Collider
 func (collisionMap *CollisionMap) HasCollider(x int, y int) (*Collider, bool) {
 
 	if collisionMap.Contains(x, y) {
@@ -256,36 +271,14 @@ func (collider *Collider) ChangeDirection() {
 	}
 }
 
+//ChangeColor Changes a Collider's color and increments ColorSelection
 func (collider *Collider) ChangeColor() {
 
-	switch collider.colorSelection {
-	case 0:
-		collider.Color = color.RGBA{
-			255, 0, 0, 1,
-		}
-	case 1:
-		collider.Color = color.RGBA{
-			0, 255, 0, 1,
-		}
-	case 2:
-		collider.Color = color.RGBA{
-			0, 204, 255, 1,
-		}
-	case 3:
-		collider.Color = color.RGBA{
-			255, 0, 255, 1,
-		}
-	case 4:
-		collider.Color = color.RGBA{
-			255, 255, 0, 1,
-		}
-	case 5:
-		collider.Color = color.RGBA{
-			255, 255, 255, 1,
-		}
-	default:
-		collider.colorSelection = -1
+	collider.colorSelection++
+
+	if collider.colorSelection > len(colliderColors)-1 || collider.colorSelection < 0 {
+		collider.colorSelection = 0
 	}
 
-	collider.colorSelection++
+	collider.Color = colliderColors[collider.colorSelection]
 }
