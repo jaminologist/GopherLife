@@ -14,14 +14,17 @@ type GridContainer interface {
 	Grid(x int, y int) (TileContainer, bool)
 }
 
+//GopherContainer returns Gopher if the given x and y value has a Gopher
 type GopherContainer interface {
 	HasGopher(x int, y int) (*Gopher, bool)
 }
 
+//FoodContainer returns Food if the given x and y value has food
 type FoodContainer interface {
 	HasFood(x int, y int) (*Food, bool)
 }
 
+//Container returns if the given x and y value is within the container
 type Container interface {
 	Contains(x int, y int) bool
 }
