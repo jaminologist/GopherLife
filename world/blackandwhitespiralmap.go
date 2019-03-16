@@ -6,6 +6,11 @@ import (
 	"sync"
 )
 
+type SpiralMapSettings struct {
+	Dimensions
+	MaxPopulation int
+}
+
 //SpiralMap spins right round
 type SpiralMap struct {
 	TileContainer
@@ -16,26 +21,26 @@ type SpiralMap struct {
 
 	*sync.WaitGroup
 
-	Statistics
+	SpiralMapSettings
 
 	count int
 }
 
-func NewSpiralMap(stats Statistics) SpiralMap {
+func NewSpiralMap(settings SpiralMapSettings) SpiralMap {
 
 	spiralMap := SpiralMap{}
 
-	b2d := NewBasic2DContainer(0, 0, stats.Width, stats.Height)
+	b2d := NewBasic2DContainer(0, 0, settings.Width, settings.Height)
 
-	qa := NewBasicActionQueue(stats.MaximumNumberOfGophers * 2)
+	qa := NewBasicActionQueue(settings.MaxPopulation * 2)
 	spiralMap.ActionQueuer = &qa
 
 	spiralMap.TileContainer = &b2d
 	spiralMap.GopherInserter = &b2d
 
-	spiralMap.Statistics = stats
+	spiralMap.SpiralMapSettings = settings
 
-	spiralMap.ActiveActors = make(chan *SpiralGopher, stats.MaximumNumberOfGophers*2)
+	spiralMap.ActiveActors = make(chan *SpiralGopher, settings.MaxPopulation*2)
 
 	var wg sync.WaitGroup
 	spiralMap.WaitGroup = &wg
@@ -112,7 +117,7 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 		ActionQueuer:    spiralMap.ActionQueuer,
 		MoveableGophers: spiralMap,
 		Gopher:          &gopher,
-		Statistics:      &spiralMap.Statistics,
+		settings:        &spiralMap.SpiralMapSettings,
 		Spiral:          &spiral,
 	}
 
@@ -120,23 +125,13 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 
 }
 
-func (spiralMap *SpiralMap) Stats() *Statistics {
-	s := Statistics{}
-	return &s
-}
-
-func (spiralMap *SpiralMap) Diagnostics() *Diagnostics {
-	d := Diagnostics{}
-	return &d
-}
-
 type SpiralGopher struct {
 	TileContainer
 	ActionQueuer
 	MoveableGophers
-	*Statistics
 	*Gopher
 	*geometry.Spiral
+	settings *SpiralMapSettings
 }
 
 //Cool Effect 2
@@ -145,7 +140,7 @@ func (gopher *SpiralGopher) Update() {
 	position, ok := gopher.Spiral.Next()
 	//position, ok = gopher.Spiral.Next()
 
-	x, y := gopher.Statistics.Width/2+position.GetX(), gopher.Statistics.Height/2+position.GetY()
+	x, y := gopher.settings.Width/2+position.GetX(), gopher.settings.Height/2+position.GetY()
 
 	if ok {
 		gopher.Add(func() {

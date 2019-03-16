@@ -12,15 +12,20 @@ var collisionMapSpeed = 1
 
 var colliderColors = []color.RGBA{colors.Red, colors.Blue, colors.Cyan, colors.Pink, colors.Yellow, colors.White}
 
+type CollisionMapSettings struct {
+	Dimensions
+	Population
+	IsDiagonal bool
+}
+
 type CollisionMap struct {
 	grid [][]*ColliderTile
 	Container
 	ActionQueuer
+	CollisionMapSettings
 	*sync.WaitGroup
 
 	ActiveColliders chan *Collider
-
-	IsDiagonal bool
 }
 
 type ColliderTile struct {
@@ -28,6 +33,7 @@ type ColliderTile struct {
 	c *Collider
 }
 
+//Insert Adds the Collider to the Tile, if Empty
 func (tile *ColliderTile) Insert(c *Collider) bool {
 	if tile.c == nil {
 		c.X = tile.X
@@ -38,36 +44,38 @@ func (tile *ColliderTile) Insert(c *Collider) bool {
 	return false
 }
 
+//HasCollider Return true if Collider exists
 func (tile *ColliderTile) HasCollider() bool {
 	return tile.c != nil
 }
 
+//Clear Empties the ColliderTile
 func (tile *ColliderTile) Clear() {
 	tile.c = nil
 }
 
 //NewEmptyCollisionMap Creates an Empty Collision Map
-func NewEmptyCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
+func NewEmptyCollisionMap(settings CollisionMapSettings) CollisionMap {
 
-	qa := NewBasicActionQueue(statistics.NumberOfGophers * 2)
+	qa := NewBasicActionQueue(settings.InitialPopulation * 2)
 	var wg sync.WaitGroup
 
-	rect := geometry.NewRectangle(0, 0, statistics.Width, statistics.Height)
+	rect := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
 
 	collisionMap := CollisionMap{
-		ActionQueuer:    &qa,
-		WaitGroup:       &wg,
-		Container:       &rect,
-		ActiveColliders: make(chan *Collider, statistics.NumberOfGophers*2),
-		IsDiagonal:      isDiagonal,
+		ActionQueuer:         &qa,
+		WaitGroup:            &wg,
+		Container:            &rect,
+		ActiveColliders:      make(chan *Collider, settings.InitialPopulation*2),
+		CollisionMapSettings: settings,
 	}
 
-	collisionMap.grid = make([][]*ColliderTile, statistics.Width)
+	collisionMap.grid = make([][]*ColliderTile, settings.Width)
 
-	for i := 0; i < statistics.Width; i++ {
-		collisionMap.grid[i] = make([]*ColliderTile, statistics.Height)
+	for i := 0; i < settings.Width; i++ {
+		collisionMap.grid[i] = make([]*ColliderTile, settings.Height)
 
-		for j := 0; j < statistics.Height; j++ {
+		for j := 0; j < settings.Height; j++ {
 			tile := ColliderTile{
 				Coordinates: geometry.Coordinates{
 					X: i,
@@ -82,20 +90,18 @@ func NewEmptyCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
 }
 
 //NewCollisionMap Creates a Populated Collision Map
-func NewCollisionMap(statistics Statistics, isDiagonal bool) CollisionMap {
+func NewCollisionMap(settings CollisionMapSettings) CollisionMap {
 
-	collisionMap := NewEmptyCollisionMap(statistics, isDiagonal)
+	collisionMap := NewEmptyCollisionMap(settings)
 
 	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
-		statistics.Width, statistics.Height)
+		settings.Width, settings.Height)
 
 	count := 0
 
-	for i := 0; i < statistics.NumberOfGophers; i++ {
+	for i := 0; i < settings.InitialPopulation; i++ {
 
 		var velX, velY int
-
-		//collisionMap.IsDiagonal = !collisionMap.IsDiagonal
 
 		if collisionMap.IsDiagonal {
 			velX = getNegativeOrPositiveSpeed(collisionMapSpeed)

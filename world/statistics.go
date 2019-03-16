@@ -7,17 +7,6 @@ type Dimensions struct {
 	Height int
 }
 
-//Statistics is used primarily by the 'GopherMap' struct and details
-//all editable variables of the map
-type Statistics struct {
-	Width                  int
-	Height                 int
-	NumberOfGophers        int
-	MaximumNumberOfGophers int
-	GopherBirthRate        int
-	NumberOfFood           int
-}
-
 //Population information on the amount of entities in a World
 type Population struct {
 	InitialPopulation int

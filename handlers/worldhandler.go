@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopherlife/controllers"
-	"gopherlife/world"
 	"html/template"
 	"log"
 	"net/http"
@@ -77,24 +76,6 @@ type MapData struct {
 
 func SetUpPage() {
 
-	/*stats := world.Statistics{
-		Width:                  3000,
-		Height:                 3000,
-		NumberOfGophers:        5000,
-		NumberOfFood:           1000000,
-		MaximumNumberOfGophers: 1000000,
-		GopherBirthRate:        7,
-	}*/
-
-	stats := world.Statistics{
-		Width:                  100,
-		Height:                 100,
-		NumberOfGophers:        250,
-		NumberOfFood:           1000,
-		MaximumNumberOfGophers: 10000,
-		GopherBirthRate:        7,
-	}
-
 	ControllerContainer := NewControllerContainer()
 
 	ss := controllers.NewGopherMapWithSpiralSearch()
@@ -103,19 +84,19 @@ func SetUpPage() {
 	ps := controllers.NewGopherMapWithParitionGridAndSearch()
 	ControllerContainer.Add(&ps, "GopherMap With Partition", false)
 
-	cbws := controllers.NewSpiralMapController(stats)
+	cbws := controllers.NewSpiralMapController()
 	ControllerContainer.Add(&cbws, "Cool Black And White Spiral", false)
 
-	fireworks := controllers.NewFireWorksController(stats)
+	fireworks := controllers.NewFireWorksController()
 	ControllerContainer.Add(&fireworks, "Fireworks!", false)
 
-	collision := controllers.NewCollisionMapController(stats)
+	collision := controllers.NewCollisionMapController()
 	ControllerContainer.Add(&collision, "Collision Map", false)
 
-	diagonalCollision := controllers.NewDiagonalCollisionMapController(stats)
+	diagonalCollision := controllers.NewDiagonalCollisionMapController()
 	ControllerContainer.Add(&diagonalCollision, "Diagonal Collision Map", false)
 
-	snakeMap := controllers.NewSnakeMapController(stats)
+	snakeMap := controllers.NewSnakeMapController()
 	ControllerContainer.Add(&snakeMap, "Elongateing Gopher", false)
 
 	blockblockRevolution := controllers.NewBlockBlockRevolutionController()
