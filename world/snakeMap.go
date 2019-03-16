@@ -274,7 +274,7 @@ func (smt *SnakeMap) HasSnakeFood(x int, y int) bool {
 
 func (smt *SnakeMapTile) InsertWall(w *SnakeWall) bool {
 	if smt.SnakeWall == nil && smt.SnakeFood == nil && smt.SnakePart == nil {
-		w.SetPosition(smt.GetX(), smt.GetY())
+		w.SetXY(smt.GetX(), smt.GetY())
 		smt.SnakeWall = w
 		return true
 	}
@@ -283,7 +283,7 @@ func (smt *SnakeMapTile) InsertWall(w *SnakeWall) bool {
 
 func (smt *SnakeMapTile) InsertSnakeFood(sf *SnakeFood) bool {
 	if smt.SnakeFood == nil && smt.SnakeWall == nil && smt.SnakePart == nil {
-		sf.SetPosition(smt.GetX(), smt.GetY())
+		sf.SetXY(smt.GetX(), smt.GetY())
 		smt.SnakeFood = sf
 		return true
 	}
@@ -292,7 +292,7 @@ func (smt *SnakeMapTile) InsertSnakeFood(sf *SnakeFood) bool {
 
 func (smt *SnakeMapTile) InsertSnakePart(sp *SnakePart) bool {
 	if smt.SnakePart == nil && smt.SnakeWall == nil {
-		sp.SetPosition(smt.GetX(), smt.GetY())
+		sp.SetXY(smt.GetX(), smt.GetY())
 		smt.SnakePart = sp
 		return true
 	}

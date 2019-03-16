@@ -269,7 +269,7 @@ type BlockBlockRevolutionTile struct {
 func (bbrt *BlockBlockRevolutionTile) InsertBlock(b *Block) bool {
 
 	if bbrt.Block == nil {
-		b.SetPosition(bbrt.GetX(), bbrt.GetY())
+		b.SetXY(bbrt.GetX(), bbrt.GetY())
 		bbrt.Block = b
 		return true
 	}

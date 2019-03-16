@@ -180,7 +180,7 @@ func (container *Basic2DContainer) InsertGopher(x int, y int, gopher *Gopher) bo
 
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasGopher() {
-			gopher.Position.Set(x, y)
+			gopher.Position.SetXY(x, y)
 			tile.SetGopher(gopher)
 			return true
 		}
@@ -195,7 +195,7 @@ func (container *Basic2DContainer) InsertFood(x int, y int, food *Food) bool {
 
 	if tile, ok := container.Tile(x, y); ok {
 		if !tile.HasFood() {
-			food.Position.Set(x, y)
+			food.Position.SetXY(x, y)
 			tile.SetFood(food)
 			return true
 		}
