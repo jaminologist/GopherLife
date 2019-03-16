@@ -2,7 +2,7 @@ package colors
 
 import "image/color"
 
-//List of colors
+//Collection of colors
 var (
 	White    = color.RGBA{255, 255, 255, 1}
 	Black    = color.RGBA{0, 0, 0, 1}

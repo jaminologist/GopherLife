@@ -42,23 +42,21 @@ func RelativeCoordinate(c Coordinates, X int, Y int) Coordinates {
 	return Coordinates{c.X + X, c.Y + Y}
 }
 
-func (c *Coordinates) Add(X int, Y int) {
-	c.X += X
-	c.Y += Y
+//Add x and y added to Coordinates
+func (c *Coordinates) Add(x int, y int) {
+	c.X += x
+	c.Y += y
 }
 
+//Add two Coordinates together
 func Add(c Coordinates, c2 Coordinates) Coordinates {
 	return Coordinates{c.X + c2.X, c.Y + c2.Y}
 }
 
-func (c *Coordinates) Set(X int, Y int) {
-	c.X = X
-	c.Y = Y
-}
-
-func (c *Coordinates) SetPosition(X int, Y int) {
-	c.X = X
-	c.Y = Y
+//SetXY X and Y of a Coordinate
+func (c *Coordinates) SetXY(x int, y int) {
+	c.X = x
+	c.Y = y
 }
 
 func (c *Coordinates) GetX() int {
@@ -99,6 +97,7 @@ func CoordinateMapKey(X int, Y int) string {
 	return fmt.Sprintf("%[1]d,%[2]d", X, Y)
 }
 
+//Hashcode Creates a hashcode from the given x and y
 func Hashcode(x int, y int) int {
 	return (31 * x) + y
 }

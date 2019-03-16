@@ -14,7 +14,7 @@ func TestStringToCoordinates(t *testing.T) {
 		args args
 		want Coordinates
 	}{
-		{"Hey", args{"2,5"}, Coordinates{X: 2, Y: 5}},
+		{" ", args{"2,5"}, Coordinates{X: 2, Y: 5}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -123,4 +123,48 @@ func BenchmarkMapKey(b *testing.B) {
 
 func BenchmarkTypeSwitch(b *testing.B) {
 
+}
+
+func TestCoordinates_Add(t *testing.T) {
+	type args struct {
+		x int
+		y int
+	}
+	tests := []struct {
+		name string
+		c    *Coordinates
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.c.Add(tt.args.x, tt.args.y)
+		})
+	}
+}
+
+func TestAdd(t *testing.T) {
+	type args struct {
+		c  Coordinates
+		c2 Coordinates
+	}
+	tests := []struct {
+		name string
+		args args
+		want Coordinates
+	}{
+		{"Add Positive", args{Coordinates{0, 0}, Coordinates{5, 5}}, Coordinates{5, 5}},
+		{"Add Positive, non-zero", args{Coordinates{5, 5}, Coordinates{5, 5}}, Coordinates{10, 10}},
+		{"Add Negative, to Positive", args{Coordinates{-5, -5}, Coordinates{5, 5}}, Coordinates{0, 0}},
+		{"Add Negative, to Negative", args{Coordinates{-5, -5}, Coordinates{-5, -5}}, Coordinates{-10, -10}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Add(tt.args.c, tt.args.c2); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Add() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
