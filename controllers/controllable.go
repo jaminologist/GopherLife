@@ -25,14 +25,6 @@ type WorldPageData struct {
 	IsGopherMap bool
 }
 
-type FormData struct {
-	DisplayName        string
-	Name               string
-	Value              string
-	Type               string
-	BootStrapFormWidth int
-}
-
 //Keys used to denote correct number for keys on a keyboard when called e.which in js
 type Keys int64
 
@@ -51,7 +43,7 @@ const (
 type GopherMapController struct {
 	*world.GopherMap
 	*renderers.GridRenderer
-	CreateNew func(world.Statistics) *world.GopherMap
+	CreateNew func(world.GopherMapSettings) *world.GopherMap
 }
 
 var (
@@ -68,8 +60,17 @@ var (
 	grassColor         = color.RGBA{65, 119, 15, 1}
 )
 
-func NewGopherMapWithSpiralSearch(stats world.Statistics) GopherMapController {
-	gMap := world.CreateWorldCustom(stats)
+//NewGopherMapWithSpiralSearch Returns a Controller with a Gopher Map. Where Gophers search for food using a Spiral To Nearest Search
+func NewGopherMapWithSpiralSearch() GopherMapController {
+
+	settings := world.GopherMapSettings{
+		Dimensions:      world.Dimensions{Width: 3000, Height: 3000},
+		Population:      world.Population{InitialPopulation: 5000, MaxPopulation: 1000000},
+		NumberOfFood:    1000000,
+		GopherBirthRate: 7,
+	}
+
+	gMap := world.CreateWorldCustom(settings)
 	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap:    gMap,
@@ -78,8 +79,17 @@ func NewGopherMapWithSpiralSearch(stats world.Statistics) GopherMapController {
 	}
 }
 
-func NewGopherMapWithParitionGridAndSearch(stats world.Statistics) GopherMapController {
-	gMap := world.CreatePartitionTileMapCustom(stats)
+//NewGopherMapWithParitionGridAndSearch Returns a Controller with a Gopher Map. Where Gophers search for food using Grid Partition
+func NewGopherMapWithParitionGridAndSearch() GopherMapController {
+
+	settings := world.GopherMapSettings{
+		Dimensions:      world.Dimensions{Width: 3000, Height: 3000},
+		Population:      world.Population{InitialPopulation: 5000, MaxPopulation: 1000000},
+		NumberOfFood:    1000000,
+		GopherBirthRate: 7,
+	}
+
+	gMap := world.CreatePartitionTileMapCustom(settings)
 	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
 		GopherMap:    gMap,
@@ -88,9 +98,10 @@ func NewGopherMapWithParitionGridAndSearch(stats world.Statistics) GopherMapCont
 	}
 }
 
+//Start Initiates the controller. If the Map does not exist. The Map will be built
 func (controller *GopherMapController) Start() {
 	if controller.GopherMap == nil {
-		controller.GopherMap = controller.CreateNew(*controller.Statistics)
+		controller.GopherMap = controller.CreateNew(*controller.GopherMapSettings)
 	}
 }
 
@@ -110,8 +121,6 @@ func (controller *GopherMapController) Click(x int, y int) {
 }
 
 func (controller *GopherMapController) KeyPress(key Keys) {
-
-	//fmt.Println(key)
 
 	switch key {
 	case WKey:
@@ -208,12 +217,11 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 
 	render := controller.GridRenderer.Draw(controller)
 
-	stats := controller.Stats()
 	diagnostics := controller.Diagnostics()
 
 	renderString := ""
 	renderString += "<br />"
-	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", stats.NumberOfGophers)
+	renderString += fmt.Sprintf("<span>Number of Gophers: %d </span><br />", controller.NumberOfGophers)
 	renderString += fmt.Sprintf("<span>Avg Processing Time (s): %s </span><br />", diagnostics.ProcessStopWatch.GetAverage().String())
 	renderString += fmt.Sprintf("<span>Avg Gopher Time (s): %s </span><br />", diagnostics.GopherStopWatch.GetAverage().String())
 	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.InputStopWatch.GetAverage().String())
@@ -233,43 +241,25 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 
 func (controller *GopherMapController) PageLayout() WorldPageData {
 
-	stats := controller.Statistics
+	settings := controller.GopherMapSettings
 
 	formdataArray := []FormData{
-		FormDataWidth(stats.Width, 2),
-		FormData{
-			DisplayName:        "Height",
-			Type:               "Number",
-			Name:               "height",
-			Value:              strconv.Itoa(stats.Height),
-			BootStrapFormWidth: 1,
-		},
-		FormData{
-			DisplayName:        "Initial Population",
-			Type:               "Number",
-			Name:               "numberOfGophers",
-			Value:              strconv.Itoa(stats.NumberOfGophers),
-			BootStrapFormWidth: 2,
-		},
-		FormData{
-			DisplayName:        "Max Population",
-			Type:               "Number",
-			Name:               "maxPopulation",
-			Value:              strconv.Itoa(stats.MaximumNumberOfGophers),
-			BootStrapFormWidth: 2,
-		},
+		FormDataWidth(settings.Width, 2),
+		FormDataHeight(settings.Height, 2),
+		FormDataInitialPopulation(settings.InitialPopulation, 2),
+		FormDataMaxPopulation(settings.MaxPopulation, 2),
 		FormData{
 			DisplayName:        "Birth Rate",
 			Type:               "Number",
 			Name:               "birthRate",
-			Value:              strconv.Itoa(stats.GopherBirthRate),
+			Value:              strconv.Itoa(settings.GopherBirthRate),
 			BootStrapFormWidth: 2,
 		},
 		FormData{
 			DisplayName:        "Food",
 			Type:               "Number",
 			Name:               "numberOfFood",
-			Value:              strconv.Itoa(stats.NumberOfFood),
+			Value:              strconv.Itoa(settings.NumberOfFood),
 			BootStrapFormWidth: 2,
 		},
 	}
@@ -283,25 +273,23 @@ func (controller *GopherMapController) PageLayout() WorldPageData {
 
 func (controller *GopherMapController) HandleForm(values url.Values) bool {
 
-	if strings.Contains(values.Encode(), "numberOfGophers") {
+	if strings.Contains(values.Encode(), "birthRate") {
 
 		width, _ := strconv.ParseInt(values.Get("width"), 10, 64)
 		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
-		numberOfGophers, _ := strconv.ParseInt(values.Get("numberOfGophers"), 10, 64)
+		InitialPopulation, _ := strconv.ParseInt(values.Get(FormDataInitialPopulation(0, 0).Name), 10, 64)
 		numberOfFood, _ := strconv.ParseInt(values.Get("numberOfFood"), 10, 64)
 		birthRate, _ := strconv.ParseInt(values.Get("birthRate"), 10, 64)
 		maxPopulation, _ := strconv.ParseInt(values.Get("maxPopulation"), 10, 64)
 
-		stats := world.Statistics{
-			Width:                  int(width),
-			Height:                 int(height),
-			NumberOfGophers:        int(numberOfGophers),
-			NumberOfFood:           int(numberOfFood),
-			MaximumNumberOfGophers: int(maxPopulation),
-			GopherBirthRate:        int(birthRate),
+		settings := world.GopherMapSettings{
+			Dimensions:      world.Dimensions{Width: int(width), Height: int(height)},
+			Population:      world.Population{InitialPopulation: int(InitialPopulation), MaxPopulation: int(maxPopulation)},
+			NumberOfFood:    int(numberOfFood),
+			GopherBirthRate: int(birthRate),
 		}
 
-		gmc := controller.CreateNew(stats)
+		gmc := controller.CreateNew(settings)
 		controller.GopherMap = gmc
 
 	}
@@ -379,34 +367,32 @@ func (controller *SpiralMapController) HandleForm(values url.Values) bool {
 
 type FireWorksController struct {
 	NoPlayerInput
-	world.Statistics
+	world.GopherMapSettings
 	*world.GopherMap
 	*renderers.GridRenderer
 }
 
 func NewFireWorksController(stats world.Statistics) FireWorksController {
 
-	stats = world.Statistics{
-		Width:                  400,
-		Height:                 200,
-		NumberOfGophers:        2000,
-		NumberOfFood:           1000,
-		MaximumNumberOfGophers: 100000,
-		GopherBirthRate:        35,
+	settings := world.GopherMapSettings{
+		Dimensions:      world.Dimensions{Width: 400, Height: 200},
+		Population:      world.Population{InitialPopulation: 2000, MaxPopulation: 100000},
+		NumberOfFood:    1000,
+		GopherBirthRate: 35,
 	}
 
 	renderer := renderers.NewRenderer(400, 150)
 	renderer.Shift(stats.Width/2-renderer.Width/2, stats.Height/2-renderer.Height/2)
 
 	return FireWorksController{
-		Statistics:   stats,
-		GridRenderer: &renderer,
+		GopherMapSettings: settings,
+		GridRenderer:      &renderer,
 	}
 }
 
 func (controller *FireWorksController) Start() {
 	if controller.GopherMap == nil {
-		controller.GopherMap = world.CreateWorldCustom(controller.Statistics)
+		controller.GopherMap = world.CreateWorldCustom(controller.GopherMapSettings)
 	}
 }
 
@@ -507,20 +493,8 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 
 	formdataArray := []FormData{
 		FormDataWidth(stats.Width, 2),
-		FormData{
-			DisplayName:        "Height",
-			Type:               "Number",
-			Name:               "height",
-			Value:              strconv.Itoa(stats.Height),
-			BootStrapFormWidth: 2,
-		},
-		FormData{
-			DisplayName:        "Initial Population",
-			Type:               "Number",
-			Name:               "numberOfGophers",
-			Value:              strconv.Itoa(stats.NumberOfGophers),
-			BootStrapFormWidth: 2,
-		},
+		FormDataHeight(stats.Height, 2),
+		FormDataInitialPopulation(stats.NumberOfGophers, 2),
 	}
 
 	return WorldPageData{
@@ -569,16 +543,6 @@ func NewDiagonalCollisionMapController(stats world.Statistics) CollisionMapContr
 		GridRenderer: &renderer,
 		CreateNew:    world.NewCollisionMap,
 		IsDiagonal:   true,
-	}
-}
-
-func FormDataWidth(width int, bootstrapColumnWidth int) FormData {
-	return FormData{
-		DisplayName:        "Width",
-		Type:               "Number",
-		Name:               "width",
-		Value:              strconv.Itoa(width),
-		BootStrapFormWidth: bootstrapColumnWidth,
 	}
 }
 

@@ -7,6 +7,15 @@ import (
 	"sync"
 )
 
+//GopherMapSettings sets configuration for a Gopher Map
+type GopherMapSettings struct {
+	Dimensions
+	Population
+
+	GopherBirthRate int
+	NumberOfFood    int
+}
+
 //GopherMap A map for Gophers!
 type GopherMap struct {
 	Searchable
@@ -26,26 +35,27 @@ type GopherMap struct {
 
 	GopherWaitGroup *sync.WaitGroup
 	IsPaused        bool
-	Moments         int
 	SelectedGopher  *Gopher
 	diagnostics     Diagnostics
 
-	*Statistics
+	NumberOfGophers int
+
+	*GopherMapSettings
 }
 
 //NewGopherMap Creates a new GopherMap a GopherMap contains food and gophers and can use different actors to update the state of the map
-func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserter, iff FoodInserter) GopherMap {
+func NewGopherMap(settings *GopherMapSettings, s Searchable, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserter, iff FoodInserter) GopherMap {
 
-	qa := NewBasicActionQueue(statistics.MaximumNumberOfGophers * 2)
+	qa := NewBasicActionQueue(settings.MaxPopulation * 2)
 
 	gsac := GopherSliceAndChannel{
-		ActiveActors: make(chan *Gopher, statistics.MaximumNumberOfGophers*2),
-		ActiveArray:  make([]*Gopher, statistics.NumberOfGophers),
+		ActiveActors: make(chan *Gopher, settings.MaxPopulation*2),
+		ActiveArray:  make([]*Gopher, settings.InitialPopulation),
 	}
 
 	gg := GopherGeneration{
 		GopherInserter:        ig,
-		maxGenerations:        statistics.MaximumNumberOfGophers,
+		maxGenerations:        settings.MaxPopulation,
 		GopherSliceAndChannel: &gsac,
 	}
 
@@ -66,17 +76,19 @@ func NewGopherMap(statistics *Statistics, s Searchable, t TileContainer, g Gophe
 
 		GopherWaitGroup: &wg,
 
-		Statistics: statistics,
+		GopherMapSettings: settings,
+
+		NumberOfGophers: settings.InitialPopulation,
 	}
 
 }
 
-func CreateWorldCustom(statistics Statistics) *GopherMap {
+func CreateWorldCustom(settings GopherMapSettings) *GopherMap {
 
-	b2dc := NewBasic2DContainer(0, 0, statistics.Width, statistics.Height)
+	b2dc := NewBasic2DContainer(0, 0, settings.Width, settings.Height)
 	sts := SpiralTileSearch{TileContainer: &b2dc}
 
-	tileMap := NewGopherMap(&statistics, &sts, &b2dc, &b2dc, &b2dc, &b2dc, &b2dc)
+	tileMap := NewGopherMap(&settings, &sts, &b2dc, &b2dc, &b2dc, &b2dc, &b2dc)
 
 	tileMap.setUpTiles()
 	return &tileMap
@@ -86,11 +98,11 @@ func CreateWorldCustom(statistics Statistics) *GopherMap {
 func (tileMap *GopherMap) setUpTiles() {
 
 	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
-		tileMap.Statistics.Width, tileMap.Statistics.Height)
+		tileMap.Width, tileMap.Height)
 
 	count := 0
 
-	for i := 0; i < tileMap.Statistics.NumberOfGophers; i++ {
+	for i := 0; i < tileMap.InitialPopulation; i++ {
 
 		pos := keys[count]
 		var gopher = NewGopher(names.CuteName(), pos)
@@ -107,7 +119,7 @@ func (tileMap *GopherMap) setUpTiles() {
 	}
 
 	actor := GopherActor{
-		GopherBirthRate: tileMap.Statistics.GopherBirthRate,
+		GopherBirthRate: tileMap.GopherBirthRate,
 		ActionQueuer:    tileMap.ActionQueuer,
 		Searchable:      tileMap.Searchable,
 		GopherContainer: tileMap.GopherContainer,
@@ -119,7 +131,7 @@ func (tileMap *GopherMap) setUpTiles() {
 
 	tileMap.Actor = &actor
 
-	for i := 0; i < tileMap.Statistics.NumberOfFood; i++ {
+	for i := 0; i < tileMap.NumberOfFood; i++ {
 		pos := keys[count]
 		var food = NewPotato()
 		tileMap.InsertFood(pos.GetX(), pos.GetY(), &food)
@@ -164,10 +176,6 @@ func (tileMap *GopherMap) SelectRandomGopher() {
 
 func (tileMap *GopherMap) UnSelectGopher() {
 	tileMap.SelectedGopher = nil
-}
-
-func (tileMap *GopherMap) Stats() *Statistics {
-	return tileMap.Statistics
 }
 
 func (tileMap *GopherMap) Diagnostics() *Diagnostics {
@@ -261,10 +269,7 @@ func (tileMap *GopherMap) Update() bool {
 	tileMap.diagnostics.ProcessStopWatch.Start()
 	tileMap.processGophers()
 	tileMap.processQueuedTasks()
-	tileMap.Statistics.NumberOfGophers = len(tileMap.ActiveActors)
-	if tileMap.Statistics.NumberOfGophers > 0 {
-		tileMap.Moments++
-	}
+	tileMap.NumberOfGophers = len(tileMap.ActiveActors)
 
 	tileMap.diagnostics.ProcessStopWatch.Stop()
 
