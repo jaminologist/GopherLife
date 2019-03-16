@@ -49,3 +49,13 @@ func FormDataMaxPopulation(maxPopulation int, bootstrapColumnWidth int) FormData
 		BootStrapFormWidth: bootstrapColumnWidth,
 	}
 }
+
+func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
+	return FormData{
+		DisplayName:        "Snake SlowDown",
+		Type:               "Number",
+		Name:               "SnakeSlowDown",
+		Value:              strconv.Itoa(slowdown),
+		BootStrapFormWidth: bootstrapColumnWidth,
+	}
+}
