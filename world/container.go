@@ -4,7 +4,7 @@ import (
 	"gopherlife/geometry"
 )
 
-//TileContainer contains tiles that can be accessed using an x and y value
+//TileContainer contains tiles that can be accessed using an x and y position
 type TileContainer interface {
 	Tile(x int, y int) (*Tile, bool)
 }
@@ -14,17 +14,17 @@ type GridContainer interface {
 	Grid(x int, y int) (TileContainer, bool)
 }
 
-//GopherContainer returns Gopher if the given x and y value has a Gopher
+//GopherContainer returns Gopher if the given x and y position has a Gopher
 type GopherContainer interface {
 	HasGopher(x int, y int) (*Gopher, bool)
 }
 
-//FoodContainer returns Food if the given x and y value has food
+//FoodContainer returns Food if the given x and y position has food
 type FoodContainer interface {
 	HasFood(x int, y int) (*Food, bool)
 }
 
-//Container returns if the given x and y value is within the container
+//Container returns if the given x and y position is within the container
 type Container interface {
 	Contains(x int, y int) bool
 }
@@ -163,16 +163,22 @@ func (container *BasicGridContainer) convertToGridCoordinates(x int, y int) (int
 	return gridX, gridY
 }
 
-//GopherInserter Inserts and Removes Gophers from an X and Y position
-type GopherInserter interface {
+//GopherInserterAndRemover inserts and removes Gophers from an x and y position
+type GopherInserterAndRemover interface {
 	InsertGopher(x int, y int, gopher *Gopher) bool
-	RemoveGopher(x int, y int) bool
+	RemoveGopher(x int, y int) (*Gopher, bool)
 }
 
-//FoodInserter Inserts and Removes Food from an X and Y position
-type FoodInserter interface {
+//FoodInserterAndRemover inserts and removes Food from an x and y position
+type FoodInserterAndRemover interface {
 	InsertFood(x int, y int, food *Food) bool
 	RemoveFood(x int, y int) (*Food, bool)
+}
+
+//GopherAndFoodInserterAndRemover inserts and removes Gophers and Food from an x and y position
+type GopherAndFoodInserterAndRemover interface {
+	GopherInserterAndRemover
+	FoodInserterAndRemover
 }
 
 //InsertGopher Inserts the given gopher into the tileMap at the specified co-ordinate
@@ -204,25 +210,26 @@ func (container *Basic2DContainer) InsertFood(x int, y int, food *Food) bool {
 }
 
 //RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
-func (container *Basic2DContainer) RemoveGopher(x int, y int) bool {
+func (container *Basic2DContainer) RemoveGopher(x int, y int) (*Gopher, bool) {
 
-	if mapPoint, ok := container.Tile(x, y); ok {
-		if mapPoint.HasGopher() {
-			mapPoint.ClearGopher()
-			return true
+	if tile, ok := container.Tile(x, y); ok {
+		if tile.HasGopher() {
+			gopher := tile.Gopher
+			tile.ClearGopher()
+			return gopher, true
 		}
 	}
 
-	return false
+	return nil, false
 }
 
 //RemoveFoodFromWorld Removes food from the given coordinates. Returns the food value.
 func (container *Basic2DContainer) RemoveFood(x int, y int) (*Food, bool) {
 
-	if mapPoint, ok := container.Tile(x, y); ok {
-		if mapPoint.HasFood() {
-			var food = mapPoint.Food
-			mapPoint.ClearFood()
+	if tile, ok := container.Tile(x, y); ok {
+		if tile.HasFood() {
+			var food = tile.Food
+			tile.ClearFood()
 			return food, true
 		}
 	}
@@ -272,13 +279,13 @@ func (container *TrackedTileContainer) InsertFood(x int, y int, food *Food) bool
 	return false
 }
 
-func (container *TrackedTileContainer) RemoveGopher(x int, y int) bool {
-	if ok := container.b2dc.RemoveGopher(x, y); ok {
+func (container *TrackedTileContainer) RemoveGopher(x int, y int) (*Gopher, bool) {
+	if gopher, ok := container.b2dc.RemoveGopher(x, y); ok {
 		x, y = container.ConvertToTrackedTileCoordinates(x, y)
 		delete(container.gopherTileLocations, geometry.Hashcode(x, y))
-		return true
+		return gopher, true
 	}
-	return false
+	return nil, false
 }
 
 func (container *TrackedTileContainer) RemoveFood(x int, y int) (*Food, bool) {
@@ -304,11 +311,11 @@ func (container *BasicGridContainer) InsertFood(x int, y int, food *Food) bool {
 	return false
 }
 
-func (container *BasicGridContainer) RemoveGopher(x int, y int) bool {
+func (container *BasicGridContainer) RemoveGopher(x int, y int) (*Gopher, bool) {
 	if grid, ok := container.Grid(x, y); ok {
 		return grid.RemoveGopher(x, y)
 	}
-	return false
+	return nil, false
 }
 
 func (container *BasicGridContainer) RemoveFood(x int, y int) (*Food, bool) {
@@ -332,8 +339,8 @@ func (container *BasicGridContainer) HasFood(x int, y int) (*Food, bool) {
 	return nil, false
 }
 
-//Searchable used to search for the given search type in a given area
-type Searchable interface {
+//Searcher used to search for the given search type in a given area
+type Searcher interface {
 	Search(position geometry.Coordinates, width int, height int, max int, searchType SearchType) []geometry.Coordinates
 }
 

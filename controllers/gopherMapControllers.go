@@ -27,9 +27,9 @@ var (
 )
 
 type GopherMapController struct {
-	*world.GopherMap
+	*world.GopherWorld
 	*renderers.GridRenderer
-	CreateNew func(world.GopherMapSettings) *world.GopherMap
+	CreateNew func(world.GopherMapSettings) *world.GopherWorld
 }
 
 //NewGopherMapWithSpiralSearch Returns a Controller with a Gopher Map. Where Gophers search for food using a Spiral To Nearest Search
@@ -42,10 +42,10 @@ func NewGopherMapWithSpiralSearch() GopherMapController {
 		GopherBirthRate: 7,
 	}
 
-	gMap := world.CreateWorldCustom(settings)
+	gWorld := world.CreateWorldCustom(settings)
 	renderer := renderers.NewRenderer(45, 15)
 	return GopherMapController{
-		GopherMap:    gMap,
+		GopherWorld:  gWorld,
 		GridRenderer: &renderer,
 		CreateNew:    world.CreateWorldCustom,
 	}
@@ -61,10 +61,10 @@ func NewGopherMapWithParitionGridAndSearch() GopherMapController {
 		GopherBirthRate: 7,
 	}
 
-	gMap := world.CreatePartitionTileMapCustom(settings)
+	gWorld := world.CreatePartitionTileMapCustom(settings)
 	renderer := renderers.NewRenderer(100, 100)
 	return GopherMapController{
-		GopherMap:    gMap,
+		GopherWorld:  gWorld,
 		GridRenderer: &renderer,
 		CreateNew:    world.CreatePartitionTileMapCustom,
 	}
@@ -72,8 +72,8 @@ func NewGopherMapWithParitionGridAndSearch() GopherMapController {
 
 //Start Initiates the controller. If the Map does not exist. The Map will be built
 func (controller *GopherMapController) Start() {
-	if controller.GopherMap == nil {
-		controller.GopherMap = controller.CreateNew(*controller.GopherMapSettings)
+	if controller.GopherWorld == nil {
+		controller.GopherWorld = controller.CreateNew(*controller.GopherMapSettings)
 	}
 }
 
@@ -89,18 +89,18 @@ func (controller *GopherMapController) Click(x int, y int) {
 		}
 	}
 
-	controller.GopherMap.Add(action)
+	controller.GopherWorld.Add(action)
 }
 
 func (controller *GopherMapController) KeyPress(key Keys) {
 
 	switch key {
 	case WKey:
-		controller.GopherMap.Add(func() {
+		controller.GopherWorld.Add(func() {
 			controller.UnSelectGopher()
 		})
 	case QKey:
-		controller.GopherMap.Add(func() {
+		controller.GopherWorld.Add(func() {
 			controller.SelectRandomGopher()
 		})
 	case PKey:
@@ -163,9 +163,9 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 			return grassColor
 		case tile.Gopher != nil:
 			isSelected := false
-			if controller.GopherMap.SelectedGopher != nil {
-				isSelected = controller.GopherMap.SelectedGopher.Position.GetX() == x &&
-					controller.GopherMap.SelectedGopher.Position.GetY() == y
+			if controller.GopherWorld.SelectedGopher != nil {
+				isSelected = controller.GopherWorld.SelectedGopher.Position.GetX() == x &&
+					controller.GopherWorld.SelectedGopher.Position.GetY() == y
 			}
 			return TileToColor(tile, isSelected)
 		case tile.Food != nil:
@@ -268,7 +268,7 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 		}
 
 		gmc := controller.CreateNew(settings)
-		controller.GopherMap = gmc
+		controller.GopherWorld = gmc
 
 	}
 
@@ -352,7 +352,7 @@ func (controller *SpiralMapController) HandleForm(values url.Values) bool {
 type FireWorksController struct {
 	NoPlayerInput
 	world.GopherMapSettings
-	*world.GopherMap
+	*world.GopherWorld
 	*renderers.GridRenderer
 }
 
@@ -375,8 +375,8 @@ func NewFireWorksController() FireWorksController {
 }
 
 func (controller *FireWorksController) Start() {
-	if controller.GopherMap == nil {
-		controller.GopherMap = world.CreateWorldCustom(controller.GopherMapSettings)
+	if controller.GopherWorld == nil {
+		controller.GopherWorld = world.CreateWorldCustom(controller.GopherMapSettings)
 	}
 }
 

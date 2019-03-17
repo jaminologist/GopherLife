@@ -17,7 +17,7 @@ type SpiralMapSettings struct {
 //SpiralMap spins right round
 type SpiralMap struct {
 	TileContainer
-	GopherInserter
+	GopherInserterAndRemover
 	ActionQueuer
 
 	ActiveActors chan *SpiralGopher
@@ -41,7 +41,7 @@ func NewSpiralMap(settings SpiralMapSettings) SpiralMap {
 	spiralMap.ActionQueuer = &qa
 
 	spiralMap.TileContainer = &b2d
-	spiralMap.GopherInserter = &b2d
+	spiralMap.GopherInserterAndRemover = &b2d
 
 	spiralMap.SpiralMapSettings = settings
 
