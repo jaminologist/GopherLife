@@ -17,7 +17,7 @@ type Population struct {
 	MaxPopulation     int
 }
 
-//Diagnostics is used primarily by the 'GopherMap' struct and is used to track
+//Diagnostics is used primarily by the 'GopherWorld' struct and is used to track
 //how long different parts of the 'Update' method take
 type Diagnostics struct {
 	GlobalStopWatch  timer.StopWatch

@@ -1,34 +1,31 @@
 package controllers
 
-//UserInputHandler used to handle user inputs for a world
+//UserInputHandler handles the 'Scroll', 'Click' and 'KeyPress' user inputs
 type UserInputHandler interface {
 	Scroller
-	Click(x int, y int)
-	KeyPress(key Keys)
+	Clicker
+	KeyPresser
 }
 
+//Scroller handles the 'Scroll' user input
 type Scroller interface {
 	Scroll(deltaY int)
 }
 
-type NoPlayerInput struct{}
-
-func (controller *NoPlayerInput) Click(x int, y int) {
+//Clicker handles the 'Click' user input
+type Clicker interface {
+	Click(x int, y int)
 }
 
-func (controller *NoPlayerInput) KeyPress(key Keys) {
+//KeyPresser handles the 'KeyPress' user input
+type KeyPresser interface {
+	KeyPress(key Keys)
 }
 
-type WorldPageData struct {
-	PageTitle   string
-	FormData    []FormData
-	IsGopherWorld bool
-}
-
-//Keys used to denote correct number for keys on a keyboard when calling e.which in js
+//Keys the number assigned to a keyboard 'key' when calling e.which in js
 type Keys int64
 
-//List of keys and their corresponding numbers
+//List of used keys and their corresponding numbers
 const (
 	LeftArrow  Keys = 37
 	RightArrow Keys = 39
@@ -39,3 +36,17 @@ const (
 	QKey Keys = 81
 	WKey Keys = 87
 )
+
+type NoPlayerInput struct{}
+
+func (controller *NoPlayerInput) Click(x int, y int) {
+}
+
+func (controller *NoPlayerInput) KeyPress(key Keys) {
+}
+
+type WorldPageData struct {
+	PageTitle     string
+	FormData      []FormData
+	IsGopherWorld bool
+}

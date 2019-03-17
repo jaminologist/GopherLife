@@ -11,7 +11,7 @@ const (
 	gridHeight = 5
 )
 
-func CreatePartitionTileMapCustom(settings GopherMapSettings) *GopherMap {
+func CreatePartitionTileMapCustom(settings GopherMapSettings) *GopherWorld {
 
 	gc := NewBasicGridContainer(settings.Width,
 		settings.Height,
@@ -23,7 +23,7 @@ func CreatePartitionTileMapCustom(settings GopherMapSettings) *GopherMap {
 		BasicGridContainer: &gc,
 	}
 
-	tileMap := NewGopherMap(&settings, &search, &gc, &gc, &gc, &gc, &gc)
+	tileMap := NewGopherWorld(&settings, &search, &gc, &gc, &gc, &gc, &gc)
 
 	tileMap.setUpTiles()
 	return &tileMap
