@@ -10,7 +10,10 @@ func TestCollisionMap_InsertCollider(t *testing.T) {
 
 	width := 100
 	height := 100
-	collisionMap := NewEmptyCollisionMap(Statistics{Width: width, Height: height}, false)
+	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+		Dimensions: Dimensions{Width: width, Height: height},
+		IsDiagonal: false},
+	)
 
 	type args struct {
 		x int
@@ -49,7 +52,10 @@ func TestCollisionMap_HasCollider(t *testing.T) {
 
 	width := 5
 	height := 5
-	collisionMap := NewEmptyCollisionMap(Statistics{Width: width, Height: height}, false)
+	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+		Dimensions: Dimensions{Width: width, Height: height},
+		IsDiagonal: false},
+	)
 
 	insertX, insertY := 1, 1
 	collider := Collider{}
@@ -97,7 +103,10 @@ func TestCollisionMap_MoveCollider(t *testing.T) {
 
 	width := 5
 	height := 5
-	collisionMap := NewEmptyCollisionMap(Statistics{Width: width, Height: height, NumberOfGophers: 10}, false)
+	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+		Dimensions: Dimensions{Width: width, Height: height},
+		IsDiagonal: false},
+	)
 
 	insertX, insertY := 1, 1
 	collider := Collider{}
