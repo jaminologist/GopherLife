@@ -77,7 +77,6 @@ function OpenWorld(CanvasInformation) {
             CanvasInformation.OtherStartY = data.StartY;
             CanvasInformation.TileWidth = data.TileWidth;
             CanvasInformation.TileHeight = data.TileHeight;
-            console.log(CanvasInformation)
             UpdateWorldDisplay(data, CanvasInformation);
             OpenWorld(CanvasInformation);
         },

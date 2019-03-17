@@ -43,7 +43,7 @@ func NewGopherMapWithSpiralSearch() GopherMapController {
 	}
 
 	gMap := world.CreateWorldCustom(settings)
-	renderer := renderers.NewRenderer(100, 100)
+	renderer := renderers.NewRenderer(45, 15)
 	return GopherMapController{
 		GopherMap:    gMap,
 		GridRenderer: &renderer,
@@ -96,9 +96,13 @@ func (controller *GopherMapController) KeyPress(key Keys) {
 
 	switch key {
 	case WKey:
-		controller.UnSelectGopher()
+		controller.GopherMap.Add(func() {
+			controller.UnSelectGopher()
+		})
 	case QKey:
-		controller.SelectRandomGopher()
+		controller.GopherMap.Add(func() {
+			controller.SelectRandomGopher()
+		})
 	case PKey:
 		controller.TogglePause()
 	case LeftArrow:
@@ -206,6 +210,8 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	}
 	if controller.SelectedGopher != nil {
 		gmr.SelectedGopher = controller.SelectedGopher
+	} else {
+		gmr.SelectedGopher = &world.Gopher{}
 	}
 
 	return json.Marshal(gmr)
@@ -237,9 +243,9 @@ func (controller *GopherMapController) PageLayout() WorldPageData {
 	}
 
 	return WorldPageData{
-		PageTitle:   "G O P H E R L I F E <b>2.0</b>",
-		FormData:    formdataArray,
-		IsGopherMap: true,
+		PageTitle:     "G O P H E R L I F E <b>2.0</b>",
+		FormData:      formdataArray,
+		IsGopherWorld: true,
 	}
 }
 
@@ -279,10 +285,29 @@ type SpiralMapController struct {
 func NewSpiralMapController() SpiralMapController {
 
 	settings := world.SpiralMapSettings{
-		Dimensions: world.Dimensions{Width: 50, Height: 50},
+		Dimensions:    world.Dimensions{Width: 50, Height: 50},
+		MaxPopulation: 1000,
+		WeirdSpiral:   false,
 	}
 
-	renderer := renderers.NewRenderer(75, 75)
+	renderer := renderers.NewRenderer(50, 50)
+	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
+
+	return SpiralMapController{
+		GridRenderer:      &renderer,
+		SpiralMapSettings: settings,
+	}
+}
+
+func NewWeirdSpiralMapController() SpiralMapController {
+
+	settings := world.SpiralMapSettings{
+		Dimensions:    world.Dimensions{Width: 50, Height: 50},
+		MaxPopulation: 1000,
+		WeirdSpiral:   true,
+	}
+
+	renderer := renderers.NewRenderer(50, 50)
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
 
 	return SpiralMapController{
@@ -315,10 +340,12 @@ func (controller *SpiralMapController) RenderTile(x int, y int) color.RGBA {
 }
 
 func (controller *SpiralMapController) PageLayout() WorldPageData {
-	return WorldPageData{}
+	return WorldPageData{IsGopherWorld: false}
 }
 
 func (controller *SpiralMapController) HandleForm(values url.Values) bool {
+	controller.SpiralMap = nil
+	controller.Start()
 	return true
 }
 

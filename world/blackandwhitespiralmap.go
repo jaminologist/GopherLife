@@ -3,12 +3,15 @@ package world
 import (
 	"gopherlife/geometry"
 	"gopherlife/names"
+	"gopherlife/timer"
 	"sync"
+	"time"
 )
 
 type SpiralMapSettings struct {
 	Dimensions
 	MaxPopulation int
+	WeirdSpiral   bool
 }
 
 //SpiralMap spins right round
@@ -24,6 +27,8 @@ type SpiralMap struct {
 	SpiralMapSettings
 
 	count int
+
+	FrameTimer timer.StopWatch
 }
 
 func NewSpiralMap(settings SpiralMapSettings) SpiralMap {
@@ -32,7 +37,7 @@ func NewSpiralMap(settings SpiralMapSettings) SpiralMap {
 
 	b2d := NewBasic2DContainer(0, 0, settings.Width, settings.Height)
 
-	qa := NewBasicActionQueue(settings.MaxPopulation * 2)
+	qa := NewFiniteActionQueue(settings.MaxPopulation * 2)
 	spiralMap.ActionQueuer = &qa
 
 	spiralMap.TileContainer = &b2d
@@ -51,6 +56,8 @@ func NewSpiralMap(settings SpiralMapSettings) SpiralMap {
 }
 
 func (spiralMap *SpiralMap) Update() bool {
+
+	spiralMap.FrameTimer.Start()
 
 	numGophers := len(spiralMap.ActiveActors)
 	secondChannel := make(chan *SpiralGopher, numGophers*2)
@@ -86,6 +93,9 @@ func (spiralMap *SpiralMap) Update() bool {
 	}
 	spiralMap.Process()
 
+	for spiralMap.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*time.Duration(2) {
+	}
+
 	return true
 
 }
@@ -108,7 +118,9 @@ func (spiralMap *SpiralMap) AddNewSpiralGopher() {
 	gopher := NewGopher(names.CuteName(), geometry.Coordinates{0, 0})
 
 	//Commented out for cool spiral effect 1
-	spiralMap.InsertGopher(spiralMap.Width/2, spiralMap.Height/2, &gopher)
+	if !spiralMap.WeirdSpiral {
+		spiralMap.InsertGopher(spiralMap.Width/2, spiralMap.Height/2, &gopher)
+	}
 
 	spiral := geometry.NewSpiral(spiralMap.Width, spiralMap.Height)
 
@@ -134,8 +146,16 @@ type SpiralGopher struct {
 	settings *SpiralMapSettings
 }
 
-//Cool Effect 2
 func (gopher *SpiralGopher) Update() {
+	if gopher.settings.WeirdSpiral {
+		gopher.UpdateWeridSpiral()
+	} else {
+		gopher.UpdateNormalSpiral()
+	}
+}
+
+//Cool Effect 2
+func (gopher *SpiralGopher) UpdateNormalSpiral() {
 
 	position, ok := gopher.Spiral.Next()
 	//position, ok = gopher.Spiral.Next()
@@ -153,7 +173,7 @@ func (gopher *SpiralGopher) Update() {
 }
 
 //Cool Effect 1
-/*func (gopher *SpiralGopher) Update() {
+func (gopher *SpiralGopher) UpdateWeridSpiral() {
 
 	position, ok := gopher.Spiral.Next()
 	//position, ok = gopher.Spiral.Next()
@@ -168,4 +188,4 @@ func (gopher *SpiralGopher) Update() {
 		gopher.IsDead = true
 	}
 
-}*/
+}

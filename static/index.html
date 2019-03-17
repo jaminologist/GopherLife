@@ -38,9 +38,9 @@
           <div class="col">
             <form id="switch-worlds" action="/SwitchWorld" method="post" >
             <div class="form-group col-md-2 mx-auto text-center">
-                <label for="mapSelection">Map Selection</label>
-                <select class="form-control" name="mapSelection" onchange="this.form.submit()">
-                    {{range $index, $element := $.MapData}}
+                <label for="worldSelection">World Selection</label>
+                <select class="form-control" name="worldSelection" onchange="this.form.submit()">
+                    {{range $index, $element := $.WorldSelectFormInput}}
                         <option value={{.Value}} {{if eq $element.Value $.Selected}} selected="selected" {{end}}>{{.DisplayName}}</option>
                     {{end}}
                 </select>
@@ -49,7 +49,7 @@
         </div>
       </div>
 
-      {{if .IsGopherMap}}
+      {{if .IsGopherWorld}}
       <div class="row">
           <div class="col-2"></div>
           <div class="col text-center">
@@ -76,11 +76,11 @@
       </div>
       {{end}}
 
-      {{if .FormData}}
       <div class="row">
           <div class="col-2"></div>
           <div class="col">
               <form id="reset" action="/ResetWorld" method="post">
+                {{if .FormData}}
                 <div class="form-row">
                     {{range .FormData}}
                         <div class="form-group col-md-{{.BootStrapFormWidth}} mx-auto text-center">
@@ -89,6 +89,7 @@
                         </div>
                     {{end}}
                 </div>
+                {{end}}
                 <div class="form-row">
                     <div class="col-sm-6 offset-sm-3">
                         <button type="submit" class="btn btn-block btn-outline-primary">Reset</button>
@@ -98,7 +99,6 @@
           </div>
           <div class="col-2"></div>
       </div>
-      {{end}}
   </div>
 </body>
 </html>

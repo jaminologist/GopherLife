@@ -1,6 +1,10 @@
 package world
 
-import "gopherlife/timer"
+import (
+	"gopherlife/timer"
+)
+
+const FrameSpeedMultiplier = 7
 
 type Dimensions struct {
 	Width  int
