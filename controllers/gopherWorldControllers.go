@@ -361,12 +361,14 @@ func NewFireWorksController() FireWorksController {
 	settings := world.GopherMapSettings{
 		Dimensions:      world.Dimensions{Width: 400, Height: 200},
 		Population:      world.Population{InitialPopulation: 2000, MaxPopulation: 100000},
-		NumberOfFood:    2000,
+		NumberOfFood:    2500,
 		GopherBirthRate: 35,
 	}
 
 	renderer := renderers.NewRenderer(400, 150)
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
+	renderer.TileHeight = 2
+	renderer.TileWidth = 2
 
 	return FireWorksController{
 		GopherMapSettings: settings,
@@ -402,11 +404,10 @@ func (controller *FireWorksController) RenderTile(x int, y int) color.RGBA {
 		} else if tile.HasFood() {
 			return colors.White
 		}
-
-		return color.RGBA{0, 0, 0, 1}
-	} else {
-		return color.RGBA{0, 0, 0, 1}
 	}
+
+	return color.RGBA{0, 0, 0, 1}
+
 }
 
 func (controller *FireWorksController) PageLayout() WorldPageData {
