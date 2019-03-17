@@ -55,7 +55,7 @@ func NewSnakeTileGrid(x int, y int, width int, height int) [][]*SnakeMapTile {
 //NewEmptySnakeMap Creates an Empty Snake Map (No Snake, No Wall)
 func NewEmptySnakeMap(settings SnakeMapSettings) SnakeMap {
 	r := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
-	baq := NewBasicActionQueue(1)
+	baq := NewFiniteActionQueue(1)
 
 	snakeMap := SnakeMap{
 		grid:             NewSnakeTileGrid(0, 0, settings.Width, settings.Height),

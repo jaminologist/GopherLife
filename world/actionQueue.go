@@ -1,33 +1,30 @@
 package world
 
-import "fmt"
-
 type ActionQueuer interface {
 	Add(action func())
 	Process()
 }
 
-type BasicActionQueue struct {
+type FiniteActionQueue struct {
 	actionQueue chan func()
 	maxActions  int
 }
 
-func NewBasicActionQueue(maxActions int) BasicActionQueue {
-	return BasicActionQueue{
+func NewFiniteActionQueue(maxActions int) FiniteActionQueue {
+	return FiniteActionQueue{
 		actionQueue: make(chan func(), maxActions),
 		maxActions:  maxActions,
 	}
 }
 
-func (basicActionQueue *BasicActionQueue) Add(action func()) {
+func (basicActionQueue *FiniteActionQueue) Add(action func()) {
 	select {
 	case basicActionQueue.actionQueue <- action: // Put 2 in the channel unless it is full
 	default:
-		fmt.Println("Channel full. Discarding value")
 	}
 }
 
-func (basicActionQueue *BasicActionQueue) Process() {
+func (basicActionQueue *FiniteActionQueue) Process() {
 	actionChannel := basicActionQueue.actionQueue
 	basicActionQueue.actionQueue = make(chan func(), basicActionQueue.maxActions)
 	close(actionChannel)

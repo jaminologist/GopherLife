@@ -57,7 +57,7 @@ func (tile *ColliderTile) Clear() {
 //NewEmptyCollisionMap Creates an Empty Collision Map
 func NewEmptyCollisionMap(settings CollisionMapSettings) CollisionMap {
 
-	qa := NewBasicActionQueue(settings.InitialPopulation * 2)
+	qa := NewFiniteActionQueue(settings.InitialPopulation * 2)
 	var wg sync.WaitGroup
 
 	rect := geometry.NewRectangle(0, 0, settings.Width, settings.Height)

@@ -59,3 +59,13 @@ func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
 		BootStrapFormWidth: bootstrapColumnWidth,
 	}
 }
+
+func FormDataBlockSpeedReductionSlowDown(speedReduction int, bootstrapColumnWidth int) FormData {
+	return FormData{
+		DisplayName:        "Block Speed Reduction",
+		Type:               "Number",
+		Name:               "speedReduction",
+		Value:              strconv.Itoa(speedReduction),
+		BootStrapFormWidth: bootstrapColumnWidth,
+	}
+}

@@ -46,7 +46,7 @@ type GopherMap struct {
 //NewGopherMap Creates a new GopherMap a GopherMap contains food and gophers and can use different actors to update the state of the map
 func NewGopherMap(settings *GopherMapSettings, s Searchable, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserter, iff FoodInserter) GopherMap {
 
-	qa := NewBasicActionQueue(settings.MaxPopulation * 2)
+	qa := NewFiniteActionQueue(settings.MaxPopulation * 2)
 
 	gsac := GopherSliceAndChannel{
 		ActiveActors: make(chan *Gopher, settings.MaxPopulation*2),
@@ -268,7 +268,9 @@ func (tileMap *GopherMap) Update() bool {
 
 	tileMap.diagnostics.ProcessStopWatch.Start()
 	tileMap.processGophers()
+
 	tileMap.processQueuedTasks()
+
 	tileMap.NumberOfGophers = len(tileMap.ActiveActors)
 
 	tileMap.diagnostics.ProcessStopWatch.Stop()

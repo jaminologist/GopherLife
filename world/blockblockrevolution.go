@@ -9,11 +9,14 @@ import (
 	"time"
 )
 
-//10 x 20
+type BlockBlockRevolutionSettings struct {
+	Dimensions
+	BlockSpeedReduction int
+}
 
 type BlockBlockRevolutionMap struct {
 	grid [][]*BlockBlockRevolutionTile
-	Dimensions
+	BlockBlockRevolutionSettings
 	Container
 	CurrentTetromino Tetromino
 
@@ -27,20 +30,21 @@ type BlockBlockRevolutionMap struct {
 	FrameSpeed time.Duration
 
 	DownToNextLineCount int
+
+	Score      int
+	IsGameOver bool
 }
 
-const FrameSpeedMultiplier = time.Duration(7)
+func NewBlockBlockRevolutionMap(settings BlockBlockRevolutionSettings) BlockBlockRevolutionMap {
 
-func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap {
+	r := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
 
-	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
+	grid := make([][]*BlockBlockRevolutionTile, settings.Width)
 
-	grid := make([][]*BlockBlockRevolutionTile, d.Width)
+	for i := 0; i < settings.Width; i++ {
+		grid[i] = make([]*BlockBlockRevolutionTile, settings.Height)
 
-	for i := 0; i < d.Width; i++ {
-		grid[i] = make([]*BlockBlockRevolutionTile, d.Height)
-
-		for j := 0; j < d.Height; j++ {
+		for j := 0; j < settings.Height; j++ {
 			tile := BlockBlockRevolutionTile{
 				Coordinates: geometry.Coordinates{
 					X: i,
@@ -51,14 +55,14 @@ func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap
 		}
 	}
 
-	qa := NewBasicActionQueue(1)
+	qa := NewFiniteActionQueue(1)
 
 	bbrm := BlockBlockRevolutionMap{
-		Container:    &r,
-		Dimensions:   d,
-		ActionQueuer: &qa,
-		grid:         grid,
-		FrameSpeed:   5,
+		Container:                    &r,
+		BlockBlockRevolutionSettings: settings,
+		ActionQueuer:                 &qa,
+		grid:                         grid,
+		FrameSpeed:                   5,
 		newBlockFunctions: []func(int, int, BlockInserterAndRemover) (Tetromino, bool){
 			NewSquareTetrominoes,
 			NewLTetrominoes,
@@ -78,6 +82,10 @@ func NewBlockBlockRevolutionMap(d Dimensions, speed int) BlockBlockRevolutionMap
 
 func (bbrm *BlockBlockRevolutionMap) Update() bool {
 
+	if bbrm.IsGameOver {
+		return false
+	}
+
 	bbrm.FrameTimer.Start()
 	bbrm.Process()
 
@@ -88,11 +96,14 @@ func (bbrm *BlockBlockRevolutionMap) Update() bool {
 		if !bbrm.MoveCurrentTetrominoDown() {
 			//bbrm.CurrentTetromino = nil
 			bbrm.CheckForAndClearLines()
-			bbrm.AddNewBlock()
+
+			if !bbrm.AddNewBlock() {
+				bbrm.IsGameOver = true
+			}
 		}
 	}
 
-	for bbrm.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*bbrm.FrameSpeed {
+	for bbrm.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*time.Duration(bbrm.BlockBlockRevolutionSettings.BlockSpeedReduction) {
 	}
 
 	return true
@@ -168,6 +179,8 @@ func (bbrm *BlockBlockRevolutionMap) CheckForAndClearLines() {
 
 	//linesToClear := make([]int, bbrm.Height)
 
+	scoreMultiplier := 0
+
 	for y := 0; y < bbrm.Height; y++ {
 
 		canAddLine := true
@@ -184,9 +197,14 @@ func (bbrm *BlockBlockRevolutionMap) CheckForAndClearLines() {
 		if canAddLine {
 			bbrm.RemoveAllBlocksFromLine(y)
 			bbrm.ShiftAllBlocksAboveLineDown(y)
+			scoreMultiplier++
 			y--
 		}
 
+	}
+
+	for i := 0; i < scoreMultiplier; i++ {
+		bbrm.Score += scoreMultiplier * 100
 	}
 
 }

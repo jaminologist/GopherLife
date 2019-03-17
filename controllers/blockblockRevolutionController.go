@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"gopherlife/colors"
 	"gopherlife/renderers"
 	"gopherlife/world"
@@ -12,9 +13,7 @@ import (
 )
 
 type BlockBlockRevolutionController struct {
-	world.Dimensions
-	FrameSpeed   int
-	ClickToBegin bool
+	world.BlockBlockRevolutionSettings
 	*world.BlockBlockRevolutionMap
 	*renderers.GridRenderer
 }
@@ -32,16 +31,18 @@ func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
 	renderer.TileHeight = 15
 
 	return BlockBlockRevolutionController{
-		Dimensions:   d,
+		BlockBlockRevolutionSettings: world.BlockBlockRevolutionSettings{
+			Dimensions:          world.Dimensions{Width: 10, Height: 20},
+			BlockSpeedReduction: 5,
+		},
 		GridRenderer: &renderer,
-		FrameSpeed:   10,
 	}
 
 }
 
 func (controller *BlockBlockRevolutionController) Start() {
 	if controller.BlockBlockRevolutionMap == nil {
-		sMap := world.NewBlockBlockRevolutionMap(controller.Dimensions, controller.FrameSpeed)
+		sMap := world.NewBlockBlockRevolutionMap(controller.BlockBlockRevolutionSettings)
 		controller.BlockBlockRevolutionMap = &sMap
 	}
 }
@@ -49,13 +50,11 @@ func (controller *BlockBlockRevolutionController) Start() {
 func (controller *BlockBlockRevolutionController) MarshalJSON() ([]byte, error) {
 
 	render := controller.GridRenderer.Draw(controller)
-	//render.TextBelowCanvas += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
+	render.TextBelowCanvas += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
 
-	/*if controller.SnakeMap.IsGameOver {
+	if controller.IsGameOver {
 		render.TextBelowCanvas += fmt.Sprintf("<span>Game Over!</span><br />")
-	} else if !controller.ClickToBegin {
-		render.TextBelowCanvas += fmt.Sprintf("<span>Click to Begin")
-	} */
+	}
 
 	return json.Marshal(render)
 }
@@ -77,26 +76,30 @@ func (controller *BlockBlockRevolutionController) PageLayout() WorldPageData {
 	return WorldPageData{
 		PageTitle: "B L O C K B L O C K R E V O L U T I O N",
 		FormData: []FormData{
-			FormDataSnakeSlowDown(controller.FrameSpeed, 3),
+			FormDataBlockSpeedReductionSlowDown(controller.BlockBlockRevolutionSettings.BlockSpeedReduction, 3),
 		},
 	}
 }
 
 func (controller *BlockBlockRevolutionController) HandleForm(values url.Values) bool {
 
-	fd := FormDataSnakeSlowDown(0, 0)
+	fd := FormDataBlockSpeedReductionSlowDown(0, 0)
 	if strings.Contains(values.Encode(), fd.Name) {
 		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		bbrm := world.NewBlockBlockRevolutionMap(controller.Dimensions, int(speed))
-		controller.FrameSpeed = int(speed)
+		controller.BlockBlockRevolutionSettings.BlockSpeedReduction = int(speed)
+		bbrm := world.NewBlockBlockRevolutionMap(controller.BlockBlockRevolutionSettings)
 		controller.BlockBlockRevolutionMap = &bbrm
-
 	}
 
 	return true
 }
 
 func (controller *BlockBlockRevolutionController) KeyPress(key Keys) {
+
+	if controller.IsGameOver {
+		return
+	}
+
 	switch key {
 	case LeftArrow:
 		controller.Add(func() {
@@ -116,17 +119,13 @@ func (controller *BlockBlockRevolutionController) KeyPress(key Keys) {
 }
 
 func (controller *BlockBlockRevolutionController) Update() bool {
-	/*if controller.ClickToBegin {
-		if controller.IsGameOver {
-			controller.ClickToBegin = false
-		}
-		return controller.SnakeMap.Update()
-	}*/
-
 	return controller.BlockBlockRevolutionMap.Update()
 }
 
 //Click selects the tile on the gopher map and runs the SelectEntity method
 func (controller *BlockBlockRevolutionController) Click(x int, y int) {
-	controller.ClickToBegin = true
+	if controller.IsGameOver {
+		controller.BlockBlockRevolutionMap = nil
+		controller.Start()
+	}
 }

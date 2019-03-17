@@ -44,6 +44,14 @@ func (c *ControllerContainer) Add(rc RenderController, key string, selected bool
 }
 
 func (c *ControllerContainer) Selected() RenderController {
+
+	if c.SelectedKey == "" {
+		for k := range c.RenderControllers {
+			c.SelectedKey = k
+			break
+		}
+	}
+
 	return c.RenderControllers[c.SelectedKey]
 }
 
@@ -59,7 +67,7 @@ func (c *ControllerContainer) PopulatePageData() {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		data.MapData = append(data.MapData, MapData{
+		data.WorldSelectFormInput = append(data.WorldSelectFormInput, WorldSelectFormInput{
 			DisplayName: key,
 			Value:       key,
 		})
@@ -71,11 +79,11 @@ func (c *ControllerContainer) PopulatePageData() {
 
 type PageData struct {
 	controllers.WorldPageData
-	MapData  []MapData
-	Selected string
+	WorldSelectFormInput []WorldSelectFormInput
+	Selected             string
 }
 
-type MapData struct {
+type WorldSelectFormInput struct {
 	DisplayName string
 	Value       string
 }
@@ -85,13 +93,16 @@ func SetUpPage() {
 	ControllerContainer := NewControllerContainer()
 
 	ss := controllers.NewGopherMapWithSpiralSearch()
-	ControllerContainer.Add(&ss, "GopherWorld With Spiral Search", true)
+	ControllerContainer.Add(&ss, "GopherWorld With Spiral Search", false)
 
 	ps := controllers.NewGopherMapWithParitionGridAndSearch()
 	ControllerContainer.Add(&ps, "GopherWorld With Partition", false)
 
-	cbws := controllers.NewSpiralMapController()
-	ControllerContainer.Add(&cbws, "Cool Black And White Spiral", false)
+	sm := controllers.NewSpiralMapController()
+	ControllerContainer.Add(&sm, "Black and White Spiral World", true)
+
+	wsm := controllers.NewWeirdSpiralMapController()
+	ControllerContainer.Add(&wsm, "Black and White Spiral World (Weird)", true)
 
 	fireworks := controllers.NewFireWorksController()
 	ControllerContainer.Add(&fireworks, "Fireworks!", false)
@@ -173,8 +184,8 @@ func SwitchWorld(ControllerContainer *ControllerContainer) func(w http.ResponseW
 
 		r.ParseForm()
 
-		mapSelection := r.FormValue("mapSelection")
-		ControllerContainer.SelectedKey = mapSelection
+		worldSelection := r.FormValue("worldSelection")
+		ControllerContainer.SelectedKey = worldSelection
 		ControllerContainer.Selected().Start()
 
 		ControllerContainer.pageData.WorldPageData = ControllerContainer.Selected().PageLayout()

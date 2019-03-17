@@ -22,7 +22,7 @@ func (controller *NoPlayerInput) KeyPress(key Keys) {
 type WorldPageData struct {
 	PageTitle   string
 	FormData    []FormData
-	IsGopherMap bool
+	IsGopherWorld bool
 }
 
 //Keys used to denote correct number for keys on a keyboard when calling e.which in js
