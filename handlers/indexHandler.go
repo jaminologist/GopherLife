@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 )
 
@@ -52,10 +53,15 @@ func (c *ControllerContainer) PopulatePageData() {
 	data.WorldPageData = c.Selected().PageLayout()
 	data.Selected = c.SelectedKey
 
-	for k := range c.RenderControllers {
+	keys := make([]string, 0)
+	for key := range c.RenderControllers {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
 		data.MapData = append(data.MapData, MapData{
-			DisplayName: k,
-			Value:       k,
+			DisplayName: key,
+			Value:       key,
 		})
 	}
 
@@ -79,10 +85,10 @@ func SetUpPage() {
 	ControllerContainer := NewControllerContainer()
 
 	ss := controllers.NewGopherMapWithSpiralSearch()
-	ControllerContainer.Add(&ss, "GopherMap With Spiral Search", false)
+	ControllerContainer.Add(&ss, "GopherWorld With Spiral Search", true)
 
 	ps := controllers.NewGopherMapWithParitionGridAndSearch()
-	ControllerContainer.Add(&ps, "GopherMap With Partition", false)
+	ControllerContainer.Add(&ps, "GopherWorld With Partition", false)
 
 	cbws := controllers.NewSpiralMapController()
 	ControllerContainer.Add(&cbws, "Cool Black And White Spiral", false)
@@ -91,16 +97,16 @@ func SetUpPage() {
 	ControllerContainer.Add(&fireworks, "Fireworks!", false)
 
 	collision := controllers.NewCollisionMapController()
-	ControllerContainer.Add(&collision, "Collision Map", false)
+	ControllerContainer.Add(&collision, "Collision World", false)
 
 	diagonalCollision := controllers.NewDiagonalCollisionMapController()
-	ControllerContainer.Add(&diagonalCollision, "Diagonal Collision Map", false)
+	ControllerContainer.Add(&diagonalCollision, "Collision World (Diagonal)", false)
 
 	snakeMap := controllers.NewSnakeMapController()
-	ControllerContainer.Add(&snakeMap, "Elongateing Gopher", false)
+	ControllerContainer.Add(&snakeMap, "Elongating Gopher", false)
 
 	blockblockRevolution := controllers.NewBlockBlockRevolutionController()
-	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", true)
+	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", false)
 
 	ControllerContainer.Selected().Start()
 	ControllerContainer.PopulatePageData()
@@ -108,8 +114,9 @@ func SetUpPage() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", worldToHTML(&ControllerContainer))
 	http.HandleFunc("/Update", Update(&ControllerContainer))
-	http.HandleFunc("/ShiftWorldView", HandleKeyPress(&ControllerContainer))
 	http.HandleFunc("/Click", HandleClick(&ControllerContainer))
+	http.HandleFunc("/KeyPress", HandleKeyPress(&ControllerContainer))
+	http.HandleFunc("/Scroll", HandleScroll(&ControllerContainer))
 	http.HandleFunc("/ResetWorld", ResetWorld(&ControllerContainer))
 	http.HandleFunc("/SwitchWorld", SwitchWorld(&ControllerContainer))
 	fmt.Println("Listening...")
@@ -196,12 +203,28 @@ func HandleKeyPress(ControllerContainer *ControllerContainer) func(w http.Respon
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		keydown := r.FormValue("keydown")
+
 		key, err := strconv.ParseInt(keydown, 10, 64)
 
 		if err == nil {
 			ControllerContainer.Selected().KeyPress(controllers.Keys(key))
+			w.WriteHeader(200)
+		}
+	}
+
+}
+
+func HandleScroll(ControllerContainer *ControllerContainer) func(w http.ResponseWriter, r *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+
+		deltaY := r.FormValue("deltaY")
+		deltaYNum, err := strconv.Atoi(deltaY)
+
+		if err == nil {
+			ControllerContainer.Selected().Scroll(deltaYNum)
 		}
 		w.WriteHeader(200)
 	}
-
 }

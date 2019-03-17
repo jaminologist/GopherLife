@@ -7,10 +7,16 @@ import (
 	"time"
 )
 
+type SnakeMapSettings struct {
+	Dimensions
+	SpeedReduction int
+}
+
 type SnakeMap struct {
 	ActionQueuer
 	Container
-	Dimensions
+
+	SnakeMapSettings
 
 	grid [][]*SnakeMapTile
 
@@ -20,7 +26,6 @@ type SnakeMap struct {
 	Score      int
 
 	FrameTimer timer.StopWatch
-	FrameSpeed time.Duration
 }
 
 type SnakeMapTile struct {
@@ -48,29 +53,28 @@ func NewSnakeTileGrid(x int, y int, width int, height int) [][]*SnakeMapTile {
 }
 
 //NewEmptySnakeMap Creates an Empty Snake Map (No Snake, No Wall)
-func NewEmptySnakeMap(d Dimensions, speed int) SnakeMap {
-	r := geometry.NewRectangle(0, 0, d.Width, d.Height)
+func NewEmptySnakeMap(settings SnakeMapSettings) SnakeMap {
+	r := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
 	baq := NewBasicActionQueue(1)
 
 	snakeMap := SnakeMap{
-		grid:         NewSnakeTileGrid(0, 0, d.Width, d.Height),
-		Container:    &r,
-		ActionQueuer: &baq,
-		Dimensions:   d,
-		IsGameOver:   false,
-		FrameSpeed:   time.Duration(speed),
+		grid:             NewSnakeTileGrid(0, 0, settings.Width, settings.Height),
+		Container:        &r,
+		ActionQueuer:     &baq,
+		SnakeMapSettings: settings,
+		IsGameOver:       false,
 	}
 
 	return snakeMap
 }
 
 //NewSnakeMap Creates a SnakeMap with a Snake and Walls surrounding the edges
-func NewSnakeMap(d Dimensions, speed int) SnakeMap {
+func NewSnakeMap(settings SnakeMapSettings) SnakeMap {
 
-	snakeMap := NewEmptySnakeMap(d, speed)
+	snakeMap := NewEmptySnakeMap(settings)
 
 	snakeHead := SnakePart{}
-	startX, startY := d.Width/2, d.Height/2-5
+	startX, startY := settings.Width/2, settings.Height/2-2
 	snakeMap.InsertSnakePart(startX, startY, &snakeHead)
 
 	snakePartToAttachTo := &snakeHead
@@ -84,14 +88,14 @@ func NewSnakeMap(d Dimensions, speed int) SnakeMap {
 		snakePartToAttachTo = &snakePartInStomach
 	}
 
-	for i := 0; i < d.Width; i++ {
+	for i := 0; i < settings.Width; i++ {
 		snakeMap.InsertSnakeWall(i, 0, &SnakeWall{})
-		snakeMap.InsertSnakeWall(i, d.Height-1, &SnakeWall{})
+		snakeMap.InsertSnakeWall(i, settings.Height-1, &SnakeWall{})
 	}
 
-	for i := 0; i < d.Height; i++ {
+	for i := 0; i < settings.Height; i++ {
 		snakeMap.InsertSnakeWall(0, i, &SnakeWall{})
-		snakeMap.InsertSnakeWall(d.Width-1, i, &SnakeWall{})
+		snakeMap.InsertSnakeWall(settings.Width-1, i, &SnakeWall{})
 	}
 
 	snakeMap.AddNewSnakeFoodToMap(0, 0)
@@ -116,7 +120,7 @@ func (sm *SnakeMap) Update() bool {
 		sm.IsGameOver = true
 	}
 
-	for sm.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*sm.FrameSpeed {
+	for sm.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*time.Duration(sm.SpeedReduction) {
 	}
 
 	return true
@@ -125,12 +129,13 @@ func (sm *SnakeMap) Update() bool {
 func (sm *SnakeMap) MoveSnake() bool {
 
 	currentSnakePart := sm.SnakeHead
+	currentSnakePart.PassOnFood()
 
 	nextX, nextY := sm.Direction.AddToPoint(currentSnakePart.GetX(), currentSnakePart.GetY())
 
 	hasFood := sm.HasSnakeFood(nextX, nextY)
 
-	newPartPassedDownThisFrame := false
+	//newPartPassedDownThisFrame := false
 
 	for {
 
@@ -155,20 +160,20 @@ func (sm *SnakeMap) MoveSnake() bool {
 
 		//Fun litte bug, due to the boolean if two things are swallowed at the same time on one will stay still on the screen.
 		//You can decide whether to fix this or not
-		if currentSnakePart.snakePartInStomach != nil && currentSnakePart.snakePartBehind != nil && !newPartPassedDownThisFrame {
+		/*if currentSnakePart.snakePartInStomach != nil && currentSnakePart.snakePartBehind != nil && !newPartPassedDownThisFrame {
 			currentSnakePart.snakePartBehind.snakePartInStomach = currentSnakePart.snakePartInStomach
 			currentSnakePart.snakePartInStomach = nil
 			newPartPassedDownThisFrame = true
-		}
+		}*/
 
 		nextX, nextY = prevX, prevY
 
 		if currentSnakePart.snakePartBehind == nil {
 
-			if currentSnakePart.snakePartInStomach != nil {
-				currentSnakePart.AttachToBack(currentSnakePart.snakePartInStomach)
-				currentSnakePart.snakePartInStomach = nil
-			}
+			//	if currentSnakePart.snakePartInStomach != nil {
+			//		currentSnakePart.AttachToBack(currentSnakePart.snakePartInStomach)
+			//		currentSnakePart.snakePartInStomach = nil
+			//	}
 
 			break
 		}
@@ -319,6 +324,25 @@ type SnakePart struct {
 func (sp *SnakePart) AttachToBack(partToAttach *SnakePart) {
 	sp.snakePartBehind = partToAttach
 	partToAttach.snakePartInFront = sp
+}
+
+//AttachToBack Adds a SnakePart to the back of another SnakePart.
+func (sp *SnakePart) PassOnFood() {
+
+	if sp.snakePartBehind != nil {
+		sp.snakePartBehind.PassOnFood()
+	}
+
+	if sp.HasPartInStomach() {
+
+		if sp.snakePartBehind == nil {
+			sp.AttachToBack(sp.snakePartInStomach)
+			sp.snakePartInStomach = nil
+		} else {
+			sp.snakePartBehind.snakePartInStomach = sp.snakePartInStomach
+			sp.snakePartInStomach = nil
+		}
+	}
 }
 
 //HasPartInStomach Return true is there is a SnakePart inside the Stomach

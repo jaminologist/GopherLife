@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopherlife/colors"
-	"gopherlife/geometry"
 	"gopherlife/renderers"
 	"gopherlife/world"
 	"image/color"
@@ -12,39 +11,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-//UserInputHandler used to handle user inputs for a world
-type UserInputHandler interface {
-	Click(x int, y int)
-	KeyPress(key Keys)
-}
-
-type WorldPageData struct {
-	PageTitle   string
-	FormData    []FormData
-	IsGopherMap bool
-}
-
-//Keys used to denote correct number for keys on a keyboard when called e.which in js
-type Keys int64
-
-//List of keys and their corresponding numbers
-const (
-	LeftArrow  Keys = 37
-	RightArrow Keys = 39
-	UpArrow    Keys = 38
-	DownArrow  Keys = 40
-
-	PKey Keys = 80
-	QKey Keys = 81
-	WKey Keys = 87
-)
-
-type GopherMapController struct {
-	*world.GopherMap
-	*renderers.GridRenderer
-	CreateNew func(world.GopherMapSettings) *world.GopherMap
-}
 
 var (
 	maleGopherColor         = color.RGBA{90, 218, 255, 1}
@@ -59,6 +25,12 @@ var (
 	decayedGopherColor = color.RGBA{0, 0, 0, 1}
 	grassColor         = color.RGBA{65, 119, 15, 1}
 )
+
+type GopherMapController struct {
+	*world.GopherMap
+	*renderers.GridRenderer
+	CreateNew func(world.GopherMapSettings) *world.GopherMap
+}
 
 //NewGopherMapWithSpiralSearch Returns a Controller with a Gopher Map. Where Gophers search for food using a Spiral To Nearest Search
 func NewGopherMapWithSpiralSearch() GopherMapController {
@@ -227,7 +199,7 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	renderString += fmt.Sprintf("<span; >Avg Input Time (s): %s </span><br />", diagnostics.InputStopWatch.GetAverage().String())
 	renderString += fmt.Sprintf("<span>Total Elasped Time (s): %s </span><br />", diagnostics.GlobalStopWatch.GetCurrentElaspedTime().String())
 
-	render.WorldRender = renderString
+	render.TextBelowCanvas = renderString
 
 	gmr := GopherMapRender{
 		Render: render,
@@ -297,14 +269,6 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 	return true
 }
 
-type NoPlayerInput struct{}
-
-func (controller *NoPlayerInput) Click(x int, y int) {
-}
-
-func (controller *NoPlayerInput) KeyPress(key Keys) {
-}
-
 type SpiralMapController struct {
 	NoPlayerInput
 	world.SpiralMapSettings
@@ -370,7 +334,7 @@ func NewFireWorksController() FireWorksController {
 	settings := world.GopherMapSettings{
 		Dimensions:      world.Dimensions{Width: 400, Height: 200},
 		Population:      world.Population{InitialPopulation: 2000, MaxPopulation: 100000},
-		NumberOfFood:    1000,
+		NumberOfFood:    2000,
 		GopherBirthRate: 35,
 	}
 
@@ -424,344 +388,4 @@ func (controller *FireWorksController) PageLayout() WorldPageData {
 
 func (controller *FireWorksController) HandleForm(values url.Values) bool {
 	return true
-}
-
-type CollisionMapController struct {
-	NoPlayerInput
-	world.CollisionMapSettings
-	*world.CollisionMap
-	*renderers.GridRenderer
-	CreateNew func(world.CollisionMapSettings) world.CollisionMap
-}
-
-func NewCollisionMapController() CollisionMapController {
-
-	settings := world.CollisionMapSettings{
-		Dimensions: world.Dimensions{Width: 75, Height: 75},
-		Population: world.Population{InitialPopulation: 500},
-		IsDiagonal: false,
-	}
-
-	renderer := renderers.NewRenderer(100, 100)
-	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
-
-	return CollisionMapController{
-		CollisionMapSettings: settings,
-		GridRenderer:         &renderer,
-		CreateNew:            world.NewCollisionMap,
-	}
-}
-
-func NewDiagonalCollisionMapController() CollisionMapController {
-
-	settings := world.CollisionMapSettings{
-		Dimensions: world.Dimensions{Width: 75, Height: 75},
-		Population: world.Population{InitialPopulation: 500},
-		IsDiagonal: true,
-	}
-
-	renderer := renderers.NewRenderer(100, 100)
-
-	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
-
-	return CollisionMapController{
-		CollisionMapSettings: settings,
-		GridRenderer:         &renderer,
-		CreateNew:            world.NewCollisionMap,
-	}
-}
-
-func (controller *CollisionMapController) Start() {
-	if controller.CollisionMap == nil {
-		sMap := controller.CreateNew(controller.CollisionMapSettings)
-		controller.CollisionMap = &sMap
-	}
-}
-
-func (controller *CollisionMapController) MarshalJSON() ([]byte, error) {
-	return json.Marshal(controller.GridRenderer.Draw(controller))
-}
-
-func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
-
-	if controller.Contains(x, y) {
-		if c, ok := controller.HasCollider(x, y); ok {
-			return c.Color
-		} else {
-			return color.RGBA{0, 0, 0, 1}
-		}
-	}
-
-	return color.RGBA{255, 255, 255, 1}
-}
-
-func (controller *CollisionMapController) PageLayout() WorldPageData {
-	settings := controller.CollisionMapSettings
-
-	formdataArray := []FormData{
-		FormDataWidth(settings.Width, 2),
-		FormDataHeight(settings.Height, 2),
-		FormDataInitialPopulation(settings.InitialPopulation, 2),
-	}
-
-	return WorldPageData{
-		PageTitle: "C O L L I D E R L I F E",
-		FormData:  formdataArray,
-	}
-}
-
-func (controller *CollisionMapController) HandleForm(values url.Values) bool {
-
-	if strings.Contains(values.Encode(), "initialPopulation") {
-
-		width, _ := strconv.ParseInt(values.Get("width"), 10, 64)
-		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
-		initialPopulation, _ := strconv.ParseInt(values.Get("initialPopulation"), 10, 64)
-
-		controller.CollisionMapSettings.Width = int(width)
-		controller.CollisionMapSettings.Height = int(height)
-		controller.CollisionMapSettings.InitialPopulation = int(initialPopulation)
-
-		gmc := world.NewCollisionMap(controller.CollisionMapSettings)
-		controller.CollisionMap = &gmc
-
-	}
-	return true
-}
-
-type SnakeMapController struct {
-	world.Dimensions
-	FrameSpeed   int
-	ClickToBegin bool
-	*world.SnakeMap
-	*renderers.GridRenderer
-}
-
-func NewSnakeMapController() SnakeMapController {
-
-	d := world.Dimensions{
-		Width:  35,
-		Height: 35,
-	}
-
-	renderer := renderers.NewRenderer(50, 50)
-	renderer.Shift(d.Width/2-renderer.Width/2, d.Height/2-renderer.Height/2)
-
-	return SnakeMapController{
-		Dimensions:   d,
-		GridRenderer: &renderer,
-		FrameSpeed:   10,
-	}
-}
-
-func (controller *SnakeMapController) Start() {
-	if controller.SnakeMap == nil {
-		sMap := world.NewSnakeMap(controller.Dimensions, controller.FrameSpeed)
-		controller.SnakeMap = &sMap
-	}
-}
-
-func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
-
-	render := controller.GridRenderer.Draw(controller)
-	render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
-
-	if controller.SnakeMap.IsGameOver {
-		render.WorldRender += fmt.Sprintf("<span>Game Over!</span><br />")
-	} else if !controller.ClickToBegin {
-		render.WorldRender += fmt.Sprintf("<span>Click to Begin")
-	}
-
-	return json.Marshal(render)
-}
-
-func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
-
-	if sp, ok := controller.Tile(x, y); ok {
-		switch {
-		case sp.SnakePart != nil:
-			if sp.SnakePart.HasPartInStomach() {
-				return colors.NokiaFoodGreen
-			} else {
-				return colors.NokiaBorder
-			}
-		case sp.SnakeFood != nil:
-			return colors.NokiaBorder
-		case sp.SnakeWall != nil:
-			return colors.NokiaBorder
-		default:
-			return colors.NokiaGreen
-		}
-	}
-	return colors.White
-}
-
-func (controller *SnakeMapController) PageLayout() WorldPageData {
-	return WorldPageData{
-		PageTitle: "E L O N G A T I N G G O P H E R L I F E",
-		FormData: []FormData{
-			FormDataSnakeSlowDown(controller.FrameSpeed, 3),
-		},
-	}
-}
-
-func (controller *SnakeMapController) HandleForm(values url.Values) bool {
-
-	fd := FormDataSnakeSlowDown(0, 0)
-	if strings.Contains(values.Encode(), fd.Name) {
-		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		sm := world.NewSnakeMap(controller.Dimensions, int(speed))
-		controller.FrameSpeed = int(speed)
-		controller.SnakeMap = &sm
-
-	}
-
-	return true
-}
-
-func (controller *SnakeMapController) KeyPress(key Keys) {
-	switch key {
-	case LeftArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Left)
-	case RightArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Right)
-	case UpArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Up)
-	case DownArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Down)
-	}
-}
-
-func (controller *SnakeMapController) Update() bool {
-	if controller.ClickToBegin {
-		if controller.IsGameOver {
-			controller.ClickToBegin = false
-		}
-		return controller.SnakeMap.Update()
-	}
-
-	return true
-}
-
-//Click selects the tile on the gopher map and runs the SelectEntity method
-func (controller *SnakeMapController) Click(x int, y int) {
-	controller.ClickToBegin = true
-}
-
-type BlockBlockRevolutionController struct {
-	world.Dimensions
-	FrameSpeed   int
-	ClickToBegin bool
-	*world.BlockBlockRevolutionMap
-	*renderers.GridRenderer
-}
-
-func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
-
-	d := world.Dimensions{
-		Width:  10,
-		Height: 20,
-	}
-
-	renderer := renderers.NewRenderer(50, 50)
-	renderer.Shift(d.Width/2-renderer.Width/2, d.Height/2-renderer.Height/2)
-
-	return BlockBlockRevolutionController{
-		Dimensions:   d,
-		GridRenderer: &renderer,
-		FrameSpeed:   10,
-	}
-
-}
-
-func (controller *BlockBlockRevolutionController) Start() {
-	if controller.BlockBlockRevolutionMap == nil {
-		sMap := world.NewBlockBlockRevolutionMap(controller.Dimensions, controller.FrameSpeed)
-		controller.BlockBlockRevolutionMap = &sMap
-	}
-}
-
-func (controller *BlockBlockRevolutionController) MarshalJSON() ([]byte, error) {
-
-	render := controller.GridRenderer.Draw(controller)
-	//render.WorldRender += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
-
-	/*if controller.SnakeMap.IsGameOver {
-		render.WorldRender += fmt.Sprintf("<span>Game Over!</span><br />")
-	} else if !controller.ClickToBegin {
-		render.WorldRender += fmt.Sprintf("<span>Click to Begin")
-	} */
-
-	return json.Marshal(render)
-}
-
-func (controller *BlockBlockRevolutionController) RenderTile(x int, y int) color.RGBA {
-
-	if tile, ok := controller.Tile(x, y); ok {
-		switch {
-		case tile.Block != nil:
-			return tile.Block.Color
-		default:
-			return colors.Black
-		}
-	}
-	return colors.White
-}
-
-func (controller *BlockBlockRevolutionController) PageLayout() WorldPageData {
-	return WorldPageData{
-		PageTitle: "B L O C K B L O C K R E V O L U T I O N",
-		FormData: []FormData{
-			FormDataSnakeSlowDown(controller.FrameSpeed, 3),
-		},
-	}
-}
-
-func (controller *BlockBlockRevolutionController) HandleForm(values url.Values) bool {
-
-	fd := FormDataSnakeSlowDown(0, 0)
-	if strings.Contains(values.Encode(), fd.Name) {
-		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		bbrm := world.NewBlockBlockRevolutionMap(controller.Dimensions, int(speed))
-		controller.FrameSpeed = int(speed)
-		controller.BlockBlockRevolutionMap = &bbrm
-
-	}
-
-	return true
-}
-
-func (controller *BlockBlockRevolutionController) KeyPress(key Keys) {
-	switch key {
-	case LeftArrow:
-		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.MoveCurrentTetrominoLeft()
-		})
-	case RightArrow:
-		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.MoveCurrentTetrominoRight()
-		})
-	case UpArrow:
-		controller.BlockBlockRevolutionMap.RotateTetromino()
-	case DownArrow:
-		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.InstantDown()
-		})
-	}
-}
-
-func (controller *BlockBlockRevolutionController) Update() bool {
-	/*if controller.ClickToBegin {
-		if controller.IsGameOver {
-			controller.ClickToBegin = false
-		}
-		return controller.SnakeMap.Update()
-	}*/
-
-	return controller.BlockBlockRevolutionMap.Update()
-}
-
-//Click selects the tile on the gopher map and runs the SelectEntity method
-func (controller *BlockBlockRevolutionController) Click(x int, y int) {
-	controller.ClickToBegin = true
 }

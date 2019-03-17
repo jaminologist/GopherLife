@@ -10,13 +10,18 @@ type GridRenderer struct {
 
 	Width  int
 	Height int
+
+	TileWidth  int
+	TileHeight int
 }
 
 type Render struct {
-	Grid        [][]*RenderTile
-	WorldRender string
-	StartX      int
-	StartY      int
+	Grid            [][]*RenderTile
+	TextBelowCanvas string
+	StartX          int
+	StartY          int
+	TileWidth       int
+	TileHeight      int
 }
 
 type RenderTile struct {
@@ -30,13 +35,19 @@ type RenderTileContainer interface {
 
 //NewRenderer returns a new Render struct of size 45x and 15 y
 func NewRenderer(width int, height int) GridRenderer {
-	return GridRenderer{Width: width, Height: height}
+	return GridRenderer{Width: width, Height: height, TileWidth: 5, TileHeight: 5}
 }
 
 //Draw returns a struct containing all colors found within the dimensions of the Renderer
 func (renderer *GridRenderer) Draw(container RenderTileContainer) Render {
 
-	render := Render{WorldRender: ""}
+	render := Render{
+		TextBelowCanvas: "",
+		StartX:          renderer.StartX,
+		StartY:          renderer.StartY,
+		TileWidth:       renderer.TileWidth,
+		TileHeight:      renderer.TileHeight,
+	}
 
 	render.Grid = make([][]*RenderTile, renderer.Width)
 
@@ -52,9 +63,6 @@ func (renderer *GridRenderer) Draw(container RenderTileContainer) Render {
 	startX := renderer.StartX
 	startY := renderer.StartY
 
-	render.StartX = startX
-	render.StartY = startY
-
 	for y := startY; y < startY+renderer.Height; y++ {
 		for x := startX; x < startX+renderer.Width; x++ {
 			render.Grid[x-startX][y-startY].RGBA = container.RenderTile(x, y)
@@ -65,7 +73,24 @@ func (renderer *GridRenderer) Draw(container RenderTileContainer) Render {
 }
 
 //Shift Moves the Starting X and Y of the renderer
-func (renderer *GridRenderer) Shift(x int, y int) {
-	renderer.StartX += x
-	renderer.StartY += y
+func (gr *GridRenderer) Shift(x int, y int) {
+	gr.StartX += x
+	gr.StartY += y
+}
+
+func (gr *GridRenderer) Scroll(deltaY int) {
+
+	if deltaY < 0 { //Wheel Up
+		gr.TileWidth = gr.TileWidth + 1
+		gr.TileHeight = gr.TileHeight + 1
+	} else { //Wheel Down
+		gr.TileWidth = gr.TileWidth - 1
+		gr.TileHeight = gr.TileHeight - 1
+
+		if gr.TileWidth <= 1 || gr.TileHeight <= 1 {
+			gr.TileWidth = 1
+			gr.TileHeight = 1
+		}
+	}
+
 }

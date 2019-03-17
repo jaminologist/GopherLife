@@ -52,9 +52,9 @@ func FormDataMaxPopulation(maxPopulation int, bootstrapColumnWidth int) FormData
 
 func FormDataSnakeSlowDown(slowdown int, bootstrapColumnWidth int) FormData {
 	return FormData{
-		DisplayName:        "Snake SlowDown",
+		DisplayName:        "Speed Reduction Level",
 		Type:               "Number",
-		Name:               "SnakeSlowDown",
+		Name:               "speedReduction",
 		Value:              strconv.Itoa(slowdown),
 		BootStrapFormWidth: bootstrapColumnWidth,
 	}

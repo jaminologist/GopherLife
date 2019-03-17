@@ -6,7 +6,10 @@ $(document).ready(function () {
     var $canvas = $("#worldCanvas");
 
     $canvas.on('wheel', function (event) {
-        ScrollCanvas(event, ci)
+        $.ajax({
+            type: 'GET',
+            url: '/Scroll?deltaY=' + event.originalEvent.deltaY,
+        })
         event.preventDefault()
     });
 
@@ -14,7 +17,7 @@ $(document).ready(function () {
         var key = event.which;
         $.ajax({
             type: 'GET',
-            url: '/ShiftWorldView?keydown=' + key,
+            url: '/KeyPress?keydown=' + key,
         })
     });
 
@@ -41,7 +44,7 @@ function ScrollCanvas(event, CanvasInformation){
 
 
 function UpdateWorldDisplay(data, CanvasInformation) {
-    $("#worldDiv").html(data.WorldRender)
+    $("#worldDiv").html(data.TextBelowCanvas)
     DrawGrid(data.Grid, CanvasInformation)
 
     if (typeof(data.SelectedGopher) !== "undefined"){
@@ -51,8 +54,6 @@ function UpdateWorldDisplay(data, CanvasInformation) {
 
 
 function CanvasInformation(){
-   // this.TileWidth = 5;
-   // this.TileHeight = 5;
     this.TileWidth = 15;
     this.TileHeight = 15;
     this.StartX = 0;
@@ -74,6 +75,9 @@ function OpenWorld(CanvasInformation) {
         success: function (data) {
             CanvasInformation.OtherStartX = data.StartX;
             CanvasInformation.OtherStartY = data.StartY;
+            CanvasInformation.TileWidth = data.TileWidth;
+            CanvasInformation.TileHeight = data.TileHeight;
+            console.log(CanvasInformation)
             UpdateWorldDisplay(data, CanvasInformation);
             OpenWorld(CanvasInformation);
         },
