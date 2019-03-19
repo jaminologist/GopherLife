@@ -98,10 +98,10 @@ func SetUpPage() {
 	ps := controllers.NewGopherMapWithParitionGridAndSearch()
 	ControllerContainer.Add(&ps, "GopherWorld With Partition", false)
 
-	sm := controllers.NewSpiralMapController()
+	sm := controllers.NewSpiralWorldController()
 	ControllerContainer.Add(&sm, "Black and White Spiral World", true)
 
-	wsm := controllers.NewWeirdSpiralMapController()
+	wsm := controllers.NewWeirdSpiralWorldController()
 	ControllerContainer.Add(&wsm, "Black and White Spiral World (Weird)", true)
 
 	fireworks := controllers.NewFireWorksController()

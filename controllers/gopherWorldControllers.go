@@ -275,16 +275,16 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 	return true
 }
 
-type SpiralMapController struct {
+type SpiralWorldController struct {
 	NoPlayerInput
-	world.SpiralMapSettings
-	*world.SpiralMap
+	world.SpiralWorldSettings
+	*world.SpiralWorld
 	*renderers.GridRenderer
 }
 
-func NewSpiralMapController() SpiralMapController {
+func NewSpiralWorldController() SpiralWorldController {
 
-	settings := world.SpiralMapSettings{
+	settings := world.SpiralWorldSettings{
 		Dimensions:    world.Dimensions{Width: 50, Height: 50},
 		MaxPopulation: 1000,
 		WeirdSpiral:   false,
@@ -293,15 +293,15 @@ func NewSpiralMapController() SpiralMapController {
 	renderer := renderers.NewRenderer(50, 50)
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
 
-	return SpiralMapController{
-		GridRenderer:      &renderer,
-		SpiralMapSettings: settings,
+	return SpiralWorldController{
+		GridRenderer:        &renderer,
+		SpiralWorldSettings: settings,
 	}
 }
 
-func NewWeirdSpiralMapController() SpiralMapController {
+func NewWeirdSpiralWorldController() SpiralWorldController {
 
-	settings := world.SpiralMapSettings{
+	settings := world.SpiralWorldSettings{
 		Dimensions:    world.Dimensions{Width: 50, Height: 50},
 		MaxPopulation: 1000,
 		WeirdSpiral:   true,
@@ -310,24 +310,24 @@ func NewWeirdSpiralMapController() SpiralMapController {
 	renderer := renderers.NewRenderer(50, 50)
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
 
-	return SpiralMapController{
-		GridRenderer:      &renderer,
-		SpiralMapSettings: settings,
+	return SpiralWorldController{
+		GridRenderer:        &renderer,
+		SpiralWorldSettings: settings,
 	}
 }
 
-func (controller *SpiralMapController) Start() {
-	if controller.SpiralMap == nil {
-		sMap := world.NewSpiralMap(controller.SpiralMapSettings)
-		controller.SpiralMap = &sMap
+func (controller *SpiralWorldController) Start() {
+	if controller.SpiralWorld == nil {
+		sMap := world.NewSpiralWorld(controller.SpiralWorldSettings)
+		controller.SpiralWorld = &sMap
 	}
 }
 
-func (controller *SpiralMapController) MarshalJSON() ([]byte, error) {
+func (controller *SpiralWorldController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(controller.GridRenderer.Draw(controller))
 }
 
-func (controller *SpiralMapController) RenderTile(x int, y int) color.RGBA {
+func (controller *SpiralWorldController) RenderTile(x int, y int) color.RGBA {
 	if tile, ok := controller.Tile(x, y); ok {
 		if tile.HasGopher() {
 			return color.RGBA{255, 255, 255, 1}
@@ -339,12 +339,12 @@ func (controller *SpiralMapController) RenderTile(x int, y int) color.RGBA {
 	}
 }
 
-func (controller *SpiralMapController) PageLayout() WorldPageData {
+func (controller *SpiralWorldController) PageLayout() WorldPageData {
 	return WorldPageData{IsGopherWorld: false}
 }
 
-func (controller *SpiralMapController) HandleForm(values url.Values) bool {
-	controller.SpiralMap = nil
+func (controller *SpiralWorldController) HandleForm(values url.Values) bool {
+	controller.SpiralWorld = nil
 	controller.Start()
 	return true
 }

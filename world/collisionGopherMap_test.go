@@ -105,12 +105,13 @@ func TestCollisionMap_MoveCollider(t *testing.T) {
 	height := 5
 	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
 		Dimensions: Dimensions{Width: width, Height: height},
+		Population: Population{InitialPopulation: 100, MaxPopulation: 100},
 		IsDiagonal: false},
 	)
 
 	insertX, insertY := 1, 1
-	collider := Collider{}
-	collisionMap.InsertCollider(insertX, insertY, &collider)
+	collider := &Collider{}
+	collisionMap.InsertCollider(insertX, insertY, collider)
 
 	tests := []struct {
 		name         string
@@ -118,7 +119,7 @@ func TestCollisionMap_MoveCollider(t *testing.T) {
 		args         args
 		want         expected
 	}{
-		{"Move into Empty Space", &collisionMap, args{0, 1, &collider}, expected{insertX, insertY + 1, true}},
+		{"Move into Empty Space", &collisionMap, args{0, 1, collider}, expected{insertX, insertY + 1, true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
