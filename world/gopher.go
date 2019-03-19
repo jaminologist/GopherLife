@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"gopherlife/names"
 	"math/rand"
 )
@@ -9,28 +9,32 @@ import (
 const hungerPerMoment = 1
 const timeToDecay = 10
 
-type Gender int
-
+//Gopher The whole point of the project
 type Gopher struct {
-	Name                       string
+	Name string
+
 	Lifespan                   int
-	Gender                     Gender
 	Decay                      int
 	Hunger                     int
-	IsMated                    bool
-	IsDead                     bool
-	IsHungry                   bool
 	CounterTillReadyToFindLove int
-	Position                   calc.Coordinates
-	HeldFood                   *Food
 
-	FoodTargets   []calc.Coordinates
-	GopherTargets []calc.Coordinates
-	MovementPath  []calc.Coordinates
+	IsMated  bool
+	IsDead   bool
+	IsHungry bool
+
+	Position geometry.Coordinates
+
+	HeldFood *Food
+
+	Gender Gender
+
+	FoodTargets   []geometry.Coordinates
+	GopherTargets []geometry.Coordinates
+	MovementPath  []geometry.Coordinates
 }
 
 //NewGopher Creates a new Gopher and the given co-ordinate
-func NewGopher(Name string, coord calc.Coordinates) Gopher {
+func NewGopher(Name string, coord geometry.Coordinates) Gopher {
 
 	return Gopher{
 		Name:     Name,
@@ -48,7 +52,7 @@ func (gopher *Gopher) SetName(Name string) {
 
 //IsMature Checks if the gopher is no longer a child
 func (gopher *Gopher) IsMature() bool {
-	return gopher.Lifespan >= 50
+	return gopher.Lifespan >= 150
 }
 
 func (gopher *Gopher) SetIsDead() {
@@ -131,58 +135,56 @@ func (gopher *Gopher) AdvanceLife() {
 
 //ClearFoodTargets Clears all food targets from the Gopher
 func (gopher *Gopher) ClearFoodTargets() {
-	gopher.FoodTargets = []calc.Coordinates{}
+	gopher.FoodTargets = []geometry.Coordinates{}
 }
 
 func (gopher *Gopher) ClearGopherTargets() {
-	gopher.GopherTargets = []calc.Coordinates{}
+	gopher.GopherTargets = []geometry.Coordinates{}
 }
 
 type GopherActor struct {
-	*Gopher
-	QueueableActions
-	Searchable
-	TileContainer
-	Insertable
-	PickableTiles
-	MoveableActors
+	ActionQueuer
+	Searcher
+	GopherContainer
+	FoodContainer
+	FoodPicker
+	MoveableGophers
 	ActorGeneration
 	GopherBirthRate int
 }
 
-func (gopher *GopherActor) Update() {
-
+func (actor *GopherActor) Update(gopher *Gopher) {
 	switch {
 	case gopher.IsDead:
 		gopher.Decay++
 	case gopher.IsHungry:
-		gopher.handleHunger()
+		actor.handleHunger(gopher)
 	case !gopher.IsHungry:
 
 		switch {
 		case gopher.Gender == Male:
 			if gopher.IsLookingForLove() {
-				gopher.GopherTargets = gopher.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
+				gopher.GopherTargets = actor.Search(gopher.Position, 15, 15, 1, SearchForFemaleGopher)
 				if len(gopher.GopherTargets) <= 0 {
-					gopher.Wander()
+					actor.Wander(gopher)
 				} else {
 
 					target := gopher.GopherTargets[0]
 
 					if gopher.Position.IsInRange(target, 1, 1) {
-						gopher.QueueMating(target)
+						actor.QueueMating(gopher, target)
 						break
 					}
-					moveX, moveY := calc.FindNextStep(gopher.Position, target)
-					gopher.QueueGopherMove(moveX, moveY)
+					moveX, moveY := geometry.FindNextStep(gopher.Position, target)
+					actor.QueueGopherMove(moveX, moveY, gopher)
 					gopher.ClearFoodTargets()
 				}
 			} else {
-				gopher.Wander()
+				actor.Wander(gopher)
 			}
 
 		default:
-			gopher.Wander()
+			actor.Wander(gopher)
 		}
 
 	}
@@ -191,67 +193,56 @@ func (gopher *GopherActor) Update() {
 
 }
 
-func (gopher *GopherActor) handleHunger() {
+func (actor *GopherActor) handleHunger(gopher *Gopher) {
 	switch {
 	case gopher.HeldFood != nil:
 		gopher.Eat()
 	default:
-		gopher.moveTowardsFood()
+		actor.moveTowardsFood(gopher)
 	}
 }
 
-func (gopher *GopherActor) moveTowardsFood() {
+func (actor *GopherActor) moveTowardsFood(gopher *Gopher) {
 
 	if len(gopher.FoodTargets) > 0 {
 
 		target := gopher.FoodTargets[0]
 
-		mapPoint, _ := gopher.Tile(target.GetX(), target.GetY())
-
-		if mapPoint.Food == nil {
-			gopher.ClearFoodTargets()
-		} else {
+		if _, ok := actor.HasFood(target.GetX(), target.GetY()); ok {
 
 			if gopher.Position.IsInRange(target, 0, 0) {
-				gopher.QueuePickUpFood()
+				actor.QueuePickUpFood(gopher)
 				gopher.ClearFoodTargets()
 				return
 			}
 
-			moveX, moveY := calc.FindNextStep(gopher.Position, target)
-			gopher.QueueGopherMove(moveX, moveY)
-
+			moveX, moveY := geometry.FindNextStep(gopher.Position, target)
+			actor.QueueGopherMove(moveX, moveY, gopher)
+		} else {
+			gopher.ClearFoodTargets()
 		}
 
 	} else {
-		gopher.LookForFood()
+		actor.LookForFood(gopher)
 	}
 
 }
 
 //Wander Randomly decides a diretion for the gopher to move in
-func (gopher *GopherActor) Wander() {
+func (actor *GopherActor) Wander(gopher *Gopher) {
 	x, y := rand.Intn(3)-1, rand.Intn(3)-1
-	gopher.QueueGopherMove(x, y)
+	actor.QueueGopherMove(x, y, gopher)
 }
 
-func (gopher *GopherActor) LookForFood() {
-	gopher.FoodTargets = gopher.Search(gopher.Position, 25, 25, 1, SearchForFood)
-}
-
-//QueueRemoveGopher Adds the Remove Gopher Method to the Input Queue.
-func (gopher *GopherActor) QueueRemoveGopher() {
-
-	gopher.Add(func() {
-		gopher.RemoveGopher(gopher.Position.GetX(), gopher.Position.GetY())
-	})
+func (actor *GopherActor) LookForFood(gopher *Gopher) {
+	gopher.FoodTargets = actor.Search(gopher.Position, 25, 25, 1, SearchForFood)
 }
 
 //QueueGopherMove Adds the Move Gopher Method to the Input Queue.
-func (gopher *GopherActor) QueueGopherMove(moveX int, moveY int) {
+func (actor *GopherActor) QueueGopherMove(moveX int, moveY int, gopher *Gopher) {
 
-	gopher.Add(func() {
-		success := gopher.MoveGopher(gopher.Gopher, moveX, moveY)
+	actor.Add(func() {
+		success := actor.MoveGopher(gopher, moveX, moveY)
 		_ = success
 	})
 
@@ -259,10 +250,10 @@ func (gopher *GopherActor) QueueGopherMove(moveX int, moveY int) {
 
 //QueuePickUpFood Adds the PickUp Food Method to the Input Queue. If food is at the give position it is added to the Gopher's
 //held food variable
-func (gopher *GopherActor) QueuePickUpFood() {
+func (actor *GopherActor) QueuePickUpFood(gopher *Gopher) {
 
-	gopher.Add(func() {
-		food, ok := gopher.PickUpFood(gopher.Position.GetX(), gopher.Position.GetY())
+	actor.Add(func() {
+		food, ok := actor.PickUpFood(gopher.Position.GetX(), gopher.Position.GetY())
 		if ok {
 			gopher.HeldFood = food
 			gopher.ClearFoodTargets()
@@ -270,21 +261,19 @@ func (gopher *GopherActor) QueuePickUpFood() {
 	})
 }
 
-func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
+func (actor *GopherActor) QueueMating(gopher *Gopher, matePosition geometry.Coordinates) {
 
-	gopher.Add(func() {
+	actor.Add(func() {
 
-		if mapPoint, ok := gopher.Tile(matePosition.GetX(), matePosition.GetY()); ok && mapPoint.HasGopher() {
-
-			mate := mapPoint.Gopher
+		if mate, ok := actor.HasGopher(matePosition.GetX(), matePosition.GetY()); ok {
 
 			litterNumber := 0
 
-			if gopher.GopherBirthRate > 0 {
-				litterNumber = rand.Intn(gopher.GopherBirthRate)
+			if actor.GopherBirthRate > 0 {
+				litterNumber = rand.Intn(actor.GopherBirthRate)
 			}
 
-			emptySpaces := gopher.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
+			emptySpaces := actor.Search(gopher.Position, 10, 10, litterNumber, SearchForEmptySpace)
 
 			if mate.Gender == Female && len(emptySpaces) > 0 {
 				mate.IsMated = true
@@ -296,20 +285,7 @@ func (gopher *GopherActor) QueueMating(matePosition calc.Coordinates) {
 
 						pos := emptySpaces[i]
 						newborn := NewGopher(names.CuteName(), emptySpaces[i])
-
-						var gopherActor = GopherActor{
-							Gopher:           &newborn,
-							GopherBirthRate:  gopher.GopherBirthRate,
-							QueueableActions: gopher.QueueableActions,
-							Searchable:       gopher.Searchable,
-							TileContainer:    gopher.TileContainer,
-							Insertable:       gopher.Insertable,
-							PickableTiles:    gopher.PickableTiles,
-							MoveableActors:   gopher.MoveableActors,
-							ActorGeneration:  gopher.ActorGeneration,
-						}
-
-						gopher.AddNewGopher(pos.GetX(), pos.GetY(), &gopherActor)
+						actor.AddNewGopher(pos.GetX(), pos.GetY(), &newborn)
 
 					}
 

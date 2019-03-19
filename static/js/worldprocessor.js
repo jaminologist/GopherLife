@@ -6,7 +6,10 @@ $(document).ready(function () {
     var $canvas = $("#worldCanvas");
 
     $canvas.on('wheel', function (event) {
-        ScrollCanvas(event, ci)
+        $.ajax({
+            type: 'GET',
+            url: '/Scroll?deltaY=' + event.originalEvent.deltaY,
+        })
         event.preventDefault()
     });
 
@@ -14,7 +17,7 @@ $(document).ready(function () {
         var key = event.which;
         $.ajax({
             type: 'GET',
-            url: '/ShiftWorldView?keydown=' + key,
+            url: '/KeyPress?keydown=' + key,
         })
     });
 
@@ -41,15 +44,18 @@ function ScrollCanvas(event, CanvasInformation){
 
 
 function UpdateWorldDisplay(data, CanvasInformation) {
-    $("#worldDiv").html(data.WorldRender)
+    $("#worldDiv").html(data.TextBelowCanvas)
     DrawGrid(data.Grid, CanvasInformation)
-    DisplaySelectedGopher(data.SelectedGopher)
+
+    if (typeof(data.SelectedGopher) !== "undefined"){
+        DisplaySelectedGopher(data.SelectedGopher)
+    }
 }
 
 
 function CanvasInformation(){
-    this.TileWidth = 5;
-    this.TileHeight = 5;
+    this.TileWidth = 15;
+    this.TileHeight = 15;
     this.StartX = 0;
     this.StartY = 0;
     this.RenderWidth = 0;
@@ -63,12 +69,14 @@ function CanvasInformation(){
 
 function OpenWorld(CanvasInformation) {
     $.ajax({
-        url: '/ProcessWorld',
+        url: '/Update',
         dataType: 'json',
         type: 'GET',
         success: function (data) {
             CanvasInformation.OtherStartX = data.StartX;
             CanvasInformation.OtherStartY = data.StartY;
+            CanvasInformation.TileWidth = data.TileWidth;
+            CanvasInformation.TileHeight = data.TileHeight;
             UpdateWorldDisplay(data, CanvasInformation);
             OpenWorld(CanvasInformation);
         },
@@ -81,7 +89,7 @@ function HandleClick(event, CanvasInformation) {
 
     //Convert click event x and y to canvas coordinates
     var canvasX = event.clientX - rect.left;
-    var canvasY = event.clientY - rect.top;
+    var canvasY = canvas.height - (event.clientY - rect.top);
 
     //Convert canvas x and y to render coordinates
     var x = Math.ceil((canvasX - CanvasInformation.StartX) / CanvasInformation.TileWidth);
@@ -90,6 +98,7 @@ function HandleClick(event, CanvasInformation) {
     //Convert render x and y to world coordinates
     x = (CanvasInformation.OtherStartX + x) - 1
     y = (CanvasInformation.OtherStartY + y) - 1
+    
 
     $.ajax({
         type: 'GET',
@@ -121,7 +130,7 @@ function DrawGrid(Grid, CanvasInformation) {
 
             var x = CanvasInformation.StartX + (i * CanvasInformation.TileWidth)
             var y = CanvasInformation.StartY + (j * CanvasInformation.TileHeight)
-            cxt.fillRect(x, y, CanvasInformation.TileWidth, CanvasInformation.TileHeight);
+            cxt.fillRect(x, canvas.height - y, CanvasInformation.TileWidth, CanvasInformation.TileHeight);
         }
     }
 }

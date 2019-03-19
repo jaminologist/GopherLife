@@ -1,7 +1,7 @@
 package world
 
 import (
-	"gopherlife/calc"
+	"gopherlife/geometry"
 	"testing"
 )
 
@@ -14,21 +14,19 @@ func TestGridSection_Tile(t *testing.T) {
 
 func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
-	stats := Statistics{
-		Width:                  10,
-		Height:                 10,
-		NumberOfGophers:        0,
-		NumberOfFood:           20,
-		MaximumNumberOfGophers: 100000,
-		GopherBirthRate:        7,
+	settings := GopherMapSettings{
+		Dimensions:      Dimensions{10, 10},
+		Population:      Population{0, 100},
+		NumberOfFood:    20,
+		GopherBirthRate: 7,
 	}
 
-	var tileMap = CreatePartitionTileMapCustom(stats)
+	var tileMap = CreatePartitionTileMapCustom(settings)
 
-	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	gopher := NewGopher("a", geometry.NewCoordinate(1, 2))
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	tileMap.QueueableActions.Add(func() {
+	tileMap.ActionQueuer.Add(func() {
 		tileMap.MoveGopher(&gopher, 0, 1)
 	})
 	tileMap.Update()
@@ -49,21 +47,19 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
 func TestPartitionTileMap_RemoveGopher(t *testing.T) {
 
-	stats := Statistics{
-		Width:                  10,
-		Height:                 10,
-		NumberOfGophers:        0,
-		NumberOfFood:           20,
-		MaximumNumberOfGophers: 100000,
-		GopherBirthRate:        7,
+	settings := GopherMapSettings{
+		Dimensions:      Dimensions{10, 10},
+		Population:      Population{0, 100},
+		NumberOfFood:    20,
+		GopherBirthRate: 7,
 	}
 
-	var tileMap = CreatePartitionTileMapCustom(stats)
+	var tileMap = CreatePartitionTileMapCustom(settings)
 
-	gopher := NewGopher("a", calc.Coordinates{1, 2})
+	gopher := NewGopher("a", geometry.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	bool := tileMap.RemoveGopher(1, 2)
+	_, bool := tileMap.RemoveGopher(1, 2)
 
 	if !bool {
 		t.Errorf("Gopher is not removed")
