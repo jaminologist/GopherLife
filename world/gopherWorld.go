@@ -42,43 +42,43 @@ type GopherWorld struct {
 	*GopherWorldSettings
 }
 
-type Tile struct {
+type GopherWorldTile struct {
 	Gopher *Gopher
 	Food   *Food
 }
 
-//NewTile Returns a new tile which hold the given gopher and food
-func NewTile(gopher *Gopher, food *Food) Tile {
-	return Tile{Gopher: gopher, Food: food}
+//NewGopherWorldTile Returns a new tile which hold the given gopher and food
+func NewGopherWorldTile(gopher *Gopher, food *Food) GopherWorldTile {
+	return GopherWorldTile{Gopher: gopher, Food: food}
 }
 
-func (tile *Tile) IsEmpty() bool {
+func (tile *GopherWorldTile) IsEmpty() bool {
 	return tile.Gopher == nil && tile.Food == nil
 }
 
 //HasGopher Checks if this tile contains a gopher
-func (tile *Tile) HasGopher() bool {
+func (tile *GopherWorldTile) HasGopher() bool {
 	return tile.Gopher != nil
 }
 
 //HasFood Checks if this tile contains food
-func (tile *Tile) HasFood() bool {
+func (tile *GopherWorldTile) HasFood() bool {
 	return tile.Food != nil
 }
 
-func (tile *Tile) SetGopher(g *Gopher) {
+func (tile *GopherWorldTile) SetGopher(g *Gopher) {
 	tile.Gopher = g
 }
 
-func (tile *Tile) SetFood(f *Food) {
+func (tile *GopherWorldTile) SetFood(f *Food) {
 	tile.Food = f
 }
 
-func (tile *Tile) ClearGopher() {
+func (tile *GopherWorldTile) ClearGopher() {
 	tile.Gopher = nil
 }
 
-func (tile *Tile) ClearFood() {
+func (tile *GopherWorldTile) ClearFood() {
 	tile.Food = nil
 }
 
@@ -459,15 +459,15 @@ func (searcher *GridTileSearch) Search(position geometry.Coordinates, width int,
 func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) []geometry.Coordinates {
 	return gridQuery(tileMap, width, height, x, y,
 
-		func(container *TrackedTileContainer) map[int]*Tile {
+		func(container *TrackedTileContainer) map[int]*GopherWorldTile {
 			return container.foodTileLocations
 		},
 
-		func(tile *Tile) (int, int) {
+		func(tile *GopherWorldTile) (int, int) {
 			return tile.Food.Position.GetX(), tile.Food.Position.GetY()
 		},
 
-		func(tile *Tile) bool {
+		func(tile *GopherWorldTile) bool {
 			return true
 		},
 	)
@@ -477,24 +477,24 @@ func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int
 
 	return gridQuery(tileMap, width, height, x, y,
 
-		func(container *TrackedTileContainer) map[int]*Tile {
+		func(container *TrackedTileContainer) map[int]*GopherWorldTile {
 			return container.gopherTileLocations
 		},
 
-		func(tile *Tile) (int, int) {
+		func(tile *GopherWorldTile) (int, int) {
 			return tile.Gopher.Position.GetX(), tile.Gopher.Position.GetY()
 		},
 
-		func(tile *Tile) bool {
+		func(tile *GopherWorldTile) bool {
 			return tile.Gopher.Gender == Female && tile.Gopher.IsLookingForLove()
 		},
 	)
 }
 
 func gridQuery(tileMap *GridTileSearch, width int, height int, x int, y int,
-	gridSearchFunc func(*TrackedTileContainer) map[int]*Tile,
-	coordsFromTile func(*Tile) (int, int),
-	tileCheck func(*Tile) bool) []geometry.Coordinates {
+	gridSearchFunc func(*TrackedTileContainer) map[int]*GopherWorldTile,
+	coordsFromTile func(*GopherWorldTile) (int, int),
+	tileCheck func(*GopherWorldTile) bool) []geometry.Coordinates {
 
 	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
 

@@ -116,7 +116,7 @@ func (controller *GopherWorldController) KeyPress(key Keys) {
 	}
 }
 
-func TileToColor(tile *world.Tile, isSelected bool) color.RGBA {
+func TileToColor(tile *world.GopherWorldTile, isSelected bool) color.RGBA {
 
 	switch {
 	case tile.IsEmpty():

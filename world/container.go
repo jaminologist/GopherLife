@@ -6,7 +6,7 @@ import (
 
 //TileContainer contains tiles that can be accessed using an x and y position
 type TileContainer interface {
-	Tile(x int, y int) (*Tile, bool)
+	Tile(x int, y int) (*GopherWorldTile, bool)
 }
 
 type GridContainer interface {
@@ -30,7 +30,7 @@ type Container interface {
 }
 
 type Basic2DContainer struct {
-	grid   [][]*Tile
+	grid   [][]*GopherWorldTile
 	x      int
 	y      int
 	width  int
@@ -45,13 +45,13 @@ func NewBasic2DContainer(x int, y int, width int, height int) Basic2DContainer {
 		width:  width,
 		height: height}
 
-	container.grid = make([][]*Tile, width)
+	container.grid = make([][]*GopherWorldTile, width)
 
 	for i := 0; i < width; i++ {
-		container.grid[i] = make([]*Tile, height)
+		container.grid[i] = make([]*GopherWorldTile, height)
 
 		for j := 0; j < height; j++ {
-			tile := Tile{}
+			tile := GopherWorldTile{}
 			container.grid[i][j] = &tile
 		}
 	}
@@ -59,7 +59,7 @@ func NewBasic2DContainer(x int, y int, width int, height int) Basic2DContainer {
 	return container
 }
 
-func (container *Basic2DContainer) Tile(x int, y int) (*Tile, bool) {
+func (container *Basic2DContainer) Tile(x int, y int) (*GopherWorldTile, bool) {
 	if x < container.x || x >= container.width+container.x || y < container.y || y >= container.height+container.y {
 		return nil, false
 	}
@@ -69,8 +69,8 @@ func (container *Basic2DContainer) Tile(x int, y int) (*Tile, bool) {
 
 type TrackedTileContainer struct {
 	b2dc                *Basic2DContainer
-	gopherTileLocations map[int]*Tile
-	foodTileLocations   map[int]*Tile
+	gopherTileLocations map[int]*GopherWorldTile
+	foodTileLocations   map[int]*GopherWorldTile
 }
 
 func NewTrackedTileContainer(x int, y int, width int, height int) TrackedTileContainer {
@@ -78,8 +78,8 @@ func NewTrackedTileContainer(x int, y int, width int, height int) TrackedTileCon
 
 	return TrackedTileContainer{
 		b2dc:                &b2dc,
-		gopherTileLocations: make(map[int]*Tile),
-		foodTileLocations:   make(map[int]*Tile),
+		gopherTileLocations: make(map[int]*GopherWorldTile),
+		foodTileLocations:   make(map[int]*GopherWorldTile),
 	}
 }
 
@@ -130,7 +130,7 @@ func NewBasicGridContainer(width int, height int, gridWidth int, gridHeight int)
 	}
 }
 
-func (container *BasicGridContainer) Tile(x int, y int) (*Tile, bool) {
+func (container *BasicGridContainer) Tile(x int, y int) (*GopherWorldTile, bool) {
 
 	if grid, ok := container.Grid(x, y); ok {
 		if tile, ok := grid.b2dc.Tile(x, y); ok {
