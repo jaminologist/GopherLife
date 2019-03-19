@@ -16,17 +16,16 @@ type SpiralMapSettings struct {
 
 //SpiralMap spins right round
 type SpiralMap struct {
+	SpiralMapSettings
+
 	TileContainer
 	GopherInserterAndRemover
 	ActionQueuer
 
 	ActiveActors chan *SpiralGopher
-
 	*sync.WaitGroup
 
-	SpiralMapSettings
-
-	count int
+	nextSpawnCount int
 
 	FrameTimer timer.StopWatch
 }
@@ -85,10 +84,10 @@ func (spiralMap *SpiralMap) Update() bool {
 	spiralMap.ActiveActors = secondChannel
 	spiralMap.WaitGroup.Wait()
 
-	spiralMap.count++
+	spiralMap.nextSpawnCount++
 
-	if spiralMap.count > 2 {
-		spiralMap.count = 0
+	if spiralMap.nextSpawnCount > 2 {
+		spiralMap.nextSpawnCount = 0
 		spiralMap.AddNewSpiralGopher()
 	}
 	spiralMap.Process()

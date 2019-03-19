@@ -19,7 +19,6 @@ type GopherMapSettings struct {
 //GopherWorld A map for Gophers!
 type GopherWorld struct {
 	Searcher
-
 	TileContainer
 	GopherContainer
 	FoodContainer

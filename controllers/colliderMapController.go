@@ -89,8 +89,7 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 	}
 
 	return WorldPageData{
-		PageTitle: "C O L L I D E R L I F E",
-		FormData:  formdataArray,
+		FormData: formdataArray,
 	}
 }
 
