@@ -18,7 +18,7 @@ type GopherWorldSettings struct {
 
 //GopherWorld A map for Gophers!
 type GopherWorld struct {
-	Searcher
+	GopherWorldSearcher
 	TileContainer
 	GopherContainer
 	FoodContainer
@@ -83,7 +83,7 @@ func (tile *Tile) ClearFood() {
 }
 
 //NewGopherWorld Creates a new GopherWorld a GopherWorld contains food and gophers and can use different actors to update the state of the map
-func NewGopherWorld(settings *GopherWorldSettings, s Searcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
+func NewGopherWorld(settings *GopherWorldSettings, s GopherWorldSearcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
 
 	qa := NewFiniteActionQueue(settings.MaxPopulation * 2)
 
@@ -101,7 +101,7 @@ func NewGopherWorld(settings *GopherWorldSettings, s Searcher, t TileContainer, 
 	var wg sync.WaitGroup
 
 	return GopherWorld{
-		Searcher:                 s,
+		GopherWorldSearcher:      s,
 		TileContainer:            t,
 		GopherContainer:          g,
 		FoodContainer:            f,
@@ -179,14 +179,14 @@ func (gw *GopherWorld) setUpTiles() {
 	}
 
 	actor := GopherActor{
-		GopherBirthRate: gw.GopherBirthRate,
-		ActionQueuer:    gw.ActionQueuer,
-		Searcher:        gw.Searcher,
-		GopherContainer: gw.GopherContainer,
-		FoodContainer:   gw.FoodContainer,
-		FoodPicker:      gw,
-		MoveableGophers: gw,
-		ActorGeneration: gw.GopherGeneration,
+		GopherBirthRate:     gw.GopherBirthRate,
+		ActionQueuer:        gw.ActionQueuer,
+		GopherWorldSearcher: gw.GopherWorldSearcher,
+		GopherContainer:     gw.GopherContainer,
+		FoodContainer:       gw.FoodContainer,
+		FoodPicker:          gw,
+		MoveableGophers:     gw,
+		ActorGeneration:     gw.GopherGeneration,
 	}
 
 	gw.Actor = &actor
@@ -370,6 +370,20 @@ func (gw *GopherWorld) processQueuedTasks() {
 func (gw *GopherWorld) TogglePause() {
 	gw.IsPaused = !gw.IsPaused
 }
+
+//GopherWorldSearcher used to search for the given search type in a given area
+type GopherWorldSearcher interface {
+	Search(position geometry.Coordinates, width int, height int, max int, searchType SearchType) []geometry.Coordinates
+}
+
+type SearchType int
+
+const (
+	SearchForFood SearchType = iota
+	SearchForEmptySpace
+	SearchForFemaleGopher
+	FemaleGopher
+)
 
 type SpiralTileSearch struct {
 	TileContainer

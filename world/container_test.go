@@ -1,26 +1,53 @@
 package world
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
 
-func TestBasicGridContainer_Grid(t *testing.T) {
+func TestBasic2DContainer_HasGopher(t *testing.T) {
 
-	bgc := NewBasicGridContainer(10, 10, 5, 5)
+	gridC := NewBasic2DContainer(0, 0, 10, 10)
+	gopher1 := &Gopher{}
+	gridC.InsertGopher(1, 1, gopher1)
+	gridC.InsertGopher(1, 2, &Gopher{})
+	gridC.RemoveGopher(1, 2)
 
-	_, ok := bgc.Grid(0, 0)
-
-	fmt.Println(ok)
-
-	_, ok = bgc.Grid(10, 10)
-
-	fmt.Println(ok)
-
+	type args struct {
+		x int
+		y int
+	}
+	tests := []struct {
+		name      string
+		container *Basic2DContainer
+		args      args
+		want      *Gopher
+		want1     bool
+	}{
+		{"Gopher Should Exist", &gridC, args{1, 1}, gopher1, true},
+		{"Gopher Should Not Exist", &gridC, args{1, 2}, nil, false},
+		{"Out of Bounds", &gridC, args{100, 200}, nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := tt.container.HasGopher(tt.args.x, tt.args.y)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Basic2DContainer.HasGopher() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("Basic2DContainer.HasGopher() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
 }
 
 func TestBasic2DContainer_HasFood(t *testing.T) {
+
+	gridC := NewBasic2DContainer(0, 0, 10, 10)
+	food1 := &Food{}
+	gridC.InsertFood(1, 1, food1)
+	gridC.InsertFood(1, 2, &Food{})
+	gridC.RemoveFood(1, 2)
 
 	type args struct {
 		x int
@@ -33,7 +60,9 @@ func TestBasic2DContainer_HasFood(t *testing.T) {
 		want      *Food
 		want1     bool
 	}{
-		// TODO: Add test cases.
+		{"Food Should Exist", &gridC, args{1, 1}, food1, true},
+		{"Food Should Not Exist", &gridC, args{1, 2}, nil, false},
+		{"Out of Bounds", &gridC, args{100, 200}, nil, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

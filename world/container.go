@@ -338,17 +338,3 @@ func (container *BasicGridContainer) HasFood(x int, y int) (*Food, bool) {
 	}
 	return nil, false
 }
-
-//Searcher used to search for the given search type in a given area
-type Searcher interface {
-	Search(position geometry.Coordinates, width int, height int, max int, searchType SearchType) []geometry.Coordinates
-}
-
-type SearchType int
-
-const (
-	SearchForFood SearchType = iota
-	SearchForEmptySpace
-	SearchForFemaleGopher
-	FemaleGopher
-)
