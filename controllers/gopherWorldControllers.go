@@ -43,7 +43,7 @@ func NewGopherWorldWithSpiralSearch() GopherWorldController {
 	}
 
 	gWorld := world.CreateGopherWorldSpiralSearch(settings)
-	renderer := renderers.NewRenderer(45, 15)
+	renderer := renderers.NewRenderer(100, 100)
 	return GopherWorldController{
 		GopherWorld:  gWorld,
 		GridRenderer: &renderer,

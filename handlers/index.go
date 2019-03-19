@@ -35,12 +35,13 @@ func NewControllerContainer() ControllerContainer {
 	}
 }
 
-func (c *ControllerContainer) Add(rc RenderController, key string, selected bool) {
+func (c *ControllerContainer) Add(rc RenderController, key string) {
 	c.RenderControllers[key] = rc
+}
 
-	if selected {
-		c.SelectedKey = key
-	}
+func (c *ControllerContainer) AddSelected(rc RenderController, key string) {
+	c.Add(rc, key)
+	c.SelectedKey = key
 }
 
 func (c *ControllerContainer) Selected() RenderController {
@@ -93,31 +94,31 @@ func SetUpPage() {
 	ControllerContainer := NewControllerContainer()
 
 	ss := controllers.NewGopherWorldWithSpiralSearch()
-	ControllerContainer.Add(&ss, "GopherWorld With Spiral Search", false)
+	ControllerContainer.AddSelected(&ss, "GopherWorld With Spiral Search")
 
 	ps := controllers.NewGopherWorldWithParitionGridAndSearch()
-	ControllerContainer.Add(&ps, "GopherWorld With Partition", false)
+	ControllerContainer.Add(&ps, "GopherWorld With Partition")
 
 	sm := controllers.NewSpiralWorldController()
-	ControllerContainer.Add(&sm, "Black and White Spiral World", true)
+	ControllerContainer.Add(&sm, "Black and White Spiral World")
 
 	wsm := controllers.NewWeirdSpiralWorldController()
-	ControllerContainer.Add(&wsm, "Black and White Spiral World (Weird)", true)
+	ControllerContainer.Add(&wsm, "Black and White Spiral World (Weird)")
 
 	fireworks := controllers.NewFireWorksController()
-	ControllerContainer.Add(&fireworks, "Fireworks!", false)
+	ControllerContainer.Add(&fireworks, "Fireworks!")
 
-	collision := controllers.NewCollisionMapController()
-	ControllerContainer.Add(&collision, "Collision World", false)
+	collision := controllers.NewCollisionWorldController()
+	ControllerContainer.Add(&collision, "Collision World")
 
-	diagonalCollision := controllers.NewDiagonalCollisionMapController()
-	ControllerContainer.Add(&diagonalCollision, "Collision World (Diagonal)", false)
+	diagonalCollision := controllers.NewDiagonalCollisionWorldController()
+	ControllerContainer.Add(&diagonalCollision, "Collision World (Diagonal)")
 
 	SnakeWorld := controllers.NewSnakeWorldController()
-	ControllerContainer.Add(&SnakeWorld, "Elongating Gopher", false)
+	ControllerContainer.Add(&SnakeWorld, "Elongating Gopher")
 
 	blockblockRevolution := controllers.NewBlockBlockRevolutionController()
-	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", false)
+	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution")
 
 	ControllerContainer.Selected().Start()
 	ControllerContainer.PopulatePageData()

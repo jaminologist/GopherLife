@@ -10,17 +10,17 @@ import (
 	"strings"
 )
 
-type CollisionMapController struct {
+type CollisionWorldController struct {
 	NoPlayerInput
-	world.CollisionMapSettings
-	*world.CollisionMap
+	world.CollisionWorldSettings
+	*world.CollisionWorld
 	*renderers.GridRenderer
-	CreateNew func(world.CollisionMapSettings) world.CollisionMap
+	CreateNew func(world.CollisionWorldSettings) world.CollisionWorld
 }
 
-func NewCollisionMapController() CollisionMapController {
+func NewCollisionWorldController() CollisionWorldController {
 
-	settings := world.CollisionMapSettings{
+	settings := world.CollisionWorldSettings{
 		Dimensions: world.Dimensions{Width: 75, Height: 75},
 		Population: world.Population{InitialPopulation: 500},
 		IsDiagonal: false,
@@ -29,16 +29,16 @@ func NewCollisionMapController() CollisionMapController {
 	renderer := renderers.NewRenderer(100, 100)
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
 
-	return CollisionMapController{
-		CollisionMapSettings: settings,
+	return CollisionWorldController{
+		CollisionWorldSettings: settings,
 		GridRenderer:         &renderer,
-		CreateNew:            world.NewCollisionMap,
+		CreateNew:            world.NewCollisionWorld,
 	}
 }
 
-func NewDiagonalCollisionMapController() CollisionMapController {
+func NewDiagonalCollisionWorldController() CollisionWorldController {
 
-	settings := world.CollisionMapSettings{
+	settings := world.CollisionWorldSettings{
 		Dimensions: world.Dimensions{Width: 75, Height: 75},
 		Population: world.Population{InitialPopulation: 500},
 		IsDiagonal: true,
@@ -48,25 +48,25 @@ func NewDiagonalCollisionMapController() CollisionMapController {
 
 	renderer.Shift(settings.Width/2-renderer.Width/2, settings.Height/2-renderer.Height/2)
 
-	return CollisionMapController{
-		CollisionMapSettings: settings,
+	return CollisionWorldController{
+		CollisionWorldSettings: settings,
 		GridRenderer:         &renderer,
-		CreateNew:            world.NewCollisionMap,
+		CreateNew:            world.NewCollisionWorld,
 	}
 }
 
-func (controller *CollisionMapController) Start() {
-	if controller.CollisionMap == nil {
-		sMap := controller.CreateNew(controller.CollisionMapSettings)
-		controller.CollisionMap = &sMap
+func (controller *CollisionWorldController) Start() {
+	if controller.CollisionWorld == nil {
+		sMap := controller.CreateNew(controller.CollisionWorldSettings)
+		controller.CollisionWorld = &sMap
 	}
 }
 
-func (controller *CollisionMapController) MarshalJSON() ([]byte, error) {
+func (controller *CollisionWorldController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(controller.GridRenderer.Draw(controller))
 }
 
-func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
+func (controller *CollisionWorldController) RenderTile(x int, y int) color.RGBA {
 
 	if controller.Contains(x, y) {
 		if c, ok := controller.HasCollider(x, y); ok {
@@ -79,8 +79,8 @@ func (controller *CollisionMapController) RenderTile(x int, y int) color.RGBA {
 	return color.RGBA{255, 255, 255, 1}
 }
 
-func (controller *CollisionMapController) PageLayout() WorldPageData {
-	settings := controller.CollisionMapSettings
+func (controller *CollisionWorldController) PageLayout() WorldPageData {
+	settings := controller.CollisionWorldSettings
 
 	formdataArray := []FormData{
 		FormDataWidth(settings.Width, 2),
@@ -93,7 +93,7 @@ func (controller *CollisionMapController) PageLayout() WorldPageData {
 	}
 }
 
-func (controller *CollisionMapController) HandleForm(values url.Values) bool {
+func (controller *CollisionWorldController) HandleForm(values url.Values) bool {
 
 	if strings.Contains(values.Encode(), "initialPopulation") {
 
@@ -101,12 +101,12 @@ func (controller *CollisionMapController) HandleForm(values url.Values) bool {
 		height, _ := strconv.ParseInt(values.Get("height"), 10, 64)
 		initialPopulation, _ := strconv.ParseInt(values.Get("initialPopulation"), 10, 64)
 
-		controller.CollisionMapSettings.Width = int(width)
-		controller.CollisionMapSettings.Height = int(height)
-		controller.CollisionMapSettings.InitialPopulation = int(initialPopulation)
+		controller.CollisionWorldSettings.Width = int(width)
+		controller.CollisionWorldSettings.Height = int(height)
+		controller.CollisionWorldSettings.InitialPopulation = int(initialPopulation)
 
-		gmc := world.NewCollisionMap(controller.CollisionMapSettings)
-		controller.CollisionMap = &gmc
+		gmc := world.NewCollisionWorld(controller.CollisionWorldSettings)
+		controller.CollisionWorld = &gmc
 
 	}
 	return true
