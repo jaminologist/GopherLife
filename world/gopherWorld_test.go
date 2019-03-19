@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPartitionTileMap_MoveGopher(t *testing.T) {
+func TestPartitionGopherWorld_MoveGopher(t *testing.T) {
 
 	settings := GopherWorldSettings{
 		Dimensions:      Dimensions{10, 10},
@@ -38,7 +38,7 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
 }
 
-func TestPartitionTileMap_RemoveGopher(t *testing.T) {
+func TestPartitionGopherWorld_RemoveGopher(t *testing.T) {
 
 	settings := GopherWorldSettings{
 		Dimensions:      Dimensions{10, 10},

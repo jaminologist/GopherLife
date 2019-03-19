@@ -113,8 +113,8 @@ func SetUpPage() {
 	diagonalCollision := controllers.NewDiagonalCollisionMapController()
 	ControllerContainer.Add(&diagonalCollision, "Collision World (Diagonal)", false)
 
-	snakeMap := controllers.NewSnakeMapController()
-	ControllerContainer.Add(&snakeMap, "Elongating Gopher", false)
+	SnakeWorld := controllers.NewSnakeWorldController()
+	ControllerContainer.Add(&SnakeWorld, "Elongating Gopher", false)
 
 	blockblockRevolution := controllers.NewBlockBlockRevolutionController()
 	ControllerContainer.Add(&blockblockRevolution, "Block Block Revolution", false)
