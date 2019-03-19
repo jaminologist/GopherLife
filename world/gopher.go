@@ -52,7 +52,7 @@ func (gopher *Gopher) SetName(Name string) {
 
 //IsMature Checks if the gopher is no longer a child
 func (gopher *Gopher) IsMature() bool {
-	return gopher.Lifespan >= 50
+	return gopher.Lifespan >= 150
 }
 
 func (gopher *Gopher) SetIsDead() {

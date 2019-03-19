@@ -59,7 +59,7 @@ func TestPartitionTileMap_RemoveGopher(t *testing.T) {
 	gopher := NewGopher("a", geometry.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)
 
-	bool := tileMap.RemoveGopher(1, 2)
+	_, bool := tileMap.RemoveGopher(1, 2)
 
 	if !bool {
 		t.Errorf("Gopher is not removed")
