@@ -7,8 +7,8 @@ import (
 	"sync"
 )
 
-//GopherMapSettings sets configuration for a Gopher Map
-type GopherMapSettings struct {
+//GopherWorldSettings sets configuration for a Gopher Map
+type GopherWorldSettings struct {
 	Dimensions
 	Population
 
@@ -39,11 +39,11 @@ type GopherWorld struct {
 
 	NumberOfGophers int
 
-	*GopherMapSettings
+	*GopherWorldSettings
 }
 
 //NewGopherWorld Creates a new GopherWorld a GopherWorld contains food and gophers and can use different actors to update the state of the map
-func NewGopherWorld(settings *GopherMapSettings, s Searcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
+func NewGopherWorld(settings *GopherWorldSettings, s Searcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
 
 	qa := NewFiniteActionQueue(settings.MaxPopulation * 2)
 
@@ -75,14 +75,14 @@ func NewGopherWorld(settings *GopherMapSettings, s Searcher, t TileContainer, g 
 
 		GopherWaitGroup: &wg,
 
-		GopherMapSettings: settings,
+		GopherWorldSettings: settings,
 
 		NumberOfGophers: settings.InitialPopulation,
 	}
 
 }
 
-func CreateWorldCustom(settings GopherMapSettings) *GopherWorld {
+func CreateGopherWorldSpiralSearch(settings GopherWorldSettings) *GopherWorld {
 
 	b2dc := NewBasic2DContainer(0, 0, settings.Width, settings.Height)
 	sts := SpiralTileSearch{TileContainer: &b2dc}
@@ -92,6 +92,27 @@ func CreateWorldCustom(settings GopherMapSettings) *GopherWorld {
 	gw.setUpTiles()
 	return &gw
 
+}
+
+func CreateGopherWorldGridPartition(settings GopherWorldSettings) *GopherWorld {
+
+	gridWidth := 5
+	gridHeight := 5
+
+	gc := NewBasicGridContainer(settings.Width,
+		settings.Height,
+		gridWidth,
+		gridHeight,
+	)
+
+	search := GridTileSearch{
+		BasicGridContainer: &gc,
+	}
+
+	tileMap := NewGopherWorld(&settings, &search, &gc, &gc, &gc, &gc, &gc)
+
+	tileMap.setUpTiles()
+	return &tileMap
 }
 
 func (gw *GopherWorld) setUpTiles() {

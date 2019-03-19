@@ -6,29 +6,6 @@ import (
 
 //PartitionTileMap is cool
 
-const (
-	gridWidth  = 5
-	gridHeight = 5
-)
-
-func CreatePartitionTileMapCustom(settings GopherMapSettings) *GopherWorld {
-
-	gc := NewBasicGridContainer(settings.Width,
-		settings.Height,
-		gridWidth,
-		gridHeight,
-	)
-
-	search := GridTileSearch{
-		BasicGridContainer: &gc,
-	}
-
-	tileMap := NewGopherWorld(&settings, &search, &gc, &gc, &gc, &gc, &gc)
-
-	tileMap.setUpTiles()
-	return &tileMap
-}
-
 type GridTileSearch struct {
 	*BasicGridContainer
 }

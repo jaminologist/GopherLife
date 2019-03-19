@@ -26,59 +26,59 @@ var (
 	grassColor         = color.RGBA{65, 119, 15, 1}
 )
 
-type GopherMapController struct {
+type GopherWorldController struct {
 	*world.GopherWorld
 	*renderers.GridRenderer
-	CreateNew func(world.GopherMapSettings) *world.GopherWorld
+	CreateNew func(world.GopherWorldSettings) *world.GopherWorld
 }
 
-//NewGopherMapWithSpiralSearch Returns a Controller with a Gopher Map. Where Gophers search for food using a Spiral To Nearest Search
-func NewGopherMapWithSpiralSearch() GopherMapController {
+//NewGopherWorldWithSpiralSearch Returns a Controller with a Gopher World. Where Gophers search for food using a Spiral To Nearest Search
+func NewGopherWorldWithSpiralSearch() GopherWorldController {
 
-	settings := world.GopherMapSettings{
+	settings := world.GopherWorldSettings{
 		Dimensions:      world.Dimensions{Width: 3000, Height: 3000},
 		Population:      world.Population{InitialPopulation: 5000, MaxPopulation: 1000000},
 		NumberOfFood:    1000000,
 		GopherBirthRate: 7,
 	}
 
-	gWorld := world.CreateWorldCustom(settings)
+	gWorld := world.CreateGopherWorldSpiralSearch(settings)
 	renderer := renderers.NewRenderer(45, 15)
-	return GopherMapController{
+	return GopherWorldController{
 		GopherWorld:  gWorld,
 		GridRenderer: &renderer,
-		CreateNew:    world.CreateWorldCustom,
+		CreateNew:    world.CreateGopherWorldSpiralSearch,
 	}
 }
 
-//NewGopherMapWithParitionGridAndSearch Returns a Controller with a Gopher Map. Where Gophers search for food using Grid Partition
-func NewGopherMapWithParitionGridAndSearch() GopherMapController {
+//NewGopherWorldWithParitionGridAndSearch Returns a Controller with a Gopher Map. Where Gophers search for food using Grid Partition
+func NewGopherWorldWithParitionGridAndSearch() GopherWorldController {
 
-	settings := world.GopherMapSettings{
+	settings := world.GopherWorldSettings{
 		Dimensions:      world.Dimensions{Width: 3000, Height: 3000},
 		Population:      world.Population{InitialPopulation: 5000, MaxPopulation: 1000000},
 		NumberOfFood:    1000000,
 		GopherBirthRate: 7,
 	}
 
-	gWorld := world.CreatePartitionTileMapCustom(settings)
+	gWorld := world.CreateGopherWorldGridPartition(settings)
 	renderer := renderers.NewRenderer(100, 100)
-	return GopherMapController{
+	return GopherWorldController{
 		GopherWorld:  gWorld,
 		GridRenderer: &renderer,
-		CreateNew:    world.CreatePartitionTileMapCustom,
+		CreateNew:    world.CreateGopherWorldGridPartition,
 	}
 }
 
 //Start Initiates the controller. If the Map does not exist. The Map will be built
-func (controller *GopherMapController) Start() {
+func (controller *GopherWorldController) Start() {
 	if controller.GopherWorld == nil {
-		controller.GopherWorld = controller.CreateNew(*controller.GopherMapSettings)
+		controller.GopherWorld = controller.CreateNew(*controller.GopherWorldSettings)
 	}
 }
 
 //Click selects the tile on the gopher map and runs the SelectEntity method
-func (controller *GopherMapController) Click(x int, y int) {
+func (controller *GopherWorldController) Click(x int, y int) {
 
 	action := func() {
 		_, ok := controller.SelectEntity(x, y)
@@ -92,7 +92,7 @@ func (controller *GopherMapController) Click(x int, y int) {
 	controller.GopherWorld.Add(action)
 }
 
-func (controller *GopherMapController) KeyPress(key Keys) {
+func (controller *GopherWorldController) KeyPress(key Keys) {
 
 	switch key {
 	case WKey:
@@ -154,7 +154,7 @@ func TileToColor(tile *world.Tile, isSelected bool) color.RGBA {
 
 }
 
-func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
+func (controller *GopherWorldController) RenderTile(x int, y int) color.RGBA {
 
 	if tile, ok := controller.Tile(x, y); ok {
 
@@ -179,12 +179,12 @@ func (controller *GopherMapController) RenderTile(x int, y int) color.RGBA {
 
 }
 
-type GopherMapRender struct {
+type GopherWorldRender struct {
 	SelectedGopher *world.Gopher
 	renderers.Render
 }
 
-func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
+func (controller *GopherWorldController) MarshalJSON() ([]byte, error) {
 
 	if controller.SelectedGopher != nil {
 		controller.GridRenderer.StartX = controller.SelectedGopher.Position.GetX() - controller.GridRenderer.Width/2
@@ -205,7 +205,7 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 
 	render.TextBelowCanvas = renderString
 
-	gmr := GopherMapRender{
+	gmr := GopherWorldRender{
 		Render: render,
 	}
 	if controller.SelectedGopher != nil {
@@ -217,9 +217,9 @@ func (controller *GopherMapController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(gmr)
 }
 
-func (controller *GopherMapController) PageLayout() WorldPageData {
+func (controller *GopherWorldController) PageLayout() WorldPageData {
 
-	settings := controller.GopherMapSettings
+	settings := controller.GopherWorldSettings
 
 	formdataArray := []FormData{
 		FormDataWidth(settings.Width, 2),
@@ -249,7 +249,7 @@ func (controller *GopherMapController) PageLayout() WorldPageData {
 	}
 }
 
-func (controller *GopherMapController) HandleForm(values url.Values) bool {
+func (controller *GopherWorldController) HandleForm(values url.Values) bool {
 
 	if strings.Contains(values.Encode(), "birthRate") {
 
@@ -260,7 +260,7 @@ func (controller *GopherMapController) HandleForm(values url.Values) bool {
 		birthRate, _ := strconv.ParseInt(values.Get("birthRate"), 10, 64)
 		maxPopulation, _ := strconv.ParseInt(values.Get("maxPopulation"), 10, 64)
 
-		settings := world.GopherMapSettings{
+		settings := world.GopherWorldSettings{
 			Dimensions:      world.Dimensions{Width: int(width), Height: int(height)},
 			Population:      world.Population{InitialPopulation: int(InitialPopulation), MaxPopulation: int(maxPopulation)},
 			NumberOfFood:    int(numberOfFood),
@@ -351,14 +351,14 @@ func (controller *SpiralWorldController) HandleForm(values url.Values) bool {
 
 type FireWorksController struct {
 	NoPlayerInput
-	world.GopherMapSettings
+	world.GopherWorldSettings
 	*world.GopherWorld
 	*renderers.GridRenderer
 }
 
 func NewFireWorksController() FireWorksController {
 
-	settings := world.GopherMapSettings{
+	settings := world.GopherWorldSettings{
 		Dimensions:      world.Dimensions{Width: 400, Height: 200},
 		Population:      world.Population{InitialPopulation: 2000, MaxPopulation: 100000},
 		NumberOfFood:    2500,
@@ -371,14 +371,14 @@ func NewFireWorksController() FireWorksController {
 	renderer.TileWidth = 2
 
 	return FireWorksController{
-		GopherMapSettings: settings,
-		GridRenderer:      &renderer,
+		GopherWorldSettings: settings,
+		GridRenderer:        &renderer,
 	}
 }
 
 func (controller *FireWorksController) Start() {
 	if controller.GopherWorld == nil {
-		controller.GopherWorld = world.CreateWorldCustom(controller.GopherMapSettings)
+		controller.GopherWorld = world.CreateGopherWorldSpiralSearch(controller.GopherWorldSettings)
 	}
 }
 

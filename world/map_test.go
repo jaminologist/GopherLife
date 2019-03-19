@@ -49,9 +49,9 @@ func BenchmarkFibProcessWorld1(b *testing.B) {
 
 /*func TestWorld_InsertGopher(t *testing.T) {
 
-	worldA := CreateWorldCustom(10, 10, 0, 0)
+	worldA := CreateGopherWorldSpiralSearch(10, 10, 0, 0)
 	gopherA := NewGopher("Harry", geometry.NewCoordinate(0, 0))
-	worldB := CreateWorldCustom(10, 10, 0, 0)
+	worldB := CreateGopherWorldSpiralSearch(10, 10, 0, 0)
 	gopherB := NewGopher("Harry", geometry.NewCoordinate(0, 0))
 
 	type args struct {

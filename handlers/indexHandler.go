@@ -92,10 +92,10 @@ func SetUpPage() {
 
 	ControllerContainer := NewControllerContainer()
 
-	ss := controllers.NewGopherMapWithSpiralSearch()
+	ss := controllers.NewGopherWorldWithSpiralSearch()
 	ControllerContainer.Add(&ss, "GopherWorld With Spiral Search", false)
 
-	ps := controllers.NewGopherMapWithParitionGridAndSearch()
+	ps := controllers.NewGopherWorldWithParitionGridAndSearch()
 	ControllerContainer.Add(&ps, "GopherWorld With Partition", false)
 
 	sm := controllers.NewSpiralWorldController()
