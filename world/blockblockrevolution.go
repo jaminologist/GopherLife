@@ -272,10 +272,14 @@ func (bbrm *BlockBlockRevolutionMap) AddNewBlock() bool {
 
 }
 
-type BlockInserterAndRemover interface {
+type BlockContainer interface {
 	Container
-	InsertBlock(x int, y int, b *Block) bool
 	ContainsBlock(x int, y int) (*Block, bool)
+}
+
+type BlockInserterAndRemover interface {
+	BlockContainer
+	InsertBlock(x int, y int, b *Block) bool
 	RemoveBlock(x int, y int)
 }
 
@@ -383,9 +387,9 @@ func NewBlock(x int, y int) *Block {
 	return &b
 }
 
-func CanTetrominoFit(cs []geometry.Coordinates, bir BlockInserterAndRemover) bool {
+func CanTetrominoFit(cs []geometry.Coordinates, bc BlockContainer) bool {
 	for _, coords := range cs {
-		if _, ok := bir.ContainsBlock(coords.GetX(), coords.GetY()); ok || !bir.Contains(coords.GetX(), coords.GetY()) {
+		if _, ok := bc.ContainsBlock(coords.GetX(), coords.GetY()); ok || !bc.Contains(coords.GetX(), coords.GetY()) {
 			return false
 		}
 	}
