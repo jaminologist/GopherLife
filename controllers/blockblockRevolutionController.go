@@ -14,7 +14,7 @@ import (
 
 type BlockBlockRevolutionController struct {
 	world.BlockBlockRevolutionSettings
-	*world.BlockBlockRevolutionMap
+	*world.BlockBlockRevolutionWorld
 	*renderers.GridRenderer
 }
 
@@ -41,9 +41,9 @@ func NewBlockBlockRevolutionController() BlockBlockRevolutionController {
 }
 
 func (controller *BlockBlockRevolutionController) Start() {
-	if controller.BlockBlockRevolutionMap == nil {
-		sMap := world.NewBlockBlockRevolutionMap(controller.BlockBlockRevolutionSettings)
-		controller.BlockBlockRevolutionMap = &sMap
+	if controller.BlockBlockRevolutionWorld == nil {
+		sMap := world.NewBlockBlockRevolutionWorld(controller.BlockBlockRevolutionSettings)
+		controller.BlockBlockRevolutionWorld = &sMap
 	}
 }
 
@@ -87,8 +87,8 @@ func (controller *BlockBlockRevolutionController) HandleForm(values url.Values) 
 	if strings.Contains(values.Encode(), fd.Name) {
 		speed, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
 		controller.BlockBlockRevolutionSettings.BlockSpeedReduction = int(speed)
-		bbrm := world.NewBlockBlockRevolutionMap(controller.BlockBlockRevolutionSettings)
-		controller.BlockBlockRevolutionMap = &bbrm
+		bbrm := world.NewBlockBlockRevolutionWorld(controller.BlockBlockRevolutionSettings)
+		controller.BlockBlockRevolutionWorld = &bbrm
 	}
 
 	return true
@@ -103,29 +103,29 @@ func (controller *BlockBlockRevolutionController) KeyPress(key Keys) {
 	switch key {
 	case LeftArrow:
 		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.MoveCurrentTetrominoLeft()
+			controller.BlockBlockRevolutionWorld.MoveCurrentTetrominoLeft()
 		})
 	case RightArrow:
 		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.MoveCurrentTetrominoRight()
+			controller.BlockBlockRevolutionWorld.MoveCurrentTetrominoRight()
 		})
 	case UpArrow:
-		controller.BlockBlockRevolutionMap.RotateTetromino()
+		controller.BlockBlockRevolutionWorld.RotateTetromino()
 	case DownArrow:
 		controller.Add(func() {
-			controller.BlockBlockRevolutionMap.InstantDown()
+			controller.BlockBlockRevolutionWorld.InstantDown()
 		})
 	}
 }
 
 func (controller *BlockBlockRevolutionController) Update() bool {
-	return controller.BlockBlockRevolutionMap.Update()
+	return controller.BlockBlockRevolutionWorld.Update()
 }
 
 //Click selects the tile on the gopher map and runs the SelectEntity method
 func (controller *BlockBlockRevolutionController) Click(x int, y int) {
 	if controller.IsGameOver {
-		controller.BlockBlockRevolutionMap = nil
+		controller.BlockBlockRevolutionWorld = nil
 		controller.Start()
 	}
 }

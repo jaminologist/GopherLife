@@ -5,13 +5,6 @@ import (
 	"testing"
 )
 
-func TestPartitionTileMap_Tile(t *testing.T) {
-
-}
-
-func TestGridSection_Tile(t *testing.T) {
-}
-
 func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
 	settings := GopherWorldSettings{

@@ -14,7 +14,7 @@ type BlockBlockRevolutionSettings struct {
 	BlockSpeedReduction int
 }
 
-type BlockBlockRevolutionMap struct {
+type BlockBlockRevolutionWorld struct {
 	grid [][]*BlockBlockRevolutionTile
 	BlockBlockRevolutionSettings
 	Container
@@ -35,7 +35,7 @@ type BlockBlockRevolutionMap struct {
 	IsGameOver bool
 }
 
-func NewBlockBlockRevolutionMap(settings BlockBlockRevolutionSettings) BlockBlockRevolutionMap {
+func NewBlockBlockRevolutionWorld(settings BlockBlockRevolutionSettings) BlockBlockRevolutionWorld {
 
 	r := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
 
@@ -57,7 +57,7 @@ func NewBlockBlockRevolutionMap(settings BlockBlockRevolutionSettings) BlockBloc
 
 	qa := NewFiniteActionQueue(1)
 
-	bbrm := BlockBlockRevolutionMap{
+	bbrw := BlockBlockRevolutionWorld{
 		Container:                    &r,
 		BlockBlockRevolutionSettings: settings,
 		ActionQueuer:                 &qa,
@@ -74,84 +74,84 @@ func NewBlockBlockRevolutionMap(settings BlockBlockRevolutionSettings) BlockBloc
 		},
 	}
 
-	bbrm.AddNewBlock()
+	bbrw.AddNewBlock()
 
-	return bbrm
+	return bbrw
 
 }
 
-func (bbrm *BlockBlockRevolutionMap) Update() bool {
+func (bbrw *BlockBlockRevolutionWorld) Update() bool {
 
-	if bbrm.IsGameOver {
+	if bbrw.IsGameOver {
 		return false
 	}
 
-	bbrm.FrameTimer.Start()
-	bbrm.Process()
+	bbrw.FrameTimer.Start()
+	bbrw.Process()
 
-	if bbrm.DownToNextLineCount < 5 {
-		bbrm.DownToNextLineCount++
+	if bbrw.DownToNextLineCount < 5 {
+		bbrw.DownToNextLineCount++
 	} else {
-		bbrm.DownToNextLineCount = 0
-		if !bbrm.MoveCurrentTetrominoDown() {
-			//bbrm.CurrentTetromino = nil
-			bbrm.CheckForAndClearLines()
+		bbrw.DownToNextLineCount = 0
+		if !bbrw.MoveCurrentTetrominoDown() {
+			//bbrw.CurrentTetromino = nil
+			bbrw.CheckForAndClearLines()
 
-			if !bbrm.AddNewBlock() {
-				bbrm.IsGameOver = true
+			if !bbrw.AddNewBlock() {
+				bbrw.IsGameOver = true
 			}
 		}
 	}
 
-	for bbrm.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*time.Duration(bbrm.BlockBlockRevolutionSettings.BlockSpeedReduction) {
+	for bbrw.FrameTimer.GetCurrentElaspedTime() < time.Millisecond*FrameSpeedMultiplier*time.Duration(bbrw.BlockBlockRevolutionSettings.BlockSpeedReduction) {
 	}
 
 	return true
 }
 
-func (bbrm *BlockBlockRevolutionMap) Tile(x int, y int) (*BlockBlockRevolutionTile, bool) {
-	if bbrm.Contains(x, y) {
-		return bbrm.grid[x][y], true
+func (bbrw *BlockBlockRevolutionWorld) Tile(x int, y int) (*BlockBlockRevolutionTile, bool) {
+	if bbrw.Contains(x, y) {
+		return bbrw.grid[x][y], true
 	}
 	return nil, false
 }
 
-func (bbrm *BlockBlockRevolutionMap) MoveCurrentTetrominoDown() bool {
-	return bbrm.MoveCurrentTetromino(0, -1)
+func (bbrw *BlockBlockRevolutionWorld) MoveCurrentTetrominoDown() bool {
+	return bbrw.MoveCurrentTetromino(0, -1)
 }
 
-func (bbrm *BlockBlockRevolutionMap) MoveCurrentTetrominoLeft() bool {
-	return bbrm.MoveCurrentTetromino(-1, 0)
+func (bbrw *BlockBlockRevolutionWorld) MoveCurrentTetrominoLeft() bool {
+	return bbrw.MoveCurrentTetromino(-1, 0)
 }
 
-func (bbrm *BlockBlockRevolutionMap) MoveCurrentTetrominoRight() bool {
-	return bbrm.MoveCurrentTetromino(1, 0)
+func (bbrw *BlockBlockRevolutionWorld) MoveCurrentTetrominoRight() bool {
+	return bbrw.MoveCurrentTetromino(1, 0)
 }
 
-func (bbrm *BlockBlockRevolutionMap) InstantDown() {
-	for bbrm.MoveCurrentTetrominoDown() {
+func (bbrw *BlockBlockRevolutionWorld) InstantDown() {
+	for bbrw.MoveCurrentTetrominoDown() {
 	}
 }
 
-func (bbrm *BlockBlockRevolutionMap) RotateTetromino() {
-	bbrm.Add(func() {
-		bbrm.CurrentTetromino.Rotate()
+func (bbrw *BlockBlockRevolutionWorld) RotateTetromino() {
+	bbrw.Add(func() {
+		bbrw.CurrentTetromino.Rotate()
 	})
 }
 
-func (bbrm *BlockBlockRevolutionMap) MoveCurrentTetromino(moveX int, moveY int) bool {
-	blocks := bbrm.CurrentTetromino.Blocks()
+func (bbrw *BlockBlockRevolutionWorld) MoveCurrentTetromino(moveX int, moveY int) bool {
+	blocks := bbrw.CurrentTetromino.Blocks()
 
 	for i := 0; i < len(blocks); i++ {
-		bbrm.RemoveBlock(blocks[i].GetX(), blocks[i].GetY())
+		bbrw.RemoveBlock(blocks[i].GetX(), blocks[i].GetY())
 	}
 
 	for i := 0; i < len(blocks); i++ {
 		newX, newY := blocks[i].GetX()+moveX, blocks[i].GetY()+moveY
-		if _, ok := bbrm.ContainsBlock(newX, newY); ok || !bbrm.Contains(newX, newY) {
+		if _, ok := bbrw.ContainsBlock(newX, newY); ok || !bbrw.Contains(newX, newY) {
 
 			for i := 0; i < len(blocks); i++ {
-				bbrm.InsertBlock(blocks[i].GetX(), blocks[i].GetY(), blocks[i])
+				bbrw.InsertBlock(blocks[i].GetX(), blocks[i].GetY(), blocks[i])
 			}
 
 			return false
@@ -160,14 +160,14 @@ func (bbrm *BlockBlockRevolutionMap) MoveCurrentTetromino(moveX int, moveY int) 
 
 	for i := 0; i < len(blocks); i++ {
 		newX, newY := blocks[i].GetX()+moveX, blocks[i].GetY()+moveY
-		bbrm.InsertBlock(newX, newY, blocks[i])
+		bbrw.InsertBlock(newX, newY, blocks[i])
 	}
 
 	return true
 }
 
-func (bbrm *BlockBlockRevolutionMap) ContainsBlock(x int, y int) (*Block, bool) {
-	if tile, ok := bbrm.Tile(x, y); ok {
+func (bbrw *BlockBlockRevolutionWorld) ContainsBlock(x int, y int) (*Block, bool) {
+	if tile, ok := bbrw.Tile(x, y); ok {
 		if tile.Block != nil {
 			return tile.Block, true
 		}
@@ -175,18 +175,18 @@ func (bbrm *BlockBlockRevolutionMap) ContainsBlock(x int, y int) (*Block, bool) 
 	return nil, false
 }
 
-func (bbrm *BlockBlockRevolutionMap) CheckForAndClearLines() {
+func (bbrw *BlockBlockRevolutionWorld) CheckForAndClearLines() {
 
-	//linesToClear := make([]int, bbrm.Height)
+	//linesToClear := make([]int, bbrw.Height)
 
 	scoreMultiplier := 0
 
-	for y := 0; y < bbrm.Height; y++ {
+	for y := 0; y < bbrw.Height; y++ {
 
 		canAddLine := true
 
-		for x := 0; x < bbrm.Width; x++ {
-			tile := bbrm.grid[x][y]
+		for x := 0; x < bbrw.Width; x++ {
+			tile := bbrw.grid[x][y]
 			if !tile.ContainsBlock() {
 				canAddLine = false
 				break
@@ -195,8 +195,8 @@ func (bbrm *BlockBlockRevolutionMap) CheckForAndClearLines() {
 		}
 
 		if canAddLine {
-			bbrm.RemoveAllBlocksFromLine(y)
-			bbrm.ShiftAllBlocksAboveLineDown(y)
+			bbrw.RemoveAllBlocksFromLine(y)
+			bbrw.ShiftAllBlocksAboveLineDown(y)
 			scoreMultiplier++
 			y--
 		}
@@ -204,24 +204,24 @@ func (bbrm *BlockBlockRevolutionMap) CheckForAndClearLines() {
 	}
 
 	for i := 0; i < scoreMultiplier; i++ {
-		bbrm.Score += scoreMultiplier * 100
+		bbrw.Score += scoreMultiplier * 100
 	}
 
 }
 
-func (bbrm *BlockBlockRevolutionMap) RemoveAllBlocksFromLine(line int) {
-	for i := 0; i < bbrm.Width; i++ {
-		bbrm.grid[i][line].RemoveBlock()
+func (bbrw *BlockBlockRevolutionWorld) RemoveAllBlocksFromLine(line int) {
+	for i := 0; i < bbrw.Width; i++ {
+		bbrw.grid[i][line].RemoveBlock()
 	}
 }
 
-func (bbrm *BlockBlockRevolutionMap) ShiftAllBlocksAboveLineDown(line int) {
+func (bbrw *BlockBlockRevolutionWorld) ShiftAllBlocksAboveLineDown(line int) {
 
 	blocks := make([]*Block, 0)
 
-	for x := 0; x < bbrm.Width; x++ {
-		for y := line; y < bbrm.Height; y++ {
-			tile := bbrm.grid[x][y]
+	for x := 0; x < bbrw.Width; x++ {
+		for y := line; y < bbrw.Height; y++ {
+			tile := bbrw.grid[x][y]
 			if tile.ContainsBlock() {
 				blocks = append(blocks, tile.Block)
 				tile.RemoveBlock()
@@ -230,41 +230,41 @@ func (bbrm *BlockBlockRevolutionMap) ShiftAllBlocksAboveLineDown(line int) {
 	}
 
 	for _, block := range blocks {
-		bbrm.InsertBlock(block.GetX(), block.GetY()-1, block)
+		bbrw.InsertBlock(block.GetX(), block.GetY()-1, block)
 	}
 
 }
 
-func (bbrm *BlockBlockRevolutionMap) InsertBlock(x int, y int, b *Block) bool {
-	if tile, ok := bbrm.Tile(x, y); ok {
+func (bbrw *BlockBlockRevolutionWorld) InsertBlock(x int, y int, b *Block) bool {
+	if tile, ok := bbrw.Tile(x, y); ok {
 		return tile.InsertBlock(b)
 	}
 	return false
 }
 
-func (bbrm *BlockBlockRevolutionMap) RemoveBlock(x int, y int) {
-	if tile, ok := bbrm.Tile(x, y); ok {
+func (bbrw *BlockBlockRevolutionWorld) RemoveBlock(x int, y int) {
+	if tile, ok := bbrw.Tile(x, y); ok {
 		tile.RemoveBlock()
 	}
 }
 
-func (bbrm *BlockBlockRevolutionMap) AddNewBlock() bool {
+func (bbrw *BlockBlockRevolutionWorld) AddNewBlock() bool {
 
-	if len(bbrm.nextNewBlockFunctions) == 0 {
+	if len(bbrw.nextNewBlockFunctions) == 0 {
 		for i := 0; i < 3; i++ {
-			for _, newblockfunc := range rand.Perm(len(bbrm.newBlockFunctions)) {
-				bbrm.nextNewBlockFunctions = append(bbrm.nextNewBlockFunctions, bbrm.newBlockFunctions[newblockfunc])
+			for _, newblockfunc := range rand.Perm(len(bbrw.newBlockFunctions)) {
+				bbrw.nextNewBlockFunctions = append(bbrw.nextNewBlockFunctions, bbrw.newBlockFunctions[newblockfunc])
 			}
 		}
 	}
 
-	x, y := bbrm.nextNewBlockFunctions[0], bbrm.nextNewBlockFunctions[1:]
-	bbrm.nextNewBlockFunctions = y
+	x, y := bbrw.nextNewBlockFunctions[0], bbrw.nextNewBlockFunctions[1:]
+	bbrw.nextNewBlockFunctions = y
 
-	block, ok := x(bbrm.Width/2, bbrm.Height-2, bbrm)
+	block, ok := x(bbrw.Width/2, bbrw.Height-2, bbrw)
 
 	if ok {
-		bbrm.CurrentTetromino = block
+		bbrw.CurrentTetromino = block
 		return true
 	}
 
