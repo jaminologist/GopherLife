@@ -7,8 +7,8 @@ import (
 	"sync"
 )
 
-//GopherMapSettings sets configuration for a Gopher Map
-type GopherMapSettings struct {
+//GopherWorldSettings sets configuration for a Gopher Map
+type GopherWorldSettings struct {
 	Dimensions
 	Population
 
@@ -18,7 +18,7 @@ type GopherMapSettings struct {
 
 //GopherWorld A map for Gophers!
 type GopherWorld struct {
-	Searcher
+	GopherWorldSearcher
 	TileContainer
 	GopherContainer
 	FoodContainer
@@ -39,11 +39,51 @@ type GopherWorld struct {
 
 	NumberOfGophers int
 
-	*GopherMapSettings
+	*GopherWorldSettings
+}
+
+type GopherWorldTile struct {
+	Gopher *Gopher
+	Food   *Food
+}
+
+//NewGopherWorldTile Returns a new tile which hold the given gopher and food
+func NewGopherWorldTile(gopher *Gopher, food *Food) GopherWorldTile {
+	return GopherWorldTile{Gopher: gopher, Food: food}
+}
+
+func (tile *GopherWorldTile) IsEmpty() bool {
+	return tile.Gopher == nil && tile.Food == nil
+}
+
+//HasGopher Checks if this tile contains a gopher
+func (tile *GopherWorldTile) HasGopher() bool {
+	return tile.Gopher != nil
+}
+
+//HasFood Checks if this tile contains food
+func (tile *GopherWorldTile) HasFood() bool {
+	return tile.Food != nil
+}
+
+func (tile *GopherWorldTile) SetGopher(g *Gopher) {
+	tile.Gopher = g
+}
+
+func (tile *GopherWorldTile) SetFood(f *Food) {
+	tile.Food = f
+}
+
+func (tile *GopherWorldTile) ClearGopher() {
+	tile.Gopher = nil
+}
+
+func (tile *GopherWorldTile) ClearFood() {
+	tile.Food = nil
 }
 
 //NewGopherWorld Creates a new GopherWorld a GopherWorld contains food and gophers and can use different actors to update the state of the map
-func NewGopherWorld(settings *GopherMapSettings, s Searcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
+func NewGopherWorld(settings *GopherWorldSettings, s GopherWorldSearcher, t TileContainer, g GopherContainer, f FoodContainer, ig GopherInserterAndRemover, iff FoodInserterAndRemover) GopherWorld {
 
 	qa := NewFiniteActionQueue(settings.MaxPopulation * 2)
 
@@ -61,7 +101,7 @@ func NewGopherWorld(settings *GopherMapSettings, s Searcher, t TileContainer, g 
 	var wg sync.WaitGroup
 
 	return GopherWorld{
-		Searcher:                 s,
+		GopherWorldSearcher:      s,
 		TileContainer:            t,
 		GopherContainer:          g,
 		FoodContainer:            f,
@@ -75,14 +115,14 @@ func NewGopherWorld(settings *GopherMapSettings, s Searcher, t TileContainer, g 
 
 		GopherWaitGroup: &wg,
 
-		GopherMapSettings: settings,
+		GopherWorldSettings: settings,
 
 		NumberOfGophers: settings.InitialPopulation,
 	}
 
 }
 
-func CreateWorldCustom(settings GopherMapSettings) *GopherWorld {
+func CreateGopherWorldSpiralSearch(settings GopherWorldSettings) *GopherWorld {
 
 	b2dc := NewBasic2DContainer(0, 0, settings.Width, settings.Height)
 	sts := SpiralTileSearch{TileContainer: &b2dc}
@@ -92,6 +132,27 @@ func CreateWorldCustom(settings GopherMapSettings) *GopherWorld {
 	gw.setUpTiles()
 	return &gw
 
+}
+
+func CreateGopherWorldGridPartition(settings GopherWorldSettings) *GopherWorld {
+
+	gridWidth := 5
+	gridHeight := 5
+
+	gc := NewBasicGridContainer(settings.Width,
+		settings.Height,
+		gridWidth,
+		gridHeight,
+	)
+
+	search := GridTileSearch{
+		BasicGridContainer: &gc,
+	}
+
+	tileMap := NewGopherWorld(&settings, &search, &gc, &gc, &gc, &gc, &gc)
+
+	tileMap.setUpTiles()
+	return &tileMap
 }
 
 func (gw *GopherWorld) setUpTiles() {
@@ -118,14 +179,14 @@ func (gw *GopherWorld) setUpTiles() {
 	}
 
 	actor := GopherActor{
-		GopherBirthRate: gw.GopherBirthRate,
-		ActionQueuer:    gw.ActionQueuer,
-		Searcher:        gw.Searcher,
-		GopherContainer: gw.GopherContainer,
-		FoodContainer:   gw.FoodContainer,
-		FoodPicker:      gw,
-		MoveableGophers: gw,
-		ActorGeneration: gw.GopherGeneration,
+		GopherBirthRate:     gw.GopherBirthRate,
+		ActionQueuer:        gw.ActionQueuer,
+		GopherWorldSearcher: gw.GopherWorldSearcher,
+		GopherContainer:     gw.GopherContainer,
+		FoodContainer:       gw.FoodContainer,
+		FoodPicker:          gw,
+		MoveableGophers:     gw,
+		ActorGeneration:     gw.GopherGeneration,
 	}
 
 	gw.Actor = &actor
@@ -310,6 +371,20 @@ func (gw *GopherWorld) TogglePause() {
 	gw.IsPaused = !gw.IsPaused
 }
 
+//GopherWorldSearcher used to search for the given search type in a given area
+type GopherWorldSearcher interface {
+	Search(position geometry.Coordinates, width int, height int, max int, searchType SearchType) []geometry.Coordinates
+}
+
+type SearchType int
+
+const (
+	SearchForFood SearchType = iota
+	SearchForEmptySpace
+	SearchForFemaleGopher
+	FemaleGopher
+)
+
 type SpiralTileSearch struct {
 	TileContainer
 }
@@ -351,4 +426,107 @@ func (spiralTileSearch *SpiralTileSearch) Search(position geometry.Coordinates, 
 	geometry.SortByNearestFromCoordinate(position, coordsArray)
 
 	return coordsArray
+}
+
+type GridTileSearch struct {
+	*BasicGridContainer
+}
+
+func (searcher *GridTileSearch) Search(position geometry.Coordinates, width int, height int, maximumFind int, searchType SearchType) []geometry.Coordinates {
+
+	x, y := position.GetX(), position.GetY()
+
+	var locations []geometry.Coordinates
+
+	switch searchType {
+	case SearchForFood:
+		locations = queryForFood(searcher, width, height, x, y)
+	case SearchForFemaleGopher:
+		locations = queryForFemalePartner(searcher, width, height, x, y)
+	case SearchForEmptySpace:
+		sts := SpiralTileSearch{TileContainer: searcher.BasicGridContainer}
+		return sts.Search(position, width, height, maximumFind, searchType)
+	}
+
+	geometry.SortByNearestFromCoordinate(position, locations)
+
+	if len(locations) >= maximumFind {
+		return locations[:maximumFind]
+	}
+	return locations[:len(locations)]
+}
+
+func queryForFood(tileMap *GridTileSearch, width int, height int, x int, y int) []geometry.Coordinates {
+	return gridQuery(tileMap, width, height, x, y,
+
+		func(container *TrackedTileContainer) map[int]*GopherWorldTile {
+			return container.foodTileLocations
+		},
+
+		func(tile *GopherWorldTile) (int, int) {
+			return tile.Food.Position.GetX(), tile.Food.Position.GetY()
+		},
+
+		func(tile *GopherWorldTile) bool {
+			return true
+		},
+	)
+}
+
+func queryForFemalePartner(tileMap *GridTileSearch, width int, height int, x int, y int) []geometry.Coordinates {
+
+	return gridQuery(tileMap, width, height, x, y,
+
+		func(container *TrackedTileContainer) map[int]*GopherWorldTile {
+			return container.gopherTileLocations
+		},
+
+		func(tile *GopherWorldTile) (int, int) {
+			return tile.Gopher.Position.GetX(), tile.Gopher.Position.GetY()
+		},
+
+		func(tile *GopherWorldTile) bool {
+			return tile.Gopher.Gender == Female && tile.Gopher.IsLookingForLove()
+		},
+	)
+}
+
+func gridQuery(tileMap *GridTileSearch, width int, height int, x int, y int,
+	gridSearchFunc func(*TrackedTileContainer) map[int]*GopherWorldTile,
+	coordsFromTile func(*GopherWorldTile) (int, int),
+	tileCheck func(*GopherWorldTile) bool) []geometry.Coordinates {
+
+	worldStartX, worldStartY, worldEndX, worldEndY := x-width, y-height, x+width, y+height
+
+	startX, startY := tileMap.convertToGridCoordinates(x-width, y-height)
+	endX, endY := tileMap.convertToGridCoordinates(x+width, y+height)
+
+	locations := make([]geometry.Coordinates, 0)
+
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+
+			if grid, ok := tileMap.Grid(x*tileMap.BasicGridContainer.gridWidth, y*tileMap.BasicGridContainer.gridHeight); ok {
+				potentialLocations := gridSearchFunc(grid)
+
+				for key := range potentialLocations {
+
+					tile := potentialLocations[key]
+
+					i, j := coordsFromTile(tile)
+
+					if i >= worldStartX &&
+						i < worldEndX &&
+						j >= worldStartY &&
+						j < worldEndY && tileCheck(tile) {
+						locations = append(locations, geometry.Coordinates{i, j})
+					}
+
+				}
+			}
+
+		}
+	}
+
+	return locations
 }

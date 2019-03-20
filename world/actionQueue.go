@@ -17,16 +17,16 @@ func NewFiniteActionQueue(maxActions int) FiniteActionQueue {
 	}
 }
 
-func (basicActionQueue *FiniteActionQueue) Add(action func()) {
+func (finiteActionQueue *FiniteActionQueue) Add(action func()) {
 	select {
-	case basicActionQueue.actionQueue <- action: // Put 2 in the channel unless it is full
+	case finiteActionQueue.actionQueue <- action: // Put 2 in the channel unless it is full
 	default:
 	}
 }
 
-func (basicActionQueue *FiniteActionQueue) Process() {
-	actionChannel := basicActionQueue.actionQueue
-	basicActionQueue.actionQueue = make(chan func(), basicActionQueue.maxActions)
+func (finiteActionQueue *FiniteActionQueue) Process() {
+	actionChannel := finiteActionQueue.actionQueue
+	finiteActionQueue.actionQueue = make(chan func(), finiteActionQueue.maxActions)
 	close(actionChannel)
 	for action := range actionChannel {
 		action()

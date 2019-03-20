@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func TestCollisionMap_InsertCollider(t *testing.T) {
+func TestCollisionWorld_InsertCollider(t *testing.T) {
 
 	width := 100
 	height := 100
-	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+	collisionMap := NewEmptyCollisionWorld(CollisionWorldSettings{
 		Dimensions: Dimensions{Width: width, Height: height},
 		IsDiagonal: false},
 	)
@@ -27,7 +27,7 @@ func TestCollisionMap_InsertCollider(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		collisionMap *CollisionMap
+		collisionMap *CollisionWorld
 		args         args
 		want         expected
 	}{
@@ -38,7 +38,7 @@ func TestCollisionMap_InsertCollider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.collisionMap.InsertCollider(tt.args.x, tt.args.y, tt.args.c); got != tt.want.inserted {
-				t.Errorf("CollisionMap.InsertCollider() = %v, want %v", got, tt.want.inserted)
+				t.Errorf("CollisionWorld.InsertCollider() = %v, want %v", got, tt.want.inserted)
 			}
 
 			if tt.args.c.GetX() != tt.want.wantX || tt.args.c.GetY() != tt.want.wantY {
@@ -48,11 +48,11 @@ func TestCollisionMap_InsertCollider(t *testing.T) {
 	}
 }
 
-func TestCollisionMap_HasCollider(t *testing.T) {
+func TestCollisionWorld_HasCollider(t *testing.T) {
 
 	width := 5
 	height := 5
-	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+	collisionMap := NewEmptyCollisionWorld(CollisionWorldSettings{
 		Dimensions: Dimensions{Width: width, Height: height},
 		IsDiagonal: false},
 	)
@@ -67,7 +67,7 @@ func TestCollisionMap_HasCollider(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		collisionMap *CollisionMap
+		collisionMap *CollisionWorld
 		args         args
 		want         *Collider
 		want1        bool
@@ -80,16 +80,16 @@ func TestCollisionMap_HasCollider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := tt.collisionMap.HasCollider(tt.args.x, tt.args.y)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CollisionMap.HasCollider() got = %v, want %v", got, tt.want)
+				t.Errorf("CollisionWorld.HasCollider() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("CollisionMap.HasCollider() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("CollisionWorld.HasCollider() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
 }
 
-func TestCollisionMap_MoveCollider(t *testing.T) {
+func TestCollisionWorld_MoveCollider(t *testing.T) {
 	type args struct {
 		moveX int
 		moveY int
@@ -103,27 +103,28 @@ func TestCollisionMap_MoveCollider(t *testing.T) {
 
 	width := 5
 	height := 5
-	collisionMap := NewEmptyCollisionMap(CollisionMapSettings{
+	collisionMap := NewEmptyCollisionWorld(CollisionWorldSettings{
 		Dimensions: Dimensions{Width: width, Height: height},
+		Population: Population{InitialPopulation: 100, MaxPopulation: 100},
 		IsDiagonal: false},
 	)
 
 	insertX, insertY := 1, 1
-	collider := Collider{}
-	collisionMap.InsertCollider(insertX, insertY, &collider)
+	collider := &Collider{}
+	collisionMap.InsertCollider(insertX, insertY, collider)
 
 	tests := []struct {
 		name         string
-		collisionMap *CollisionMap
+		collisionMap *CollisionWorld
 		args         args
 		want         expected
 	}{
-		{"Move into Empty Space", &collisionMap, args{0, 1, &collider}, expected{insertX, insertY + 1, true}},
+		{"Move into Empty Space", &collisionMap, args{0, 1, collider}, expected{insertX, insertY + 1, true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.collisionMap.MoveCollider(tt.args.moveX, tt.args.moveY, tt.args.c); got != tt.want.funcReturn {
-				t.Errorf("CollisionMap.MoveCollider() = %v, want %v", got, tt.want.funcReturn)
+				t.Errorf("CollisionWorld.MoveCollider() = %v, want %v", got, tt.want.funcReturn)
 			}
 
 			tt.collisionMap.Process()

@@ -11,7 +11,6 @@ func TestGender_Opposite(t *testing.T) {
 		gender Gender
 		want   Gender
 	}{
-		// TODO: Add test cases.
 		{
 			name:   "first",
 			gender: Male,

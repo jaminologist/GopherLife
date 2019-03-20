@@ -12,17 +12,17 @@ var collisionMapSpeed = 1
 
 var colliderColors = []color.RGBA{colors.Red, colors.Blue, colors.Cyan, colors.Pink, colors.Yellow, colors.White}
 
-type CollisionMapSettings struct {
+type CollisionWorldSettings struct {
 	Dimensions
 	Population
 	IsDiagonal bool
 }
 
-type CollisionMap struct {
+type CollisionWorld struct {
 	grid [][]*ColliderTile
 	Container
 	ActionQueuer
-	CollisionMapSettings
+	CollisionWorldSettings
 	*sync.WaitGroup
 
 	ActiveColliders chan *Collider
@@ -54,20 +54,20 @@ func (tile *ColliderTile) Clear() {
 	tile.c = nil
 }
 
-//NewEmptyCollisionMap Creates an Empty Collision Map
-func NewEmptyCollisionMap(settings CollisionMapSettings) CollisionMap {
+//NewEmptyCollisionWorld Creates an Empty Collision Map
+func NewEmptyCollisionWorld(settings CollisionWorldSettings) CollisionWorld {
 
 	qa := NewFiniteActionQueue(settings.InitialPopulation * 2)
 	var wg sync.WaitGroup
 
 	rect := geometry.NewRectangle(0, 0, settings.Width, settings.Height)
 
-	collisionMap := CollisionMap{
-		ActionQueuer:         &qa,
-		WaitGroup:            &wg,
-		Container:            &rect,
-		ActiveColliders:      make(chan *Collider, settings.InitialPopulation*2),
-		CollisionMapSettings: settings,
+	collisionMap := CollisionWorld{
+		ActionQueuer:           &qa,
+		WaitGroup:              &wg,
+		Container:              &rect,
+		ActiveColliders:        make(chan *Collider, settings.InitialPopulation*2),
+		CollisionWorldSettings: settings,
 	}
 
 	collisionMap.grid = make([][]*ColliderTile, settings.Width)
@@ -89,10 +89,10 @@ func NewEmptyCollisionMap(settings CollisionMapSettings) CollisionMap {
 	return collisionMap
 }
 
-//NewCollisionMap Creates a Populated Collision Map
-func NewCollisionMap(settings CollisionMapSettings) CollisionMap {
+//NewCollisionWorld Creates a Populated Collision Map
+func NewCollisionWorld(settings CollisionWorldSettings) CollisionWorld {
 
-	collisionMap := NewEmptyCollisionMap(settings)
+	collisionMap := NewEmptyCollisionWorld(settings)
 
 	keys := geometry.GenerateRandomizedCoordinateArray(0, 0,
 		settings.Width, settings.Height)
@@ -133,7 +133,7 @@ func NewCollisionMap(settings CollisionMapSettings) CollisionMap {
 }
 
 //Update all Active Colliders inside the Map
-func (collisionMap *CollisionMap) Update() bool {
+func (collisionMap *CollisionWorld) Update() bool {
 
 	numColliders := len(collisionMap.ActiveColliders)
 
@@ -167,7 +167,7 @@ type ColliderWorldActions interface {
 }
 
 //InsertCollider Sets x and y of Collider and places it into map
-func (collisionMap *CollisionMap) InsertCollider(x int, y int, c *Collider) bool {
+func (collisionMap *CollisionWorld) InsertCollider(x int, y int, c *Collider) bool {
 
 	if collisionMap.Contains(x, y) {
 		return collisionMap.grid[x][y].Insert(c)
@@ -177,7 +177,7 @@ func (collisionMap *CollisionMap) InsertCollider(x int, y int, c *Collider) bool
 }
 
 //HasCollider Checks if a colliders exists at X and Y and returns the Collider
-func (collisionMap *CollisionMap) HasCollider(x int, y int) (*Collider, bool) {
+func (collisionMap *CollisionWorld) HasCollider(x int, y int) (*Collider, bool) {
 
 	if collisionMap.Contains(x, y) {
 		tile := collisionMap.grid[x][y]
@@ -190,7 +190,7 @@ func (collisionMap *CollisionMap) HasCollider(x int, y int) (*Collider, bool) {
 	return nil, false
 }
 
-func (collisionMap *CollisionMap) MoveCollider(moveX int, moveY int, c *Collider) bool {
+func (collisionMap *CollisionWorld) MoveCollider(moveX int, moveY int, c *Collider) bool {
 
 	newX, newY := c.X+moveX, c.Y+moveY
 

@@ -144,7 +144,7 @@ func (gopher *Gopher) ClearGopherTargets() {
 
 type GopherActor struct {
 	ActionQueuer
-	Searcher
+	GopherWorldSearcher
 	GopherContainer
 	FoodContainer
 	FoodPicker

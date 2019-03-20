@@ -5,23 +5,16 @@ import (
 	"testing"
 )
 
-func TestPartitionTileMap_Tile(t *testing.T) {
+func TestPartitionGopherWorld_MoveGopher(t *testing.T) {
 
-}
-
-func TestGridSection_Tile(t *testing.T) {
-}
-
-func TestPartitionTileMap_MoveGopher(t *testing.T) {
-
-	settings := GopherMapSettings{
+	settings := GopherWorldSettings{
 		Dimensions:      Dimensions{10, 10},
 		Population:      Population{0, 100},
 		NumberOfFood:    20,
 		GopherBirthRate: 7,
 	}
 
-	var tileMap = CreatePartitionTileMapCustom(settings)
+	var tileMap = CreateGopherWorldGridPartition(settings)
 
 	gopher := NewGopher("a", geometry.NewCoordinate(1, 2))
 	tileMap.InsertGopher(1, 2, &gopher)
@@ -45,16 +38,16 @@ func TestPartitionTileMap_MoveGopher(t *testing.T) {
 
 }
 
-func TestPartitionTileMap_RemoveGopher(t *testing.T) {
+func TestPartitionGopherWorld_RemoveGopher(t *testing.T) {
 
-	settings := GopherMapSettings{
+	settings := GopherWorldSettings{
 		Dimensions:      Dimensions{10, 10},
 		Population:      Population{0, 100},
 		NumberOfFood:    20,
 		GopherBirthRate: 7,
 	}
 
-	var tileMap = CreatePartitionTileMapCustom(settings)
+	var tileMap = CreateGopherWorldGridPartition(settings)
 
 	gopher := NewGopher("a", geometry.Coordinates{1, 2})
 	tileMap.InsertGopher(1, 2, &gopher)

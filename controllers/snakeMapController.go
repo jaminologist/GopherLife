@@ -13,14 +13,14 @@ import (
 	"strings"
 )
 
-type SnakeMapController struct {
-	world.SnakeMapSettings
+type SnakeWorldController struct {
+	world.SnakeWorldSettings
 	ClickToBegin bool
-	*world.SnakeMap
+	*world.SnakeWorld
 	*renderers.GridRenderer
 }
 
-func NewSnakeMapController() SnakeMapController {
+func NewSnakeWorldController() SnakeWorldController {
 
 	d := world.Dimensions{
 		Width:  35,
@@ -32,25 +32,25 @@ func NewSnakeMapController() SnakeMapController {
 	renderer.TileWidth = 10
 	renderer.TileHeight = 10
 
-	return SnakeMapController{
-		SnakeMapSettings: world.SnakeMapSettings{d, 5},
+	return SnakeWorldController{
+		SnakeWorldSettings: world.SnakeWorldSettings{d, 5},
 		GridRenderer:     &renderer,
 	}
 }
 
-func (controller *SnakeMapController) Start() {
-	if controller.SnakeMap == nil {
-		sMap := world.NewSnakeMap(controller.SnakeMapSettings)
-		controller.SnakeMap = &sMap
+func (controller *SnakeWorldController) Start() {
+	if controller.SnakeWorld == nil {
+		sMap := world.NewSnakeWorld(controller.SnakeWorldSettings)
+		controller.SnakeWorld = &sMap
 	}
 }
 
-func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
+func (controller *SnakeWorldController) MarshalJSON() ([]byte, error) {
 
 	render := controller.GridRenderer.Draw(controller)
 	render.TextBelowCanvas += fmt.Sprintf("<span>Score: %d </span><br />", controller.Score)
 
-	if controller.SnakeMap.IsGameOver {
+	if controller.SnakeWorld.IsGameOver {
 		render.TextBelowCanvas += fmt.Sprintf("<span>Game Over!</span><br />")
 	} else if !controller.ClickToBegin {
 		render.TextBelowCanvas += fmt.Sprintf("<span>Click to Begin")
@@ -59,7 +59,7 @@ func (controller *SnakeMapController) MarshalJSON() ([]byte, error) {
 	return json.Marshal(render)
 }
 
-func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
+func (controller *SnakeWorldController) RenderTile(x int, y int) color.RGBA {
 
 	if sp, ok := controller.Tile(x, y); ok {
 		switch {
@@ -80,53 +80,53 @@ func (controller *SnakeMapController) RenderTile(x int, y int) color.RGBA {
 	return colors.White
 }
 
-func (controller *SnakeMapController) PageLayout() WorldPageData {
+func (controller *SnakeWorldController) PageLayout() WorldPageData {
 	return WorldPageData{
 		PageTitle: "E L O N G A T I N G G O P H E R L I F E",
 		FormData: []FormData{
-			FormDataSnakeSlowDown(controller.SnakeMapSettings.SpeedReduction, 3),
+			FormDataSnakeSlowDown(controller.SnakeWorldSettings.SpeedReduction, 3),
 		},
 	}
 }
 
-func (controller *SnakeMapController) HandleForm(values url.Values) bool {
+func (controller *SnakeWorldController) HandleForm(values url.Values) bool {
 
 	fd := FormDataSnakeSlowDown(0, 0)
 	if strings.Contains(values.Encode(), fd.Name) {
 		speedReduction, _ := strconv.ParseInt(values.Get(fd.Name), 10, 64)
-		controller.SnakeMapSettings.SpeedReduction = int(speedReduction)
-		controller.SnakeMap = nil
+		controller.SnakeWorldSettings.SpeedReduction = int(speedReduction)
+		controller.SnakeWorld = nil
 		controller.Start()
 	}
 
 	return true
 }
 
-func (controller *SnakeMapController) KeyPress(key Keys) {
+func (controller *SnakeWorldController) KeyPress(key Keys) {
 	switch key {
 	case LeftArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Left)
+		controller.SnakeWorld.ChangeDirection(geometry.Left)
 	case RightArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Right)
+		controller.SnakeWorld.ChangeDirection(geometry.Right)
 	case UpArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Up)
+		controller.SnakeWorld.ChangeDirection(geometry.Up)
 	case DownArrow:
-		controller.SnakeMap.ChangeDirection(geometry.Down)
+		controller.SnakeWorld.ChangeDirection(geometry.Down)
 	}
 }
 
-func (controller *SnakeMapController) Update() bool {
+func (controller *SnakeWorldController) Update() bool {
 	if controller.ClickToBegin {
 		if controller.IsGameOver {
 			controller.ClickToBegin = false
 		}
-		return controller.SnakeMap.Update()
+		return controller.SnakeWorld.Update()
 	}
 
 	return true
 }
 
 //Click selects the tile on the gopher map and runs the SelectEntity method
-func (controller *SnakeMapController) Click(x int, y int) {
+func (controller *SnakeWorldController) Click(x int, y int) {
 	controller.ClickToBegin = true
 }
